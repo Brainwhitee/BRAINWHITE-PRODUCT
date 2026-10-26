@@ -1,0 +1,484 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite" // switch to postgresql for staging/prod
+  url      = env("DATABASE_URL")
+}
+
+model Organisation {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  timezone    String   @default("UTC")
+  workingDays String   @default("Mon,Tue,Wed,Thu,Fri")
+  createdAt   DateTime @default(now())
+  users       User[]
+  invitations Invitation[]
+  auditLogs   AuditLog[]
+  emails      EmailLog[]
+  projects    Project[]
+  paths       LearningPath[]
+  tasks       Task[]
+  reports     Report[]
+  githubEvents GithubEvent[]
+}
+
+// role: OWNER | MANAGER | MENTOR | CANDIDATE
+model User {
+  id               String   @id @default(cuid())
+  orgId            String
+  org              Organisation @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  name             String
+  email            String   @unique
+  passwordHash     String?
+  role             String
+  status           String   @default("ACTIVE") // ACTIVE | DEACTIVATED
+  githubUserId     String?
+  githubUsername   String?
+  githubTokenEnc   String?
+  experienceLevel  String   @default("JUNIOR")
+  createdAt        DateTime @default(now())
+  sessions         Session[]
+  notifications    Notification[]
+
+  @@index([orgId])
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+// status: PENDING | ACCEPTED | EXPIRED | REVOKED
+model Invitation {
+  id        String   @id @default(cuid())
+  orgId     String
+  org       Organisation @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  email     String
+  role      String
+  tokenHash String   @unique
+  status    String   @default("PENDING")
+  expiresAt DateTime
+  invitedBy String
+  pathId    String?
+  startDate DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([orgId])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  body      String
+  readAt    DateTime?
+  createdAt DateTime @default(now())
+}
+
+model EmailLog {
+  id        String   @id @default(cuid())
+  orgId     String
+  org       Organisation @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  to        String
+  subject   String
+  body      String
+  status    String   @default("SENT")
+  createdAt DateTime @default(now())
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  orgId     String
+  org       Organisation @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  actorId   String?
+  action    String
+  target    String?
+  createdAt DateTime @default(now())
+
+  @@index([orgId])
+}
+
+// ---------- Codebase Analyser (Phase 1) ----------
+
+model Project {
+  id          String   @id @default(cuid())
+  orgId       String
+  org         Organisation @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  name        String
+  description String   @default("")
+  summary     String   @default("")
+  createdAt   DateTime @default(now())
+  repos       Repository[]
+
+  @@index([orgId])
+}
+
+// source: "local" (folder path) | "github" (owner/name)
+model Repository {
+  id            String   @id @default(cuid())
+  orgId         String
+  projectId     String
+  project       Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name          String
+  source        String
+  location      String
+  branch        String   @default("main")
+  lastSyncedSha String?
+  syncStatus    String   @default("PENDING") // PENDING | RUNNING | HEALTHY | FAILED
+  lastSyncedAt  DateTime?
+  summary       String   @default("")
+  languages     String   @default("{}")
+  customIgnore  String   @default("")
+  modules       Module[]
+  files         File[]
+  syncRuns      SyncRun[]
+
+  @@index([orgId])
+}
+
+model Module {
+  id          String   @id @default(cuid())
+  repoId      String
+  repo        Repository @relation(fields: [repoId], references: [id], onDelete: Cascade)
+  name        String
+  path        String
+  description String   @default("")
+  summary     String   @default("")
+  files       File[]
+  chunks      Chunk[]
+
+  @@unique([repoId, path])
+}
+
+model File {
+  id          String   @id @default(cuid())
+  repoId      String
+  repo        Repository @relation(fields: [repoId], references: [id], onDelete: Cascade)
+  moduleId    String?
+  module      Module?  @relation(fields: [moduleId], references: [id], onDelete: SetNull)
+  path        String
+  language    String
+  contentHash String
+  lineCount   Int      @default(0)
+  summary     String   @default("")
+  summaryHash String   @default("")
+  redactions  Int      @default(0)
+  content     String   @default("")
+  deletedAt   DateTime?
+  symbols     Symbol[]
+
+  @@unique([repoId, path])
+}
+
+model Symbol {
+  id        String   @id @default(cuid())
+  fileId    String
+  file      File     @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  kind      String   // class | function | method | interface
+  name      String
+  signature String   @default("")
+  doc       String   @default("")
+  startLine Int
+  endLine   Int
+  summary   String   @default("")
+}
+
+// Stable id = hash(repo, path, symbol names) so unchanged code keeps its chunk id across syncs
+model Chunk {
+  id          String   @id
+  moduleId    String
+  module      Module   @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  repoId      String
+  title       String
+  filePath    String
+  startLine   Int
+  endLine     Int
+  estMinutes  Int      @default(1)
+  difficulty  String   @default("EASY")
+  summary     String   @default("")
+  contentHash String
+  summaryHash String   @default("")
+  sha         String?
+  status      String   @default("ACTIVE") // ACTIVE | UPDATED | DEPRECATED
+
+  @@index([moduleId])
+  @@index([repoId])
+}
+
+// type: IMPORTS | DEPENDS_ON (module level)
+model GraphEdge {
+  id       String @id @default(cuid())
+  repoId   String
+  fromId   String
+  toId     String
+  type     String
+  fromKind String
+  toKind   String
+
+  @@index([repoId])
+}
+
+model SyncRun {
+  id         String   @id @default(cuid())
+  repoId     String
+  repo       Repository @relation(fields: [repoId], references: [id], onDelete: Cascade)
+  startedAt  DateTime @default(now())
+  finishedAt DateTime?
+  status     String   @default("RUNNING")
+  sha        String?
+  filesSeen  Int      @default(0)
+  filesParsed Int     @default(0)
+  filesSkipped Int    @default(0)
+  secretsRedacted Int @default(0)
+  summariesGenerated Int @default(0)
+  progress   String   @default("")
+  error      String?
+}
+
+// ---------- Learning paths (Phase 2) ----------
+
+model LearningPath {
+  id          String   @id @default(cuid())
+  orgId       String
+  org         Organisation @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  title       String
+  description String   @default("")
+  role        String   @default("")
+  type        String   @default("NEW_JOINEE") // NEW_JOINEE | NEW_PROJECT
+  status      String   @default("DRAFT")      // DRAFT | PUBLISHED
+  version     Int      @default(1)
+  createdBy   String
+  createdAt   DateTime @default(now())
+  sections    PathSection[]
+  handouts    Handout[]
+  tasks       Task[]
+  assignments Assignment[]
+
+  @@index([orgId])
+}
+
+model PathSection {
+  id      String @id @default(cuid())
+  pathId  String
+  path    LearningPath @relation(fields: [pathId], references: [id], onDelete: Cascade)
+  title   String
+  order   Int    @default(0)
+  items   PathItem[]
+}
+
+// type: CHUNK | CONTENT ; refId = Chunk.id for CHUNK
+model PathItem {
+  id        String  @id @default(cuid())
+  sectionId String
+  section   PathSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  type      String
+  refId     String?
+  title     String
+  body      String  @default("")
+  order     Int     @default(0)
+  mandatory Boolean @default(true)
+  dueDay    Int?
+  handouts  Handout[]
+  progress  ProgressEvent[]
+}
+
+model Handout {
+  id            String   @id @default(cuid())
+  orgId         String
+  pathId        String
+  path          LearningPath @relation(fields: [pathId], references: [id], onDelete: Cascade)
+  itemId        String?
+  item          PathItem? @relation(fields: [itemId], references: [id], onDelete: SetNull)
+  filename      String
+  mime          String
+  size          Int
+  mustRead      Boolean  @default(false)
+  storageKey    String
+  extractedText String   @default("")
+  createdAt     DateTime @default(now())
+}
+
+model Assignment {
+  id          String   @id @default(cuid())
+  orgId       String
+  userId      String
+  pathId      String
+  path        LearningPath @relation(fields: [pathId], references: [id], onDelete: Cascade)
+  pathVersion Int
+  startDate   DateTime
+  mentorId    String?
+  status      String   @default("ACTIVE") // ACTIVE | COMPLETED
+  createdAt   DateTime @default(now())
+  progress    ProgressEvent[]
+  tasks       TaskAssignment[]
+  reports     Report[]
+  feedback    MentorFeedback[]
+
+  @@index([orgId])
+  @@index([userId])
+}
+
+// type: OPENED | COMPLETED | TIME (value = seconds)
+model ProgressEvent {
+  id           String   @id @default(cuid())
+  assignmentId String
+  assignment   Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  userId       String
+  itemId       String
+  item         PathItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  type         String
+  value        Int      @default(0)
+  ts           DateTime @default(now())
+
+  @@index([assignmentId])
+}
+
+model ChatMessage {
+  id        String   @id @default(cuid())
+  userId    String
+  itemId    String
+  role      String   // user | assistant
+  content   String
+  citations String   @default("[]")
+  feedback  Int      @default(0)
+  ts        DateTime @default(now())
+
+  @@index([userId, itemId])
+}
+
+model Note {
+  id     String @id @default(cuid())
+  userId String
+  itemId String
+  body   String @default("")
+
+  @@unique([userId, itemId])
+}
+
+// ---------- Tasks & GitHub (Phase 3) ----------
+
+model Task {
+  id             String   @id @default(cuid())
+  orgId          String
+  org            Organisation @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  pathId         String?
+  path           LearningPath? @relation(fields: [pathId], references: [id], onDelete: SetNull)
+  title          String
+  description    String   @default("")
+  repoId         String?
+  acceptance     String   @default("[]")
+  deadlineDay    Int      @default(7)
+  difficulty     String   @default("EASY")
+  estHours       Int      @default(4)
+  reviewerId     String?
+  issueNumber    Int?
+  issueUrl       String?
+  createdAt      DateTime @default(now())
+  assignments    TaskAssignment[]
+
+  @@index([orgId])
+}
+
+// status: NOT_STARTED | IN_PROGRESS | IN_REVIEW | CHANGES_REQUESTED | BLOCKED | DONE
+model TaskAssignment {
+  id             String   @id @default(cuid())
+  assignmentId   String
+  assignment     Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  taskId         String
+  task           Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  status         String   @default("NOT_STARTED")
+  dueAt          DateTime
+  completedAt    DateTime?
+  onTime         Boolean?
+  blockedReason  String?
+  blockedSince   DateTime?
+  blockedSeconds Int      @default(0)
+  reminderSent   Boolean  @default(false)
+  overdueAlerted Boolean  @default(false)
+  prs            PullRequest[]
+  history        String   @default("[]")
+}
+
+model GithubEvent {
+  id        String   @id @default(cuid())
+  orgId     String
+  org       Organisation @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  userId    String?
+  repoId    String?
+  type      String
+  summary   String   @default("")
+  payload   String   @default("{}")
+  ts        DateTime @default(now())
+
+  @@index([orgId, userId])
+}
+
+model PullRequest {
+  id               String   @id @default(cuid())
+  orgId            String
+  repoFullName     String
+  number           Int
+  authorUserId     String?
+  title            String
+  body             String   @default("")
+  branch           String   @default("")
+  state            String   @default("open") // open | merged | closed
+  additions        Int      @default(0)
+  deletions        Int      @default(0)
+  changedFiles     String   @default("[]")
+  commitMessages   String   @default("[]")
+  reviewRounds     Int      @default(0)
+  conflictCount    Int      @default(0)
+  conflictSince    DateTime?
+  conflictSeconds  Int      @default(0)
+  ciStatus         String   @default("pending")
+  ciFirstTryPass   Boolean?
+  qualityScore     Int?
+  qualityBreakdown String   @default("{}")
+  feedback         String   @default("")
+  scoreOverride    Int?
+  taskAssignmentId String?
+  taskAssignment   TaskAssignment? @relation(fields: [taskAssignmentId], references: [id], onDelete: SetNull)
+  openedAt         DateTime @default(now())
+  mergedAt         DateTime?
+
+  @@unique([repoFullName, number])
+}
+
+// ---------- Reports (Phase 4) ----------
+
+model MentorFeedback {
+  id           String   @id @default(cuid())
+  assignmentId String
+  assignment   Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  authorId     String
+  rubric       String   @default("{}")
+  notes        String   @default("")
+  visibility   String   @default("PRIVATE")
+  createdAt    DateTime @default(now())
+}
+
+model Report {
+  id           String   @id @default(cuid())
+  orgId        String
+  org          Organisation @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  assignmentId String
+  assignment   Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  type         String   // WEEKLY | FINAL
+  periodStart  DateTime
+  periodEnd    DateTime
+  metrics      String   @default("{}")
+  narrative    String   @default("")
+  sentAt       DateTime?
+  createdAt    DateTime @default(now())
+
+  @@index([assignmentId])
+}
