@@ -27,9 +27,9 @@ async function main() {
   const cand = await mk("Casey Candidate", "candidate@demo.test", "CANDIDATE", "casey-dev");
 
   // analyse this very repository as the "company codebase"
-  const project = await db.project.create({ data: { orgId: org.id, name: "Pedagon platform" } });
+  const project = await db.project.create({ data: { orgId: org.id, name: "Brainwhite platform" } });
   const repo = await db.repository.create({
-    data: { orgId: org.id, projectId: project.id, name: "pedagon", source: "local", location: process.cwd(), branch: "main" },
+    data: { orgId: org.id, projectId: project.id, name: "brainwhite", source: "local", location: process.cwd(), branch: "main" },
   });
   process.env.ALLOW_LOCAL_REPOS = "true";
   console.log("Analysing the codebase (a few seconds)...");

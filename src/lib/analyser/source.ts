@@ -34,12 +34,12 @@ export async function loadSource(source: string, location: string, branch: strin
 
   // GitHub public repo (or private with GITHUB_TOKEN) via tarball download
   if (!/^[\w.-]+\/[\w.-]+$/.test(location)) throw new Error("GitHub source must look like owner/name");
-  const headers: Record<string, string> = { "User-Agent": "pedagon" };
+  const headers: Record<string, string> = { "User-Agent": "brainwhite" };
   if (process.env.GITHUB_TOKEN) headers.Authorization = `Bearer ${process.env.GITHUB_TOKEN}`;
 
   const res = await fetch(`https://codeload.github.com/${location}/tar.gz/${encodeURIComponent(branch)}`, { headers });
   if (!res.ok || !res.body) throw new Error(`GitHub download failed (${res.status}). Check owner/name, branch and access.`);
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "pedagon-"));
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "brainwhite-"));
   await streamPipeline(Readable.fromWeb(res.body as never), tar.x({ cwd: dir, strip: 1 }));
 
   let sha: string | null = null;

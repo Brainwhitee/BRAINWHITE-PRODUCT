@@ -108,7 +108,7 @@ export async function simulateEvent(fd: FormData) {
       body: good ? `Closes #${ta.task.issueNumber ?? 0}\n\nWhat: implements the task. Why: part of onboarding. How to test: run the unit tests and try the flow manually in the UI.` : "done",
       head: { ref: `task-${ta.task.issueNumber ?? 0}-work` }, additions: good ? 120 : 900, deletions: good ? 20 : 100, ...extra,
     },
-    pedagon_extra: good
+    brainwhite_extra: good
       ? { files: ["src/feature.ts", "src/feature.test.ts"], commits: ["Add validation for the new endpoint", "Cover edge cases with tests"] }
       : { files: ["src/feature.ts"], commits: ["wip", "fix"] },
   });
