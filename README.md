@@ -41,7 +41,7 @@ Emails are not sent in dev: they are printed in the server console and stored in
 
 ## Configuration (all optional)
 
-See `.env.example`. With **no keys** everything runs: summaries are heuristic, chat is search-based, GitHub login uses a dev form, and GitHub events come from the simulator. Adding `ANTHROPIC_API_KEY` upgrades summaries, chat answers and report wording (report numbers are validated against computed metrics before an AI rewrite is accepted).
+See `.env.example`. With **no keys** everything runs: summaries are heuristic, chat is search-based, GitHub login uses a dev form, and GitHub events come from the simulator. Adding `GEMINI_API_KEY` (free at [Google AI Studio](https://aistudio.google.com)) and/or `GROQ_API_KEY` (free at [Groq Console](https://console.groq.com)) unlocks AI code summaries, interactive candidate learning chat with citations, manager narrative reports, and the public "Chat with BrainWhite" widget with automatic workload balancing.
 
 Real GitHub webhooks: point a repo/GitHub App webhook at `/api/github/webhook` (JSON), set `GITHUB_WEBHOOK_SECRET`, subscribe to `push`, `pull_request`, `pull_request_review`, `check_run`, `issues`. Candidates are matched by their linked GitHub username; only linked candidates in connected repos are recorded.
 

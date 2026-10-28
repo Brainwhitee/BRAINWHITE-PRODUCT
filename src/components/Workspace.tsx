@@ -122,7 +122,7 @@ export function Workspace(p: WorkspaceProps) {
 
   return (
     <div className="h-[calc(100vh-110px)] rounded-lg border bg-white">
-      <PanelGroup direction="horizontal" autoSaveId="pedagon-workspace-v1">
+      <PanelGroup direction="horizontal" autoSaveId="brainwhite-workspace-v1">
         {/* LEFT: code */}
         <Panel defaultSize={38} minSize={15} collapsible>
           <div className="flex h-full flex-col">

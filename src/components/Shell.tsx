@@ -16,7 +16,7 @@ export function Shell({
     <div className="min-h-screen bg-slate-50 text-slate-900">
       <header className="flex items-center justify-between border-b bg-white px-6 py-3">
         <div className="flex items-center gap-6">
-          <span className="font-semibold text-indigo-700">Pedagon</span>
+          <span className="font-semibold text-indigo-700">BrainWhite</span>
           <span className="text-sm text-slate-500">{user.org.name}</span>
           <nav className="flex gap-4 text-sm">
             {staff ? (

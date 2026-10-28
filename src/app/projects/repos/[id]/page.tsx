@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { requirePermission } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { can } from "@/lib/rbac";
+import { isAiConfigured } from "@/lib/ai";
 import { Shell } from "@/components/Shell";
 import { AutoRefresh } from "@/components/AutoRefresh";
 import { disconnectRepo, syncNow } from "../../../actions";
@@ -59,7 +60,7 @@ export default async function RepoPage({ params }: { params: Promise<{ id: strin
           {run.error && <p className="text-red-600">{run.error}</p>}
           <p className="text-slate-600">
             {run.filesSeen} files seen · {run.filesParsed} parsed · {run.filesSkipped} skipped · {run.secretsRedacted} secrets redacted · {run.summariesGenerated} LLM summaries
-            {!process.env.ANTHROPIC_API_KEY && " (no ANTHROPIC_API_KEY: heuristic summaries)"}
+            {!isAiConfigured() && " (no AI key set: heuristic summaries)"}
           </p>
           {langs.length > 0 && <p className="text-slate-600">Languages: {langs.map(([l, n]) => `${l} ${n}`).join(" · ")}</p>}
         </section>

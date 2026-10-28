@@ -1,20 +1,200 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@font-face {
+  font-family: 'Ppneuemontreal';
+  src: url('/fonts/PPNeueMontreal-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Ppneuemontreal';
+  src: url('/fonts/PPNeueMontreal-Book.woff2') format('woff2');
+  font-weight: 450;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Ppneuemontreal';
+  src: url('/fonts/PPNeueMontreal-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Ppneuemontreal';
+  src: url('/fonts/PPNeueMontreal-SemiBold.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Ppneuemontreal';
+  src: url('/fonts/PPNeueMontreal-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
 }
 
-@theme inline {
+/* ------------------------------------------------------------- */
+/* AWS BEDROCK DESIGN SYSTEM SEMANTIC TOKENS                     */
+/* LIGHT THEME (DEFAULT)                                         */
+/* ------------------------------------------------------------- */
+:root {
+  --background: #f8fafc;
+  --foreground: #141f2e;
+  
+  --surface: #ffffff;
+  --surface-subtle: #f1f5f9;
+  --surface-hover: #f8fafc;
+  
+  --muted: #545b64;
+  --muted-foreground: #64748b;
+  
+  --border: #eaeded;
+  --border-strong: #cbd5e1;
+  
+  /* AWS Dark Utility Bar */
+  --utility-bg: #141f2e;
+  --utility-fg: #eaeded;
+  --utility-muted: #879596;
+  --utility-hover: #1e2d42;
+  --utility-border: #23354d;
+  
+  /* AWS White Main Header */
+  --header-bg: #ffffff;
+  --header-fg: #141f2e;
+  --header-border: #eaeded;
+  --header-hover: #f1f5f9;
+  
+  /* Sticky Secondary Sub-Nav */
+  --subnav-bg: #f8fafc;
+  --subnav-border: #eaeded;
+  --subnav-active: #0972d3;
+  
+  /* Brand Actions */
+  --brand-orange: #ec7211;
+  --brand-orange-hover: #eb5f07;
+  --brand-blue: #0972d3;
+  --brand-blue-hover: #035397;
+  
+  /* Semantic Status */
+  --status-success: #16a34a;
+  --status-warning: #d97706;
+  --status-error: #dc2626;
+
+  /* Typography Scales */
+  --text-display-giant: clamp(2.5rem, 6vw, 4.5rem);
+  --text-display-large: clamp(2rem, 4vw, 3.25rem);
+  --text-display-medium: clamp(1.5rem, 3vw, 2.25rem);
+}
+
+/* ------------------------------------------------------------- */
+/* DARK THEME SPECIFICATION                                      */
+/* ------------------------------------------------------------- */
+.dark, [data-theme="dark"] {
+  --background: #0b111a;
+  --foreground: #f8fafc;
+  
+  --surface: #141f2e;
+  --surface-subtle: #0f172a;
+  --surface-hover: #1e2d42;
+  
+  --muted: #94a3b8;
+  --muted-foreground: #64748b;
+  
+  --border: #1e293b;
+  --border-strong: #334155;
+  
+  /* Dark Utility Bar */
+  --utility-bg: #070b12;
+  --utility-fg: #cbd5e1;
+  --utility-muted: #64748b;
+  --utility-hover: #111a27;
+  --utility-border: #1e293b;
+  
+  /* Dark Header */
+  --header-bg: #0f172a;
+  --header-fg: #f8fafc;
+  --header-border: #1e293b;
+  --header-hover: #1e293b;
+  
+  /* Sticky Secondary Sub-Nav */
+  --subnav-bg: #131d2e;
+  --subnav-border: #1e293b;
+  --subnav-active: #38bdf8;
+  
+  /* Brand Actions */
+  --brand-orange: #ff8f2c;
+  --brand-orange-hover: #ffa24b;
+  --brand-blue: #38bdf8;
+  --brand-blue-hover: #0284c7;
+  
+  /* Semantic Status */
+  --status-success: #22c55e;
+  --status-warning: #f59e0b;
+  --status-error: #ef4444;
+}
+
+@theme {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-surface: var(--surface);
+  --color-surface-subtle: var(--surface-subtle);
+  --color-surface-hover: var(--surface-hover);
+  
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  
+  --color-utility-bg: var(--utility-bg);
+  --color-utility-fg: var(--utility-fg);
+  --color-utility-muted: var(--utility-muted);
+  --color-utility-hover: var(--utility-hover);
+  --color-utility-border: var(--utility-border);
+  
+  --color-header-bg: var(--header-bg);
+  --color-header-fg: var(--header-fg);
+  --color-header-border: var(--header-border);
+  --color-header-hover: var(--header-hover);
+  
+  --color-subnav-bg: var(--subnav-bg);
+  --color-subnav-border: var(--subnav-border);
+  --color-subnav-active: var(--subnav-active);
+  
+  --color-brand-orange: var(--brand-orange);
+  --color-brand-orange-hover: var(--brand-orange-hover);
+  --color-brand-blue: var(--brand-blue);
+  --color-brand-blue-hover: var(--brand-blue-hover);
+  
+  --color-status-success: var(--status-success);
+  --color-status-warning: var(--status-warning);
+  --color-status-error: var(--status-error);
+  
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, 'Ppneuemontreal', var(--font-neue-montreal), sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  --font-display: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, 'Ppneuemontreal', sans-serif;
 }
 
+@layer base {
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
+  }
+
+  a, button, [role="button"], input[type="submit"], input[type="button"], select {
+    cursor: pointer;
+  }
 }

@@ -1,6 +1,7 @@
 import { db } from "../db";
 import { notify, sendEmail } from "../mailer";
 import { computeMetrics, type Metrics } from "./metrics";
+import { callAi, isAiConfigured } from "../ai";
 
 const DAY = 86400_000;
 const n = (v: number | null | undefined, unit = "") => (v == null ? "n/a" : `${v}${unit}`);
@@ -51,21 +52,26 @@ export function numbersGrounded(text: string, facts: string) {
 }
 
 async function llmNarrative(m: Metrics, base: string): Promise<string | null> {
-  if (!process.env.ANTHROPIC_API_KEY) return null;
+  if (!isAiConfigured()) return null;
   const facts = JSON.stringify(m);
   try {
-    const r = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: { "x-api-key": process.env.ANTHROPIC_API_KEY, "anthropic-version": "2023-06-01", "content-type": "application/json" },
-      body: JSON.stringify({
-        model: process.env.REPORT_MODEL ?? "claude-sonnet-5-5", max_tokens: 900,
-        system: "You write concise, constructive onboarding progress reports for managers. Use ONLY the numbers and facts in the JSON. Never invent or compute new numbers. Plain paragraphs, no markdown.",
-        messages: [{ role: "user", content: `Facts JSON:\n${facts}\n\nDraft to improve (keep all facts accurate):\n${base}` }],
-      }),
+    const { text } = await callAi({
+      task: "report",
+      messages: [
+        {
+          role: "system",
+          content:
+            "You write concise, constructive onboarding progress reports for managers. Use ONLY the numbers and facts in the JSON. Never invent or compute new numbers. Plain paragraphs, no markdown.",
+        },
+        {
+          role: "user",
+          content: `Facts JSON:\n${facts}\n\nDraft to improve (keep all facts accurate):\n${base}`,
+        },
+      ],
+      maxTokens: 900,
+      temperature: 0.1,
     });
-    if (!r.ok) return null;
-    const text = ((await r.json()).content?.[0]?.text as string | undefined)?.trim();
-    return text && numbersGrounded(text, facts + base) ? text : null;
+    return text && numbersGrounded(text, facts + base) ? text.trim() : null;
   } catch {
     return null;
   }
