@@ -1,4 +1,4 @@
-# Pedagon: AI onboarding platform (MVP v0)
+# Brainwhite: AI onboarding platform (MVP v0)
 
 Turns an organisation's codebase into a knowledge graph, lets managers build learning paths and GitHub-tracked tasks from it, gives new joiners a 3-pane learning workspace, and produces weekly and final onboarding reports.
 
@@ -9,7 +9,7 @@ Built from `Onboarding_Platform_Feature_List.xlsx`. This is a **v0 for the team 
 Requires Node 20+ (tested on 24). No Docker or database server needed (SQLite for dev).
 
 ```bash
-git clone <repo-url> && cd pedagon
+git clone <repo-url> && cd brainwhite
 cp .env.example .env        # Windows PowerShell: Copy-Item .env.example .env
 npm install
 npm run setup               # creates the DB, seeds a demo org, analyses this repo as the sample codebase

@@ -35,7 +35,7 @@ export async function syncRepository(repoId: string): Promise<string> {
     cleanup = src.cleanup;
 
     const readText = async (p: string) => fs.readFile(`${src.root}/${p}`, "utf8").catch(() => "");
-    const filter = makeFilter(await readText(".gitignore"), `${await readText(".pedagonignore")}\n${repo.customIgnore}`);
+    const filter = makeFilter(await readText(".gitignore"), `${await readText(".brainwhiteignore")}\n${repo.customIgnore}`);
 
     // ---- read, filter, redact ----
     await progress("Filtering and redacting");

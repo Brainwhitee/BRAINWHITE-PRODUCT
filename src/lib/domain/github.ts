@@ -55,7 +55,7 @@ async function findTaskAssignment(orgId: string, userId: string, text: string, b
 
 async function enrichFromGithub(repoFull: string, number: number) {
   if (!process.env.GITHUB_TOKEN) return null;
-  const h = { Authorization: `Bearer ${process.env.GITHUB_TOKEN}`, "User-Agent": "pedagon", Accept: "application/vnd.github+json" };
+  const h = { Authorization: `Bearer ${process.env.GITHUB_TOKEN}`, "User-Agent": "brainwhite", Accept: "application/vnd.github+json" };
   try {
     const [files, commits] = await Promise.all([
       fetch(`https://api.github.com/repos/${repoFull}/pulls/${number}/files?per_page=100`, { headers: h }).then((r) => r.json()),
@@ -96,7 +96,7 @@ export async function processGithubEvent(orgId: string, event: string, p: Json):
     const author = await candidateFor(orgId, g.user?.login);
     if (!author) return "ignored: author is not a linked candidate";
     let pr = await db.pullRequest.findUnique({ where: { repoFullName_number: { repoFullName: repoFull, number: g.number } } });
-    const extra = p.pedagon_extra ?? (await enrichFromGithub(repoFull, g.number)) ?? {};
+    const extra = p.brainwhite_extra ?? (await enrichFromGithub(repoFull, g.number)) ?? {};
     const files: string[] = extra.files ?? (pr ? JSON.parse(pr.changedFiles) : []);
     const commits: string[] = extra.commits ?? (pr ? JSON.parse(pr.commitMessages) : []);
     const state = g.merged ? "merged" : g.state === "closed" ? "closed" : "open";

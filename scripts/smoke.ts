@@ -22,7 +22,7 @@ async function main() {
       body: "Closes #101\n\nAdds tests for each role in the permission table. Run the unit tests to verify; no behaviour changes elsewhere in the app.",
       head: { ref: "task-101-tests" }, additions: 90, deletions: 5, ...extra,
     },
-    pedagon_extra: { files: ["src/lib/rbac.ts", "src/lib/rbac.test.ts"], commits: ["Add tests for permission matrix", "Cover candidate role edge cases"] },
+    brainwhite_extra: { files: ["src/lib/rbac.ts", "src/lib/rbac.test.ts"], commits: ["Add tests for permission matrix", "Cover candidate role edge cases"] },
   });
 
   await processGithubEvent(org.id, "push", { ref: "refs/heads/task-101-tests", repository: { full_name: full }, pusher: { name: "casey-dev" }, commits: [{ message: "Start tests" }] });

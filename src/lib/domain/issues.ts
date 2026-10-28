@@ -7,7 +7,7 @@ export async function createIssueForTask(orgId: string, repoId: string | null, t
   if (repo?.source === "github" && process.env.GITHUB_TOKEN) {
     const r = await fetch(`https://api.github.com/repos/${repo.location}/issues`, {
       method: "POST",
-      headers: { Authorization: `Bearer ${process.env.GITHUB_TOKEN}`, "User-Agent": "pedagon", Accept: "application/vnd.github+json" },
+      headers: { Authorization: `Bearer ${process.env.GITHUB_TOKEN}`, "User-Agent": "brainwhite", Accept: "application/vnd.github+json" },
       body: JSON.stringify({ title, body, labels: ["onboarding"] }),
     });
     if (r.ok) {
@@ -23,7 +23,7 @@ export async function assignIssue(repoLocation: string, issueNumber: number, log
   if (!process.env.GITHUB_TOKEN) return;
   await fetch(`https://api.github.com/repos/${repoLocation}/issues/${issueNumber}/assignees`, {
     method: "POST",
-    headers: { Authorization: `Bearer ${process.env.GITHUB_TOKEN}`, "User-Agent": "pedagon", Accept: "application/vnd.github+json" },
+    headers: { Authorization: `Bearer ${process.env.GITHUB_TOKEN}`, "User-Agent": "brainwhite", Accept: "application/vnd.github+json" },
     body: JSON.stringify({ assignees: [login] }),
   }).catch(() => {});
 }
