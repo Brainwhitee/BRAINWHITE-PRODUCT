@@ -23,6 +23,7 @@ model Organisation {
   tasks       Task[]
   reports     Report[]
   githubEvents GithubEvent[]
+  slideDecks   SlideDeck[]
 }
 
 // role: OWNER | MANAGER | MENTOR | CANDIDATE
@@ -42,6 +43,7 @@ model User {
   createdAt        DateTime @default(now())
   sessions         Session[]
   notifications    Notification[]
+  slideDecks       SlideDeck[]
 
   @@index([orgId])
 }
@@ -341,6 +343,23 @@ model ProgressEvent {
   @@index([assignmentId])
 }
 
+// ---------- Slides & Diagrams (PLT-09) ----------
+
+model SlideDeck {
+  id        String   @id @default(cuid())
+  title     String
+  description String @default("")
+  orgId     String
+  org       Organisation @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  slides    String   @default("[]") // JSON array of slide objects
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([orgId])
+  @@index([userId])
+}
 model ChatMessage {
   id        String   @id @default(cuid())
   userId    String
