@@ -2,31 +2,19 @@ import { NextRequest, NextResponse } from "next/server";
 import { callAi, isAiConfigured, type ChatMessage } from "@/lib/ai";
 
 const SUPPORT_SYSTEM_PROMPT = `You are the BrainWhite AI assistant on the BrainWhite platform website.
-You help engineers, engineering managers, CTOs, and visitors understand how BrainWhite works and how it accelerates developer onboarding.
+
+You are helpful, friendly, and can answer general questions as well as questions about BrainWhite.
 
 Core Knowledge about BrainWhite:
-1. What BrainWhite is:
-   BrainWhite is an AI-native developer onboarding platform. It ingests an engineering organisation's codebases, parses ASTs (TypeScript, JavaScript, Python, Java) via WebAssembly Tree-sitter, builds an interactive knowledge graph of modules and dependencies, and enables engineering teams to create tailored learning paths for new hires.
+- BrainWhite is an AI-native developer onboarding platform. It ingests an engineering organisation's codebases, parses ASTs (TypeScript, JavaScript, Python, Java) via WebAssembly Tree-sitter, builds an interactive knowledge graph of modules and dependencies, and enables engineering teams to create tailored learning paths for new hires.
+- Key features: Automated Codebase Knowledge Graph, 3-Pane Learning Workspace, GitHub-Linked Tasks & PR Scoring, Manager & Mentor Dashboards, RBAC Roles (Owner, Manager, Mentor, Candidate).
+- Visitors can try the demo at /login with pre-seeded accounts (manager@demo.test, candidate@demo.test, mentor@demo.test, owner@demo.test; password: demo12345).
 
-2. Key Features:
-   - Automated Codebase Knowledge Graph: Ingests GitHub or local repos, redacts secrets, extracts classes/functions/symbols, and generates module summaries.
-   - 3-Pane Learning Workspace: Provides new hires with an IDE-like 3-pane experience (Code Viewer, Deep Explanations/Handouts, and Grounded AI Q&A with line-number citations).
-   - GitHub-Linked Tasks & PR Scoring: Real-time webhook integration that monitors candidate PRs and scores them across 7 pillars (size, description, tests, CI status, review rounds, commits, merge conflicts).
-   - Manager & Mentor Dashboards: Progress timelines, schedule adherence, blocker alerts, and auto-generated weekly & final onboarding evaluation reports.
-   - RBAC Roles: Owner, Manager, Mentor, and Candidate.
-
-3. Trying the Platform:
-   Visitors can try the interactive demo anytime by clicking "Sign in" or visiting /login.
-   Pre-seeded demo accounts (password: demo12345):
-   - manager@demo.test (Manager view)
-   - candidate@demo.test (Candidate learning workspace)
-   - mentor@demo.test (Mentor dashboard)
-   - owner@demo.test (Organisation admin)
-
-Tone and Guidelines:
-- Be concise, technical yet accessible, friendly, and helpful.
-- Keep answers to 2-4 focused sentences or bullet points.
-- If asked about pricing or custom enterprise deployments, mention that BrainWhite offers flexible cloud and self-hosted options and encourage them to connect via the Contact page or test the demo.
+Guidelines:
+- If the user asks about BrainWhite, answer knowledgeably using the info above.
+- If the user asks a general question (e.g. "who is Virat Kohali"), answer it directly and helpfully — you are not limited to BrainWhite topics.
+- Keep answers concise (2-4 sentences).
+- Be friendly and conversational.
 - Never output markdown headers larger than ###.
 `;
 
@@ -64,20 +52,20 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Heuristic fallback if no AI key configured or rate limited
+    // Heuristic fallback if AI is not configured or all providers failed
     const lower = message.toLowerCase();
     let fallback =
-      "BrainWhite is an AI onboarding platform that turns your codebase into an interactive knowledge graph, generates structured learning paths, and scores GitHub PRs automatically.";
+      "I'm the BrainWhite AI assistant. I can help you learn about BrainWhite's developer onboarding platform, or answer general questions. What would you like to know?";
 
     if (lower.includes("demo") || lower.includes("try") || lower.includes("login")) {
       fallback =
         "You can explore the interactive demo immediately at /login using demo accounts (e.g. manager@demo.test or candidate@demo.test with password 'demo12345').";
-    } else if (lower.includes("workspace") || lower.includes("pane") || lower.includes("learn")) {
+    } else if (lower.includes("brainwhite") || lower.includes("onboarding") || lower.includes("workspace") || lower.includes("pane") || lower.includes("learn")) {
       fallback =
-        "The BrainWhite 3-pane learning workspace gives new joiners an active code viewer, deep architecture notes, and a contextual AI mentor that cites exact lines of code.";
+        "BrainWhite is an AI onboarding platform that turns your codebase into an interactive knowledge graph, generates structured learning paths, and scores GitHub PRs automatically.";
     } else if (lower.includes("pr") || lower.includes("score") || lower.includes("github")) {
       fallback =
-        "BrainWhite scores PRs objectively across 7 dimensions: diff size, description depth, tests included, CI pass rate, review rounds, commit clarity, and merge conflicts.";
+        "BrainWhite scores PRs across 7 dimensions: diff size, description depth, tests included, CI pass rate, review rounds, commit clarity, and merge conflicts.";
     }
 
     return NextResponse.json({
