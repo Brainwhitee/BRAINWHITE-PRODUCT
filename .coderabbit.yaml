@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+language: en-US
+reviews:
+  profile: assertive
+  request_changes_workflow: true
+  high_level_summary: true
+  poem: false
+  review_status: true
+  auto_review:
+    enabled: true
+    drafts: false
+    base_branches: ["master", "main"]
+  path_filters:
+    - "!package-lock.json"
+    - "!**/*.lock"
+    - "!public/**"
+  path_instructions:
+    - path: "src/app/**"
+      instructions: |
+        Every server action / route handler must: validate input with zod, check the session,
+        check role AND org membership, and scope every Prisma query by orgId. Flag IDOR risks,
+        missing loading/empty/error states, and any UI not wired to real data.
+    - path: "src/lib/**"
+      instructions: |
+        Flag N+1 queries, unbounded loops over user data, swallowed errors, secrets or PII in logs,
+        and code that cannot work on serverless (setInterval, local disk, long in-process jobs).
+    - path: "prisma/**"
+      instructions: |
+        Every schema change needs a migration. Check indexes, unique constraints, cascade rules,
+        and impact on existing rows. Flag edits to already-applied migrations.
+    - path: "**/*.{ts,tsx}"
+      instructions: |
+        Flag hardcoded mock data, hardcoded keys/URLs/ids, `any`, @ts-ignore, console.log,
+        TODO placeholders, and empty catch blocks. These are not allowed outside seed/tests.
+    - path: "**/*.test.{ts,tsx}"
+      instructions: |
+        Tests must cover happy path, invalid input, unauthenticated, wrong role and cross-org
+        access. Mock only third-party network calls, never Prisma or auth.
+  pre_merge_checks:
+    custom_checks:
+      - name: "PR description complete"
+        mode: warning
+        instructions: |
+          The PR description must explain what, why, how, testing evidence, new env vars,
+          migration impact and rollback. Fail if sections are empty or generic.
+chat:
+  auto_reply: true
