@@ -153,30 +153,38 @@ export async function callAi(options: AiRequestOptions): Promise<{ text: string 
       const model =
         options.task === "report"
           ? process.env.GEMINI_REPORT_MODEL || "gemini-1.5-pro"
-          : process.env.GEMINI_MODEL || "gemini-1.5-flash";
+          : process.env.GEMINI_MODEL || "gemini-1.5-flash-latest";
 
-      result = await callOpenAiCompatible(
-        "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
-        process.env.GEMINI_API_KEY,
-        model,
-        options.messages,
-        maxTokens,
-        temperature
-      );
+      const geminiModels = [model, "gemini-2.0-flash", "gemini-1.5-flash"];
+      for (const m of geminiModels) {
+        result = await callOpenAiCompatible(
+          "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+          process.env.GEMINI_API_KEY,
+          m,
+          options.messages,
+          maxTokens,
+          temperature
+        );
+        if (result) break;
+      }
     } else if (provider === "groq" && process.env.GROQ_API_KEY) {
       const model =
         options.task === "public_chat"
-          ? process.env.GROQ_FAST_MODEL || "llama-3.1-8b-instant"
+          ? process.env.GROQ_FAST_MODEL || "llama-3.3-70b-versatile"
           : process.env.GROQ_MODEL || "llama-3.3-70b-versatile";
 
-      result = await callOpenAiCompatible(
-        "https://api.groq.com/openai/v1/chat/completions",
-        process.env.GROQ_API_KEY,
-        model,
-        options.messages,
-        maxTokens,
-        temperature
-      );
+      const groqModels = [model, "llama-3.2-3b-preview", "gemma2-9b-it"];
+      for (const m of groqModels) {
+        result = await callOpenAiCompatible(
+          "https://api.groq.com/openai/v1/chat/completions",
+          process.env.GROQ_API_KEY,
+          m,
+          options.messages,
+          maxTokens,
+          temperature
+        );
+        if (result) break;
+      }
     } else if (provider === "grok") {
       const key = process.env.GROK_API_KEY || process.env.XAI_API_KEY;
       if (key) {
