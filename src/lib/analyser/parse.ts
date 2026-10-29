@@ -1,6 +1,7 @@
 import fs from "fs/promises";
 import path from "path";
 import type { Parser as ParserT, Language as LanguageT, Node } from "web-tree-sitter";
+import { extractRefs, type Refs } from "./refs";
 
 export type ParsedSymbol = {
   kind: "class" | "function" | "method" | "interface";
@@ -11,7 +12,7 @@ export type ParsedSymbol = {
   endLine: number;
   depth: number; // 0 = top-level
 };
-export type ParseResult = { symbols: ParsedSymbol[]; imports: string[] };
+export type ParseResult = { symbols: ParsedSymbol[]; imports: string[]; refs?: Refs };
 
 // Load the CJS build by absolute path so the bundler never rewrites web-tree-sitter's internal requires.
 const nodeRequire: NodeRequire = eval("require");
@@ -129,7 +130,31 @@ function walk(node: Node, lang: string, depth: number, inClass: boolean, out: Pa
   }
 }
 
+const unquote = (t: string) => t.replace(/^["'`]|["'`]$/g, "");
+
+// JS/TS: static imports, re-exports, require("x") and import("x"), found anywhere in the file (not only at top level).
+function collectJsImports(node: Node, found: Set<string>) {
+  const t = node.type;
+  if (t === "import_statement" || t === "export_statement") {
+    const src = node.childForFieldName("source");
+    if (src) found.add(unquote(src.text));
+  } else if (t === "call_expression") {
+    const fn = node.childForFieldName("function");
+    const args = node.childForFieldName("arguments");
+    if (fn && args && (fn.type === "import" || (fn.type === "identifier" && fn.text === "require"))) {
+      const a = args.namedChild(0);
+      if (a && a.type === "string") found.add(unquote(a.text));
+    }
+  }
+  for (let i = 0; i < node.namedChildCount; i++) collectJsImports(node.namedChild(i)!, found);
+}
+
 function collectImports(root: Node, lang: string): string[] {
+  if (lang !== "python" && lang !== "java") {
+    const found = new Set<string>();
+    collectJsImports(root, found);
+    return [...found];
+  }
   const found: string[] = [];
   for (let i = 0; i < root.namedChildCount; i++) {
     const c = root.namedChild(i)!;
@@ -143,14 +168,8 @@ function collectImports(root: Node, lang: string): string[] {
           found.push(n.type === "aliased_import" ? n.childForFieldName("name")!.text : n.text);
         }
       }
-    } else if (lang === "java") {
-      if (c.type === "import_declaration") found.push(c.text.replace(/^import\s+(static\s+)?|;$/g, "").trim());
-    } else {
-      const src =
-        c.type === "import_statement" || (c.type === "export_statement" && c.childForFieldName("source"))
-          ? c.childForFieldName("source")
-          : null;
-      if (src) found.push(src.text.replace(/^["'`]|["'`]$/g, ""));
+    } else if (c.type === "import_declaration") {
+      found.push(c.text.replace(/^import\s+(static\s+)?|;$/g, "").trim());
     }
   }
   return found;
@@ -166,7 +185,8 @@ export async function parseSource(lang: string, source: string): Promise<ParseRe
   const symbols: ParsedSymbol[] = [];
   walk(tree.rootNode, lang, 0, false, symbols);
   const imports = collectImports(tree.rootNode, lang);
+  const refs = lang === "python" || lang === "java" ? undefined : extractRefs(tree.rootNode);
   tree.delete();
   parser.delete();
-  return { symbols, imports };
+  return { symbols, imports, refs };
 }

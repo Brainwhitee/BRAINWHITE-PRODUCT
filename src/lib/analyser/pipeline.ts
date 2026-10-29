@@ -5,7 +5,9 @@ import { loadSource } from "./source";
 import { languageOf, makeFilter } from "./filter";
 import { redactSecrets } from "./secrets";
 import { isParsable, parseSource } from "./parse";
-import { modulePathFor, moduleNameFor, resolveImport } from "./modules";
+import { moduleNameFor } from "./modules";
+import { assignModules, type FileGraph } from "./cluster";
+import { createResolver, emptyImportStats } from "./resolve";
 import { buildChunks } from "./chunk";
 import { heuristicChunk, llmEnabled, newStats, summariseChunk, summariseRollup } from "./summarise";
 
@@ -92,20 +94,34 @@ export async function syncRepository(repoId: string): Promise<string> {
         });
     }
 
+    // ---- resolve imports into file edges (needed before modules: big folders are split along the graph) ----
+    await progress("Resolving imports");
+    const loadedContent = new Map(loaded.map((l) => [l.path, l.content]));
+    const resolve = createResolver(paths, (p) => loadedContent.get(p));
+    const importStats = emptyImportStats();
+    const fileGraph: FileGraph = new Map();
+    for (const l of loaded)
+      for (const spec of imports.get(l.path) ?? []) {
+        const r = resolve(l.path, spec, l.lang);
+        importStats[r.kind]++;
+        if (r.kind !== "internal" || r.target === l.path) continue;
+        if (!fileGraph.has(l.path)) fileGraph.set(l.path, new Set());
+        fileGraph.get(l.path)!.add(r.target);
+      }
+
     // ---- modules ----
     await progress("Detecting modules");
     const modIds = new Map<string, string>();
-    const modPathOf = new Map<string, string>();
-    for (const l of loaded) modPathOf.set(l.path, modulePathFor(l.path));
+    const modPathOf = assignModules([...paths], fileGraph);
     for (const mp of new Set(modPathOf.values())) {
       const m = await db.module.upsert({
         where: { repoId_path: { repoId, path: mp } },
-        update: {},
+        update: { name: moduleNameFor(mp) },
         create: { repoId, path: mp, name: moduleNameFor(mp) },
       });
       modIds.set(mp, m.id);
     }
-    await db.module.deleteMany({ where: { repoId, path: { notIn: [...modIds.keys()] } } });
+    // obsolete modules are deleted after chunks move to their new module (Chunk -> Module cascades)
     for (const l of loaded)
       await db.file.update({ where: { id: fileIds.get(l.path)! }, data: { moduleId: modIds.get(modPathOf.get(l.path)!)! } });
 
@@ -114,13 +130,11 @@ export async function syncRepository(repoId: string): Promise<string> {
     await db.graphEdge.deleteMany({ where: { repoId } });
     const fileEdges: { repoId: string; fromId: string; toId: string; type: string; fromKind: string; toKind: string }[] = [];
     const modEdges = new Set<string>();
-    for (const l of loaded)
-      for (const spec of imports.get(l.path) ?? []) {
-        const target = resolveImport(l.path, spec, l.lang, paths);
-        if (!target || target === l.path) continue;
-        fileEdges.push({ repoId, fromId: fileIds.get(l.path)!, toId: fileIds.get(target)!, type: "IMPORTS", fromKind: "file", toKind: "file" });
-        const a = modIds.get(modPathOf.get(l.path)!)!;
-        const b = modIds.get(modPathOf.get(target)!)!;
+    for (const [from, tos] of fileGraph)
+      for (const to of tos) {
+        fileEdges.push({ repoId, fromId: fileIds.get(from)!, toId: fileIds.get(to)!, type: "IMPORTS", fromKind: "file", toKind: "file" });
+        const a = modIds.get(modPathOf.get(from)!)!;
+        const b = modIds.get(modPathOf.get(to)!)!;
         if (a !== b) modEdges.add(`${a}|${b}`);
       }
     if (fileEdges.length) await db.graphEdge.createMany({ data: fileEdges });
@@ -165,6 +179,7 @@ export async function syncRepository(repoId: string): Promise<string> {
       }
     }
     await db.chunk.deleteMany({ where: { repoId, id: { notIn: [...seen] } } });
+    await db.module.deleteMany({ where: { repoId, path: { notIn: [...modIds.keys()] } } });
 
     // ---- summaries (bottom-up) ----
     await progress(`Summarising ${needSummary.length} chunks`);
@@ -208,7 +223,8 @@ export async function syncRepository(repoId: string): Promise<string> {
     await db.syncRun.update({
       where: { id: run.id },
       data: {
-        status: "SUCCESS", finishedAt: new Date(), sha, filesParsed: parsed, progress: "Done",
+        status: "SUCCESS", finishedAt: new Date(), sha, filesParsed: parsed,
+        progress: `Done. Imports: ${importStats.internal} internal resolved, ${importStats.unresolved} unresolved, ${importStats.external} external`,
         summariesGenerated: stats.calls,
       },
     });

@@ -12,7 +12,9 @@
     "seed": "tsx scripts/seed.ts",
     "setup": "prisma db push && tsx scripts/seed.ts",
     "typecheck": "tsc --noEmit",
-    "smoke": "tsx scripts/smoke.ts"
+    "smoke": "tsx scripts/smoke.ts",
+    "inspect": "tsx scripts/inspect-core.ts",
+    "test:core": "tsx --test scripts/core.test.ts"
   },
   "dependencies": {
     "@paper-design/shaders-react": "^0.0.82",
@@ -59,6 +61,6 @@
     "eslint-config-next": "15.5.28",
     "tailwindcss": "^4",
     "tsx": "^4.23.15",
-    "typescript": "^5"
+    "typescript": "^5.9.3"
   }
 }

@@ -39,6 +39,17 @@ Emails are not sent in dev: they are printed in the server console and stored in
 | Tasks, GitHub issue creation/link, webhook receiver, auto status, PR quality scoring, conflicts, blockers, manual review | Done |
 | Deadline reminders, weekly + final reports, grounded narratives, dashboards, risk flags, mentor rubric | Done |
 
+## Inspecting the core (no database needed)
+
+```bash
+npm run inspect -- .                   # local folder
+npm run inspect -- owner/name          # GitHub repo (GITHUB_TOKEN in .env for private repos)
+npm run inspect -- . --json out.json --mermaid graph.md
+npm run test:core                      # import-resolution and parsing tests
+```
+
+Prints file/symbol/chunk counts, import resolution (internal / unresolved / external), old-vs-new edge comparison, most imported files, modules and a Mermaid module graph.
+
 ## Configuration (all optional)
 
 See `.env.example`. With **no keys** everything runs: summaries are heuristic, chat is search-based, GitHub login uses a dev form, and GitHub events come from the simulator. Adding `GEMINI_API_KEY` (free at [Google AI Studio](https://aistudio.google.com)) and/or `GROQ_API_KEY` (free at [Groq Console](https://console.groq.com)) unlocks AI code summaries, interactive candidate learning chat with citations, manager narrative reports, and the public "Chat with BrainWhite" widget with automatic workload balancing.

@@ -1,7 +1,9 @@
 import { Resend } from "resend";
 import { db } from "./db";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Created lazily: `new Resend()` throws at import time when the key is empty, which broke build, seed and login.
+let client: Resend | null = null;
+const resend = () => (client ??= new Resend(process.env.RESEND_API_KEY));
 const FROM_EMAIL = process.env.FROM_EMAIL ?? "onboarding@resend.dev";
 
 // Production email sender via Resend. Falls back gracefully if key is missing:
@@ -9,7 +11,7 @@ const FROM_EMAIL = process.env.FROM_EMAIL ?? "onboarding@resend.dev";
 export async function sendEmail(orgId: string, to: string, subject: string, body: string) {
   if (process.env.RESEND_API_KEY) {
     try {
-      await resend.emails.send({
+      await resend().emails.send({
         from: FROM_EMAIL,
         to,
         subject,
