@@ -1,18 +1,49 @@
-import Link from "next/link";
-import { login } from "../actions";
-import { ActionForm, inputCls } from "@/components/ActionForm";
+"use client";
 
-export default function Login() {
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { login } from "@/app/actions";
+import AuthSectionOne from "@/components/ui/auth-section-1";
+
+export default function LoginPage() {
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleEmailLogin = async (email: string, password: string) => {
+    setError(null);
+    setIsLoading(true);
+
+    try {
+      const fd = new FormData();
+      fd.append("email", email);
+      fd.append("password", password);
+
+      // @ts-expect-error - server action called from client
+      const result: { error?: string } = await login(undefined, fd);
+
+      if (result?.error) {
+        setError(result.error);
+        setIsLoading(false);
+        return;
+      }
+
+      router.push("/dashboard");
+      router.refresh();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Login failed";
+      setError(msg);
+      setIsLoading(false);
+    }
+  };
+
+  const handleGitHubLogin = () => {
+    if (typeof window !== "undefined") {
+      window.location.href = "/api/github/start";
+    }
+  };
+
   return (
-    <div className="mx-auto mt-16 max-w-sm space-y-4">
-      <h1 className="text-xl font-semibold">Log in</h1>
-      <ActionForm action={login} submit="Log in">
-        <input name="email" type="email" placeholder="Email" className={inputCls} required />
-        <input name="password" type="password" placeholder="Password" className={inputCls} required />
-      </ActionForm>
-      <p className="text-sm">
-        New organisation? <Link className="text-indigo-700 underline" href="/signup">Sign up</Link>
-      </p>
-    </div>
+    <AuthSectionOne mode="login" onLogin={handleEmailLogin} />
   );
 }
