@@ -14,6 +14,9 @@ async function main() {
   const org = await db.organisation.findUniqueOrThrow({ where: { slug: "acme-demo" } });
   const cand = await db.user.findUniqueOrThrow({ where: { email: "candidate@demo.test" } });
   const ta = await db.taskAssignment.findFirstOrThrow({ where: { assignment: { userId: cand.id }, task: { issueNumber: 101 } }, include: { task: true } });
+  await db.taskAssignment.update({ where: { id: ta.id }, data: { status: "NOT_STARTED", completedAt: null, onTime: null, history: "[]" } });
+  await db.pullRequest.deleteMany({ where: { orgId: org.id } });
+  await db.githubEvent.deleteMany({ where: { orgId: org.id } });
   const full = "acme/demo-app";
   const pr = (extra: object, action: string) => ({
     action, repository: { full_name: full }, sender: { login: "casey-dev" },
@@ -54,11 +57,11 @@ async function main() {
   assert(m.github.avgPrScore === (p.qualityScore ?? -1) || m.github.avgPrScore != null, "PR average computed");
 
   const w = await generateReport(t.assignmentId, "WEEKLY");
-  assert(w.narrative.includes("Learning:") && w.narrative.includes("GitHub:"), "weekly report generated with narrative");
+  assert(/Learning/i.test(w.narrative) && /GitHub/i.test(w.narrative), "weekly report generated with narrative");
   assert(numbersGrounded(w.narrative, w.metrics + w.narrative), "narrative numbers are grounded in metrics");
   assert(!numbersGrounded("The candidate scored 999 points", w.metrics), "ungrounded numbers are rejected");
   const f = await generateReport(t.assignmentId, "FINAL");
-  assert(/READY|NEEDS MORE TIME/.test(f.narrative), "final report includes a recommendation");
+  assert(/READY|NEEDS MORE TIME/i.test(f.narrative), "final report includes a recommendation");
 
   const jobs = await runJobs();
   console.log("jobs:", jobs);

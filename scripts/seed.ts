@@ -15,12 +15,12 @@ async function main() {
   const hash = await bcrypt.hash(PASSWORD, 10);
   const org = await db.organisation.create({ data: { name: "Acme Demo", slug: "acme-demo" } });
   const mk = (name: string, email: string, role: string, gh?: string) =>
-    db.user.create({
-      data: {
+    db.user.upsert({ where: { email }, update: { orgId: org.id, name, role, passwordHash: hash, githubUsername: gh ?? null, githubUserId: gh ? `dev:${gh}` : null }, create: {
+
         orgId: org.id, name, email, role, passwordHash: hash,
         githubUsername: gh ?? null, githubUserId: gh ? `dev:${gh}` : null,
-      },
-    });
+
+    } });
   const owner = await mk("Olivia Owner", "owner@demo.test", "OWNER");
   const manager = await mk("Mike Manager", "manager@demo.test", "MANAGER");
   const mentor = await mk("Maya Mentor", "mentor@demo.test", "MENTOR");
