@@ -17,7 +17,7 @@ async function walk(root: string, rel = "", out: SourceFile[] = []): Promise<Sou
       if (!IGNORED_DIRS.has(e.name)) await walk(root, r, out);
     } else if (e.isFile()) {
       const abs = path.join(root, r);
-      out.push({ path: r, size: (await fs.stat(abs)).size, abs });
+      out.push({ path: r.replace(/\\/g, "/"), size: (await fs.stat(abs)).size, abs });
     }
   }
   return out;

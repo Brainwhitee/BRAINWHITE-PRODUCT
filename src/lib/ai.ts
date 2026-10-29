@@ -49,7 +49,7 @@ function getPriorityOrderForTask(task: AiTask): ProviderName[] {
     case "summary":
     case "report":
       // Prefer Gemini for deep analysis, summaries and strictly grounded reports
-      preferred = ["gemini", "groq", "grok", "anthropic"];
+      preferred = ["groq", "gemini", "grok", "anthropic"];
       break;
     case "chat":
     case "public_chat":
@@ -73,6 +73,7 @@ async function callOpenAiCompatible(
   try {
     const res = await fetch(endpoint, {
       method: "POST",
+      signal: AbortSignal.timeout(5000),
       headers: {
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
@@ -114,6 +115,7 @@ async function callAnthropic(
 
     const res = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
+      signal: AbortSignal.timeout(5000),
       headers: {
         "x-api-key": apiKey,
         "anthropic-version": "2023-06-01",
@@ -152,10 +154,12 @@ export async function callAi(options: AiRequestOptions): Promise<{ text: string 
     if (provider === "gemini" && process.env.GEMINI_API_KEY) {
       const model =
         options.task === "report"
-          ? process.env.GEMINI_REPORT_MODEL || "gemini-1.5-pro"
-          : process.env.GEMINI_MODEL || "gemini-1.5-flash-latest";
+          ? process.env.GEMINI_REPORT_MODEL || "gemini-2.5-pro"
+          : process.env.GEMINI_MODEL || "gemini-3.8-flash";
 
-      const geminiModels = [model, "gemini-3.8-flash", "gemini-2.0-flash", "gemini-1.5-flash"];
+      const geminiModels = [model, "gemini-2.5-flash", "gemini-2.0-flash"].filter(
+        (v, i, a) => a.indexOf(v) === i
+      );
       for (const m of geminiModels) {
         result = await callOpenAiCompatible(
           "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
@@ -170,10 +174,10 @@ export async function callAi(options: AiRequestOptions): Promise<{ text: string 
     } else if (provider === "groq" && process.env.GROQ_API_KEY) {
       const model =
         options.task === "public_chat"
-          ? process.env.GROQ_FAST_MODEL || "llama-3.3-70b-versatile"
-          : process.env.GROQ_MODEL || "llama-3.3-70b-versatile";
+          ? process.env.GROQ_FAST_MODEL || "openai/gpt-oss-20b"
+          : process.env.GROQ_MODEL || "qwen/qwen3.8-27b";
 
-      const groqModels = [model, "llama-3.2-3b-preview", "gemma2-9b-it"];
+      const groqModels = [...new Set([model, "qwen/qwen3.8-27b", "openai/gpt-oss-20b", "openai/gpt-oss-120b"])].filter(Boolean);
       for (const m of groqModels) {
         result = await callOpenAiCompatible(
           "https://api.groq.com/openai/v1/chat/completions",

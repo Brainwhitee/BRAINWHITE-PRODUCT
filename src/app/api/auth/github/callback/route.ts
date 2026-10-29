@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { createSession } from "@/lib/auth";
+import { createSession, homeFor } from "@/lib/auth";
 import { encrypt } from "@/lib/crypto";
 import { audit } from "@/lib/audit";
 
@@ -10,11 +10,11 @@ const slugify = (s: string) =>
 export async function GET(req: NextRequest) {
   const code = req.nextUrl.searchParams.get("code");
   const state = req.nextUrl.searchParams.get("state");
-  const mode = req.nextUrl.searchParams.get("mode") ?? "login";
+  const mode = req.cookies.get("gh_mode")?.value ?? "login";
 
   const expectedState = req.cookies.get("gh_state")?.value;
   const expectedMode = req.cookies.get("gh_mode")?.value;
-  if (!code || !state || state !== expectedState || mode !== expectedMode) {
+  if (!code || !state || state !== expectedState) {
     return NextResponse.redirect(new URL("/login?error=github_state_invalid", req.url));
   }
 
@@ -60,7 +60,7 @@ export async function GET(req: NextRequest) {
       });
       await audit(user.orgId, user.id, "github.linked", githubUsername);
       await createSession(user.id);
-      return NextResponse.redirect(new URL("/dashboard", req.url));
+      return NextResponse.redirect(new URL(homeFor(user.role), req.url));
     }
   }
 
@@ -68,7 +68,7 @@ export async function GET(req: NextRequest) {
     // Existing GitHub-linked user: log in
     await audit(user.orgId, user.id, "auth.login_github");
     await createSession(user.id);
-    return NextResponse.redirect(new URL("/dashboard", req.url));
+    return NextResponse.redirect(new URL(homeFor(user.role), req.url));
   }
 
   // No existing user
