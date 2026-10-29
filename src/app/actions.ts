@@ -12,7 +12,7 @@ import { notify, sendEmail } from "@/lib/mailer";
 import { syncRepository } from "@/lib/analyser/pipeline";
 import { createAssignment } from "@/lib/domain/assign";
 
-export type FormState = { error?: string } | undefined;
+export type FormState = { error?: string; success?: boolean; home?: string } | undefined;
 
 const slugify = (s: string) =>
   s.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
@@ -45,17 +45,17 @@ export async function signupOrg(_: FormState, fd: FormData): Promise<FormState> 
   });
   await audit(org.id, user.id, "org.created", org.slug);
   await createSession(user.id);
-  redirect("/dashboard");
+  return { success: true };
 }
 
-export async function login(_: FormState, fd: FormData): Promise<FormState> {
+export async function login(_: FormState, fd: FormData): Promise<FormState & { home?: string }> {
   const email = String(fd.get("email") ?? "").toLowerCase();
   const user = await db.user.findUnique({ where: { email } });
   const ok = user?.passwordHash && (await bcrypt.compare(String(fd.get("password") ?? ""), user.passwordHash));
   if (!user || !ok || user.status !== "ACTIVE") return { error: "Invalid email or password" };
   await audit(user.orgId, user.id, "auth.login");
   await createSession(user.id);
-  redirect(homeFor(user.role));
+  return { success: true, home: homeFor(user.role) };
 }
 
 export async function logout() {
