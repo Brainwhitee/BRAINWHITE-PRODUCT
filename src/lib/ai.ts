@@ -155,7 +155,7 @@ export async function callAi(options: AiRequestOptions): Promise<{ text: string 
           ? process.env.GEMINI_REPORT_MODEL || "gemini-1.5-pro"
           : process.env.GEMINI_MODEL || "gemini-1.5-flash-latest";
 
-      const geminiModels = [model, "gemini-2.0-flash", "gemini-1.5-flash"];
+      const geminiModels = [model, "gemini-3.8-flash", "gemini-2.0-flash", "gemini-1.5-flash"];
       for (const m of geminiModels) {
         result = await callOpenAiCompatible(
           "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
