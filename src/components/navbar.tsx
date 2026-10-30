@@ -5,10 +5,11 @@ import { TubelightNavbar } from "@/components/ui/tubelight-navbar";
 
 const navLinks = [
   { name: "Product", url: "/product" },
+  { name: "Architecture", url: "/architecture" },
   { name: "How It Works", url: "/how-it-works" },
-  { name: "Pricing", url: "/pricing" },
   { name: "Security", url: "/security" },
-  { name: "Contact", url: "/contact" },
+  { name: "Pricing", url: "/pricing" },
+  { name: "Book Demo", url: "/book-demo" },
 ];
 
 export function Navbar() {

@@ -1,26 +1,27 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { createSession, homeFor } from "@/lib/auth";
-import { encrypt } from "@/lib/crypto";
 import { audit } from "@/lib/audit";
-
-const slugify = (s: string) =>
-  s.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+import { resolveOAuthUser } from "@/lib/domain/auth";
 
 export async function GET(req: NextRequest) {
   const code = req.nextUrl.searchParams.get("code");
   const state = req.nextUrl.searchParams.get("state");
-  const mode = req.cookies.get("gh_mode")?.value ?? "login";
-
+  const mode = req.cookies.get("gh_mode")?.value === "signup" ? "signup" : "login";
   const expectedState = req.cookies.get("gh_state")?.value;
-  const expectedMode = req.cookies.get("gh_mode")?.value;
-  if (!code || !state || state !== expectedState) {
-    return NextResponse.redirect(new URL("/login?error=github_state_invalid", req.url));
-  }
 
-  if (!process.env.GITHUB_CLIENT_ID || !process.env.GITHUB_CLIENT_SECRET) {
-    return NextResponse.redirect(new URL("/login?error=github_not_configured", req.url));
-  }
+  const fail = (reason: string) => {
+    const url = new URL("/login", req.url);
+    url.searchParams.set("error", reason);
+    const res = NextResponse.redirect(url);
+    res.cookies.delete("gh_state");
+    res.cookies.delete("gh_mode");
+    return res;
+  };
+
+  if (!code || !state || state !== expectedState) return fail("github_state_invalid");
+  if (!process.env.GITHUB_CLIENT_ID || !process.env.GITHUB_CLIENT_SECRET)
+    return fail("github_not_configured");
 
   const tokenRes = await fetch("https://github.com/login/oauth/access_token", {
     method: "POST",
@@ -32,71 +33,58 @@ export async function GET(req: NextRequest) {
     }),
   });
   const tokenJson = await tokenRes.json();
-  const access_token = tokenJson.access_token as string | undefined;
-  if (!access_token) {
-    return NextResponse.redirect(new URL("/login?error=github_token_failed", req.url));
+  const accessToken = tokenJson.access_token as string | undefined;
+  if (!accessToken) return fail("github_token_failed");
+
+  const ghHeaders = {
+    Authorization: `Bearer ${accessToken}`,
+    Accept: "application/vnd.github+json",
+  };
+  const gh = await (await fetch("https://api.github.com/user", { headers: ghHeaders })).json();
+  let email = typeof gh.email === "string" && gh.email ? gh.email : null;
+
+  // Private emails are not on /user — ask the emails endpoint for a verified primary.
+  if (!email) {
+    const emails = (await (await fetch("https://api.github.com/user/emails", { headers: ghHeaders })).json()) as
+      | { email: string; primary: boolean; verified: boolean }[]
+      | undefined;
+    const primary = Array.isArray(emails) ? emails.find((e) => e.primary && e.verified) : undefined;
+    email = primary?.email ?? null;
   }
+  const emailVerified = Boolean(email);
 
-  const gh = await (
-    await fetch("https://api.github.com/user", {
-      headers: { Authorization: `Bearer ${access_token}`, Accept: "application/vnd.github+json" },
-    })
-  ).json();
-
-  const githubUserId = String(gh.id);
-  const githubUsername = String(gh.login ?? "");
-  const ghEmail = String(gh.email ?? "");
-
-  // Try to find existing user by GitHub ID
-  let user = await db.user.findFirst({ where: { githubUserId }, include: { org: true } });
-
-  if (!user && ghEmail) {
-    // Try to find by email (link existing account to GitHub)
-    user = await db.user.findUnique({ where: { email: ghEmail.toLowerCase() }, include: { org: true } });
-    if (user) {
-      await db.user.update({
-        where: { id: user.id },
-        data: { githubUserId, githubUsername, githubTokenEnc: encrypt(access_token) },
-      });
-      await audit(user.orgId, user.id, "github.linked", githubUsername);
-      await createSession(user.id);
-      return NextResponse.redirect(new URL(homeFor(user.role), req.url));
-    }
-  }
-
-  if (user) {
-    // Existing GitHub-linked user: log in
-    await audit(user.orgId, user.id, "auth.login_github");
-    await createSession(user.id);
-    return NextResponse.redirect(new URL(homeFor(user.role), req.url));
-  }
-
-  // No existing user
-  if (mode === "login") {
-    return NextResponse.redirect(new URL("/login?error=github_account_not_found", req.url));
-  }
-
-  // Signup mode: create organisation + user from GitHub profile
-  const orgName = gh.name || `${githubUsername}'s Workspace`;
-  const slug = slugify(orgName) || slugify(githubUsername);
-  if (await db.organisation.findUnique({ where: { slug } })) {
-    return NextResponse.redirect(new URL("/signup?error=org_name_taken", req.url));
-  }
-
-  const org = await db.organisation.create({ data: { name: orgName, slug } });
-  const newUser = await db.user.create({
-    data: {
-      orgId: org.id,
-      name: githubUsername || gh.name || "GitHub User",
-      email: ghEmail.toLowerCase() || `${githubUsername}@github.local`,
-      role: "OWNER",
-      githubUserId,
-      githubUsername,
-      githubTokenEnc: encrypt(access_token),
-      passwordHash: null,
+  const resolved = await resolveOAuthUser(
+    db,
+    {
+      provider: "GITHUB",
+      providerUserId: String(gh.id),
+      email,
+      emailVerified,
+      name: String(gh.name ?? "").trim() || String(gh.login ?? "GitHub User"),
+      username: String(gh.login ?? "") || null,
+      accessToken,
     },
-  });
-  await audit(org.id, newUser.id, "org.created_github", org.slug);
-  await createSession(newUser.id);
-  return NextResponse.redirect(new URL("/dashboard", req.url));
+    mode
+  );
+  if (!resolved.ok) {
+    const code = resolved.code === "oauth_no_email" ? "github_no_email" : "github_no_account";
+    return fail(code);
+  }
+
+  const user = await db.user.findUniqueOrThrow({ where: { id: resolved.data.userId } });
+  await audit(
+    user.orgId,
+    user.id,
+    resolved.data.linked ? "auth.login_github" : "auth.signup_github"
+  );
+  await createSession(user.id);
+  const authRedirect = req.cookies.get("auth_redirect")?.value;
+  const target = authRedirect && authRedirect.startsWith("/") && !authRedirect.startsWith("//")
+    ? authRedirect
+    : homeFor(user.role);
+  const res = NextResponse.redirect(new URL(target, req.url));
+  res.cookies.delete("gh_state");
+  res.cookies.delete("gh_mode");
+  res.cookies.delete("auth_redirect");
+  return res;
 }

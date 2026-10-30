@@ -2,14 +2,15 @@ import { NextResponse, NextRequest } from "next/server";
 import { newToken } from "@/lib/crypto";
 
 export async function GET(req: NextRequest) {
-  if (!process.env.GITHUB_CLIENT_ID) {
-    const url = new URL("/login", req.url);
-    url.searchParams.set("error", "GitHub authentication is not configured yet. Please use email login instead.");
-    return NextResponse.redirect(url);
-  }
-
   const { searchParams } = new URL(req.url);
   const mode = searchParams.get("mode") ?? "login";
+  const redirectParam = searchParams.get("redirect");
+
+  if (!process.env.GITHUB_CLIENT_ID) {
+    const url = new URL("/login", req.url);
+    url.searchParams.set("error", "github_not_configured");
+    return NextResponse.redirect(url);
+  }
 
   const state = newToken();
   const url = new URL("https://github.com/login/oauth/authorize");
@@ -22,5 +23,8 @@ export async function GET(req: NextRequest) {
   const res = NextResponse.redirect(url);
   res.cookies.set("gh_state", state, { httpOnly: true, sameSite: "lax", maxAge: 600, path: "/" });
   res.cookies.set("gh_mode", mode, { httpOnly: true, sameSite: "lax", maxAge: 600, path: "/" });
+  if (redirectParam && redirectParam.startsWith("/") && !redirectParam.startsWith("//")) {
+    res.cookies.set("auth_redirect", redirectParam, { httpOnly: true, sameSite: "lax", maxAge: 600, path: "/" });
+  }
   return res;
 }

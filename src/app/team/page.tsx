@@ -4,6 +4,7 @@ import { can } from "@/lib/rbac";
 import { Shell } from "@/components/Shell";
 import { ActionForm, inputCls } from "@/components/ActionForm";
 import { changeRole, deactivateMember, inviteMember, resendInvite, revokeInvite } from "../actions";
+import { Users, UserPlus, Mail, Shield, CheckCircle2, Clock, GitBranch } from "lucide-react";
 
 export default async function Team() {
   const me = await requirePermission("members:view");
@@ -15,18 +16,54 @@ export default async function Team() {
   const statusOf = (i: (typeof invites)[number]) =>
     i.status === "PENDING" && i.expiresAt < now ? "EXPIRED" : i.status;
   const canInvite = can(me.role, "members:invite");
-  const th = "px-3 py-2 text-left font-medium text-slate-500";
+
+  const getInitials = (name: string) => {
+    const parts = name.trim().split(" ");
+    if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+    return name.slice(0, 2).toUpperCase();
+  };
+
+  const getRoleBadge = (role: string) => {
+    switch (role.toUpperCase()) {
+      case "OWNER":
+        return "bg-purple-50 text-purple-700 border-purple-200";
+      case "MANAGER":
+        return "bg-blue-50 text-blue-700 border-blue-200";
+      case "MENTOR":
+        return "bg-emerald-50 text-emerald-700 border-emerald-200";
+      case "CANDIDATE":
+        return "bg-amber-50 text-amber-700 border-amber-200";
+      default:
+        return "bg-slate-50 text-slate-700 border-slate-200";
+    }
+  };
 
   return (
     <Shell user={me}>
-      <h1 className="mb-4 text-xl font-semibold">Team</h1>
+      <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-black text-slate-950 tracking-tight">Team & Members</h1>
+          <p className="text-sm text-slate-500 mt-0.5">
+            Manage organization members, engineer roles, permissions, and pending invitations.
+          </p>
+        </div>
+      </div>
 
       {canInvite && (
-        <section className="mb-8 rounded-lg border bg-white p-4">
-          <h2 className="mb-3 font-medium">Invite someone</h2>
-          <ActionForm action={inviteMember} submit="Send invite" className="flex flex-wrap items-start gap-2">
-            <input name="email" type="email" placeholder="email@company.com" className={inputCls + " !w-64"} required />
-            <select name="role" className={inputCls + " !w-40"} defaultValue="CANDIDATE">
+        <section className="mb-8 rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs">
+          <div className="flex items-center gap-2 mb-3">
+            <UserPlus className="size-4 text-slate-700" />
+            <h2 className="font-bold text-slate-900 text-sm">Invite New Member</h2>
+          </div>
+          <ActionForm action={inviteMember} submit="Send Invite" className="flex flex-wrap items-start gap-2.5">
+            <input
+              name="email"
+              type="email"
+              placeholder="engineer@company.com"
+              className={inputCls + " !w-72"}
+              required
+            />
+            <select name="role" className={inputCls + " !w-44"} defaultValue="CANDIDATE">
               <option value="CANDIDATE">Candidate</option>
               <option value="MENTOR">Mentor</option>
               <option value="MANAGER">Manager</option>
@@ -35,86 +72,200 @@ export default async function Team() {
         </section>
       )}
 
-      <section className="mb-8 overflow-hidden rounded-lg border bg-white">
-        <table className="w-full text-sm">
-          <thead className="bg-slate-50">
-            <tr>
-              <th className={th}>Name</th><th className={th}>Email</th><th className={th}>Role</th>
-              <th className={th}>GitHub</th><th className={th}>Status</th><th className={th}></th>
-            </tr>
-          </thead>
-          <tbody>
-            {members.map((m) => (
-              <tr key={m.id} className="border-t">
-                <td className="px-3 py-2">{m.name}</td>
-                <td className="px-3 py-2">{m.email}</td>
-                <td className="px-3 py-2">
-                  {can(me.role, "members:change-role") && m.role !== "OWNER" && m.id !== me.id ? (
-                    <form action={changeRole} className="flex gap-1">
-                      <input type="hidden" name="id" value={m.id} />
-                      <select name="role" defaultValue={m.role} className="rounded border px-1 py-0.5">
-                        <option value="MANAGER">MANAGER</option>
-                        <option value="MENTOR">MENTOR</option>
-                        <option value="CANDIDATE">CANDIDATE</option>
-                      </select>
-                      <button className="text-indigo-700 underline">Save</button>
-                    </form>
-                  ) : (
-                    m.role
-                  )}
-                </td>
-                <td className="px-3 py-2">{m.githubUsername ? `@${m.githubUsername}` : "—"}</td>
-                <td className="px-3 py-2">{m.status}</td>
-                <td className="px-3 py-2">
-                  {can(me.role, "members:deactivate") && m.role !== "OWNER" && m.id !== me.id && (
-                    <form action={deactivateMember}>
-                      <input type="hidden" name="id" value={m.id} />
-                      <button className="text-red-600 underline">
-                        {m.status === "ACTIVE" ? "Deactivate" : "Reactivate"}
-                      </button>
-                    </form>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </section>
+      {/* MEMBERS TABLE (Inspired by 21st.dev table11) */}
+      <div className="mb-8 rounded-2xl border border-slate-200/80 bg-white shadow-xs overflow-hidden">
+        <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Users className="size-4 text-slate-700" />
+            <h2 className="font-bold text-slate-950 text-base">Active Members ({members.length})</h2>
+          </div>
+        </div>
 
-      <h2 className="mb-2 font-medium">Invitations</h2>
-      <section className="overflow-hidden rounded-lg border bg-white">
-        <table className="w-full text-sm">
-          <thead className="bg-slate-50">
-            <tr><th className={th}>Email</th><th className={th}>Role</th><th className={th}>Status</th><th className={th}></th></tr>
-          </thead>
-          <tbody>
-            {invites.length === 0 && (
-              <tr><td className="px-3 py-3 text-slate-500" colSpan={4}>No invitations yet.</td></tr>
-            )}
-            {invites.map((i) => (
-              <tr key={i.id} className="border-t">
-                <td className="px-3 py-2">{i.email}</td>
-                <td className="px-3 py-2">{i.role}</td>
-                <td className="px-3 py-2">{statusOf(i)}</td>
-                <td className="flex gap-3 px-3 py-2">
-                  {canInvite && statusOf(i) !== "ACCEPTED" && (
-                    <form action={resendInvite}>
-                      <input type="hidden" name="id" value={i.id} />
-                      <button className="text-indigo-700 underline">Resend</button>
-                    </form>
-                  )}
-                  {canInvite && i.status === "PENDING" && (
-                    <form action={revokeInvite}>
-                      <input type="hidden" name="id" value={i.id} />
-                      <button className="text-red-600 underline">Revoke</button>
-                    </form>
-                  )}
-                </td>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead className="bg-slate-50/80 text-[11px] font-bold uppercase tracking-wider text-slate-500 border-b border-slate-100">
+              <tr>
+                <th className="px-4 py-3.5">Member</th>
+                <th className="px-4 py-3.5">Email</th>
+                <th className="px-4 py-3.5">Role</th>
+                <th className="px-4 py-3.5">GitHub</th>
+                <th className="px-4 py-3.5">Status</th>
+                <th className="px-4 py-3.5 text-right">Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </section>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {members.map((m) => (
+                <tr key={m.id} className="hover:bg-slate-50/60 transition-colors">
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-3">
+                      {m.githubUsername ? (
+                        <img
+                          src={`https://github.com/${m.githubUsername}.png?size=64`}
+                          alt={m.name}
+                          className="w-8 h-8 rounded-full object-cover ring-1 ring-slate-200"
+                        />
+                      ) : (
+                        <div className="w-8 h-8 rounded-full bg-slate-900 text-white font-bold text-xs flex items-center justify-center">
+                          {getInitials(m.name)}
+                        </div>
+                      )}
+                      <span className="font-bold text-slate-900">{m.name}</span>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-xs text-slate-600 font-mono">{m.email}</td>
+                  <td className="px-4 py-3">
+                    {can(me.role, "members:change-role") && m.role !== "OWNER" && m.id !== me.id ? (
+                      <form action={changeRole} className="flex items-center gap-1.5">
+                        <input type="hidden" name="id" value={m.id} />
+                        <select
+                          name="role"
+                          defaultValue={m.role}
+                          className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-slate-800"
+                        >
+                          <option value="MANAGER">MANAGER</option>
+                          <option value="MENTOR">MENTOR</option>
+                          <option value="CANDIDATE">CANDIDATE</option>
+                        </select>
+                        <button className="text-xs font-bold text-black hover:underline cursor-pointer">
+                          Update
+                        </button>
+                      </form>
+                    ) : (
+                      <span className={`text-[10px] font-semibold uppercase px-2 py-0.5 rounded border ${getRoleBadge(m.role)}`}>
+                        {m.role}
+                      </span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3 text-xs text-slate-600">
+                    {m.githubUsername ? (
+                      <span className="inline-flex items-center gap-1 font-mono">
+                        <GitBranch className="size-3 text-slate-400" />
+                        <span>@{m.githubUsername}</span>
+                      </span>
+                    ) : (
+                      <span className="text-slate-400">—</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3">
+                    <span
+                      className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold border ${
+                        m.status === "ACTIVE"
+                          ? "bg-emerald-50 text-emerald-700 border-emerald-200/60"
+                          : "bg-slate-100 text-slate-600 border-slate-200"
+                      }`}
+                    >
+                      <span
+                        className={`w-1.5 h-1.5 rounded-full ${
+                          m.status === "ACTIVE" ? "bg-emerald-500" : "bg-slate-400"
+                        }`}
+                      />
+                      <span>{m.status.toLowerCase()}</span>
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    {can(me.role, "members:deactivate") && m.role !== "OWNER" && m.id !== me.id && (
+                      <form action={deactivateMember}>
+                        <input type="hidden" name="id" value={m.id} />
+                        <button
+                          className={`text-xs font-semibold hover:underline cursor-pointer ${
+                            m.status === "ACTIVE" ? "text-red-600" : "text-emerald-700"
+                          }`}
+                        >
+                          {m.status === "ACTIVE" ? "Deactivate" : "Reactivate"}
+                        </button>
+                      </form>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* INVITATIONS SECTION */}
+      <div className="rounded-2xl border border-slate-200/80 bg-white shadow-xs overflow-hidden">
+        <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Mail className="size-4 text-slate-700" />
+            <h2 className="font-bold text-slate-950 text-base">Invitations ({invites.length})</h2>
+          </div>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead className="bg-slate-50/80 text-[11px] font-bold uppercase tracking-wider text-slate-500 border-b border-slate-100">
+              <tr>
+                <th className="px-4 py-3.5">Email</th>
+                <th className="px-4 py-3.5">Assigned Role</th>
+                <th className="px-4 py-3.5">Invitation Status</th>
+                <th className="px-4 py-3.5 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {invites.length === 0 ? (
+                <tr>
+                  <td colSpan={4} className="px-6 py-8 text-center text-slate-500 text-xs">
+                    No active or pending invitations sent.
+                  </td>
+                </tr>
+              ) : (
+                invites.map((i) => {
+                  const s = statusOf(i);
+                  return (
+                    <tr key={i.id} className="hover:bg-slate-50/60 transition-colors">
+                      <td className="px-4 py-3 font-mono text-xs text-slate-800">{i.email}</td>
+                      <td className="px-4 py-3">
+                        <span className={`text-[10px] font-semibold uppercase px-2 py-0.5 rounded border ${getRoleBadge(i.role)}`}>
+                          {i.role}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span
+                          className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold border ${
+                            s === "ACCEPTED"
+                              ? "bg-emerald-50 text-emerald-700 border-emerald-200/60"
+                              : s === "EXPIRED"
+                              ? "bg-slate-100 text-slate-600 border-slate-200"
+                              : "bg-amber-50 text-amber-700 border-amber-200/60"
+                          }`}
+                        >
+                          <span
+                            className={`w-1.5 h-1.5 rounded-full ${
+                              s === "ACCEPTED" ? "bg-emerald-500" : s === "EXPIRED" ? "bg-slate-400" : "bg-amber-500"
+                            }`}
+                          />
+                          <span>{s.toLowerCase()}</span>
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <div className="flex items-center justify-end gap-2 text-xs">
+                          {canInvite && s !== "ACCEPTED" && (
+                            <form action={resendInvite}>
+                              <input type="hidden" name="id" value={i.id} />
+                              <button className="font-semibold text-slate-900 hover:underline cursor-pointer">
+                                Resend
+                              </button>
+                            </form>
+                          )}
+                          {canInvite && i.status === "PENDING" && (
+                            <form action={revokeInvite}>
+                              <input type="hidden" name="id" value={i.id} />
+                              <button className="font-semibold text-red-600 hover:underline cursor-pointer">
+                                Revoke
+                              </button>
+                            </form>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </Shell>
   );
 }

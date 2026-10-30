@@ -40,12 +40,30 @@ model User {
   githubUsername   String?
   githubTokenEnc   String?
   experienceLevel  String   @default("JUNIOR")
+  emailVerifiedAt  DateTime?
   createdAt        DateTime @default(now())
   sessions         Session[]
   notifications    Notification[]
   slideDecks       SlideDeck[]
+  authTokens       AuthToken[]
+  oauthAccounts    OAuthAccount[]
 
   @@index([orgId])
+}
+
+// Social login links (Google / GitHub); githubUserId + githubUsername on User stay
+// in sync for GitHub so PR-event matching keeps working.
+model OAuthAccount {
+  id             String   @id @default(cuid())
+  provider       String // GOOGLE | GITHUB
+  providerUserId String
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  email          String
+  createdAt      DateTime @default(now())
+
+  @@unique([provider, providerUserId])
+  @@index([userId])
 }
 
 model Session {
@@ -55,6 +73,32 @@ model Session {
   tokenHash String   @unique
   expiresAt DateTime
   createdAt DateTime @default(now())
+}
+
+// type: PASSWORD_RESET | EMAIL_VERIFICATION — single-use, hashed, short-lived
+model AuthToken {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  email     String
+  tokenHash String    @unique
+  type      String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+  @@index([email])
+}
+
+// login rate limiting / lockout; key = normalized email or ip address (global infra, not org-scoped)
+model LoginAttempt {
+  id              String    @id @default(cuid())
+  key             String    @unique
+  failures        Int       @default(0)
+  windowStartedAt DateTime  @default(now())
+  lockedUntil     DateTime?
+  updatedAt       DateTime  @updatedAt
 }
 
 // status: PENDING | ACCEPTED | EXPIRED | REVOKED

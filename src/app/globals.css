@@ -1,4 +1,19 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+
+:root {
+  --clr-blue: #1890ff;
+  --clr-green: #01c3a8;
+  --clr-orange: #ffb741;
+  --clr-red: #a63d2a;
+  --bg-dark: #232228;
+  --bg-footer: #151419;
+  --color-white: #fff;
+  --color-gray-light: #ddd;
+  --color-gray-medium: #363636;
+  --color-gray-dark: #292929;
+  --color-gray-very-dark: #222127;
+}
 
 @font-face {
   font-family: 'Ppneuemontreal';
@@ -197,4 +212,225 @@
   a, button, [role="button"], input[type="submit"], input[type="button"], select {
     cursor: pointer;
   }
+}
+
+
+/* ============================================================= */
+/* COURSE DESIGN CARDS SPECIFICATION                             */
+/* ============================================================= */
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  border-radius: 1.25rem;
+  padding: 1.5rem;
+  background-color: var(--bg-dark);
+  color: var(--color-white);
+  min-height: 250px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 30px -10px rgba(0, 0, 0, 0.45);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+}
+
+.card.green::before {
+  background-color: var(--clr-green);
+}
+
+.card.orange::before {
+  background-color: var(--clr-orange);
+}
+
+.card.red::before {
+  background-color: var(--clr-red);
+}
+
+.card.blue::before {
+  background-color: var(--clr-blue);
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.card-header .date {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--color-gray-light);
+  letter-spacing: 0.025em;
+}
+
+.card-header svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.card-body h3 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--color-white);
+  text-transform: capitalize;
+  line-height: 1.25;
+  margin-bottom: 0.35rem;
+}
+
+.card-body p {
+  font-size: 0.875rem;
+  color: #94a3b8;
+  margin-bottom: 1.25rem;
+}
+
+.card-body .progress {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #cbd5e1;
+}
+
+.card-body .progress .progress-bar {
+  flex: 1;
+  height: 6px;
+  background-color: var(--color-gray-medium);
+  border-radius: 9999px;
+  overflow: hidden;
+  position: relative;
+}
+
+.card-body .progress .progress-bar .progress-fill {
+  display: block;
+  height: 100%;
+  border-radius: 9999px;
+  transition: width 0.5s ease-in-out;
+}
+
+.card.green .card-body .progress .progress-bar .progress-fill {
+  background-color: var(--clr-green);
+}
+
+.card.orange .card-body .progress .progress-bar .progress-fill {
+  background-color: var(--clr-orange);
+}
+
+.card.red .card-body .progress .progress-bar .progress-fill {
+  background-color: var(--clr-red);
+}
+
+.card.blue .card-body .progress .progress-bar .progress-fill {
+  background-color: var(--clr-blue);
+}
+
+.card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.card-footer ul {
+  display: flex;
+  align-items: center;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.card-footer ul li {
+  margin-left: -0.5rem;
+}
+
+.card-footer ul li:first-child {
+  margin-left: 0;
+}
+
+.card-footer ul li img {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 9999px;
+  border: 2px solid var(--bg-dark);
+  object-fit: cover;
+}
+
+.btn-add {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 9999px;
+  background-color: var(--color-gray-medium);
+  color: var(--color-white);
+  border: 2px solid var(--bg-dark);
+  transition: all 0.2s ease;
+  text-decoration: none;
+}
+
+.btn-add:hover {
+  background-color: var(--color-gray-dark);
+  transform: scale(1.08);
+}
+
+.btn-countdown {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.35rem 0.85rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  background-color: rgba(255, 255, 255, 0.08);
+  color: var(--color-white);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.card.green .btn-countdown {
+  background-color: rgba(1, 195, 168, 0.15);
+  color: #5eead4;
+  border-color: rgba(1, 195, 168, 0.3);
+}
+
+.card.orange .btn-countdown {
+  background-color: rgba(255, 183, 65, 0.15);
+  color: #fde047;
+  border-color: rgba(255, 183, 65, 0.3);
+}
+
+.card.red .btn-countdown {
+  background-color: rgba(166, 61, 42, 0.2);
+  color: #fca5a5;
+  border-color: rgba(166, 61, 42, 0.4);
+}
+
+.card.blue .btn-countdown {
+  background-color: rgba(24, 144, 255, 0.15);
+  color: #93c5fd;
+  border-color: rgba(24, 144, 255, 0.3);
+}
+
+.btn-countdown:hover {
+  filter: brightness(1.15);
+  transform: scale(1.02);
 }

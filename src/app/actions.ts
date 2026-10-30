@@ -4,58 +4,102 @@ import bcrypt from "bcryptjs";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { headers } from "next/headers";
 import { db } from "@/lib/db";
+import type { DbClient } from "@/lib/db";
 import { createSession, destroySession, homeFor, requirePermission, requireUser } from "@/lib/auth";
 import { encrypt, newToken, sha256 } from "@/lib/crypto";
 import { audit } from "@/lib/audit";
 import { notify, sendEmail } from "@/lib/mailer";
+import { rateLimitDb } from "@/lib/rate-limit";
 import { syncRepository } from "@/lib/analyser/pipeline";
 import { createAssignment } from "@/lib/domain/assign";
+import {
+  issueEmailVerification,
+  signupTx,
+  loginTx,
+  requestResetTx,
+  resetTx,
+  verifyEmailWithToken,
+} from "@/lib/domain/auth";
 
-export type FormState = { error?: string; success?: boolean; home?: string } | undefined;
+export type FormState = { error?: string; success?: boolean; home?: string; emailSent?: boolean } | undefined;
 
-const slugify = (s: string) =>
-  s.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-
-const signupSchema = z.object({
-  orgName: z.string().min(2),
-  name: z.string().min(2),
-  email: z.string().email(),
-  password: z.string().min(8, "Password must be at least 8 characters"),
-});
+// Best-effort client IP for rate limiting (proxy headers first).
+async function clientIp(): Promise<string> {
+  const h = await headers();
+  const forwarded = h.get("x-forwarded-for") ?? h.get("x-real-ip");
+  return (forwarded ?? "unknown").split(",")[0].trim();
+}
 
 export async function signupOrg(_: FormState, fd: FormData): Promise<FormState> {
-  const p = signupSchema.safeParse(Object.fromEntries(fd));
-  if (!p.success) return { error: p.error.issues[0].message };
-  const { orgName, name, email, password } = p.data;
-  const slug = slugify(orgName);
-  if (!slug) return { error: "Invalid organisation name" };
-  if (await db.organisation.findUnique({ where: { slug } })) return { error: "That organisation name is taken" };
-  if (await db.user.findUnique({ where: { email: email.toLowerCase() } })) return { error: "Email already registered" };
-
-  const org = await db.organisation.create({ data: { name: orgName, slug } });
-  const user = await db.user.create({
-    data: {
-      orgId: org.id,
-      name,
-      email: email.toLowerCase(),
-      role: "OWNER",
-      passwordHash: await bcrypt.hash(password, 12),
-    },
+  const ip = await clientIp();
+  const ipLimit = await rateLimitDb(`signup:ip:${ip}`, 10, 15 * 60 * 1000);
+  if (!ipLimit.ok)
+    return { error: "Too many sign-up attempts from this network. Try again later." };
+  const result = await signupTx({
+    orgName: String(fd.get("orgName") ?? ""),
+    name: String(fd.get("name") ?? ""),
+    email: String(fd.get("email") ?? ""),
+    password: String(fd.get("password") ?? ""),
   });
-  await audit(org.id, user.id, "org.created", org.slug);
-  await createSession(user.id);
-  return { success: true };
+  if (!result.ok) return { error: result.error };
+  await audit(result.data.orgId, result.data.userId, "org.created");
+  await createSession(result.data.userId);
+  return { success: true, emailSent: result.data.verificationSent };
 }
 
 export async function login(_: FormState, fd: FormData): Promise<FormState & { home?: string }> {
-  const email = String(fd.get("email") ?? "").toLowerCase();
-  const user = await db.user.findUnique({ where: { email } });
-  const ok = user?.passwordHash && (await bcrypt.compare(String(fd.get("password") ?? ""), user.passwordHash));
-  if (!user || !ok || user.status !== "ACTIVE") return { error: "Invalid email or password" };
-  await audit(user.orgId, user.id, "auth.login");
-  await createSession(user.id);
+  const ipLimit = await rateLimitDb(`login:ip:${await clientIp()}`, 20, 15 * 60 * 1000);
+  if (!ipLimit.ok) return { error: "Too many attempts from this network. Try again later." };
+  const result = await loginTx({
+    email: String(fd.get("email") ?? ""),
+    password: String(fd.get("password") ?? ""),
+  });
+  if (!result.ok) return { error: result.error };
+  await audit(result.data.orgId, result.data.userId, "auth.login");
+  await createSession(result.data.userId);
+  return { success: true, home: homeFor(result.data.role) };
+}
+
+// ---------- Password reset (never reveals whether an account exists) ----------
+
+export async function requestPasswordResetAction(_: FormState, fd: FormData): Promise<FormState> {
+  const ipLimit = await rateLimitDb(`reset:ip:${await clientIp()}`, 5, 15 * 60 * 1000);
+  if (!ipLimit.ok) return { error: "Too many reset requests from this network. Try again later." };
+  const email = z.string().email().safeParse(String(fd.get("email") ?? "").trim());
+  if (!email.success) return { error: "Enter a valid email address" };
+  const result = await requestResetTx(email.data);
+  if (!result.ok) return { error: result.error };
+  return { success: true };
+}
+
+export async function resetPasswordAction(_: FormState, fd: FormData): Promise<FormState> {
+  const parsed = z
+    .object({ token: z.string().min(1), password: z.string(), confirm: z.string() })
+    .safeParse(Object.fromEntries(fd));
+  if (!parsed.success) return { error: "Fill in every field" };
+  if (parsed.data.password !== parsed.data.confirm) return { error: "Passwords do not match" };
+  const result = await resetTx({ token: parsed.data.token, password: parsed.data.password });
+  if (!result.ok) return { error: result.error };
+  await createSession(result.data.userId);
+  const user = await db.user.findUniqueOrThrow({ where: { id: result.data.userId } });
   return { success: true, home: homeFor(user.role) };
+}
+
+// ---------- Email verification ----------
+
+export async function verifyEmailAction(token: string): Promise<FormState> {
+  const result = await verifyEmailWithToken(db, token);
+  if (!result.ok) return { error: result.error };
+  return { success: true };
+}
+
+export async function resendVerificationAction(): Promise<FormState> {
+  const me = await requireUser();
+  const sent = await issueEmailVerification(db, me.id);
+  if (!sent) return { error: "Verification email is not available. Add a Resend key or you are already verified." };
+  return { success: true, emailSent: true };
 }
 
 export async function logout() {
@@ -68,6 +112,7 @@ export async function logout() {
 const INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 async function issueInvite(
+  client: DbClient,
   orgId: string,
   orgName: string,
   inviterId: string,
@@ -76,7 +121,7 @@ async function issueInvite(
   role: string,
 ) {
   const token = newToken();
-  await db.invitation.create({
+  await client.invitation.create({
     data: {
       orgId,
       email,
@@ -92,6 +137,7 @@ async function issueInvite(
     email,
     `You are invited to join ${orgName}`,
     `${inviterName} invited you to ${orgName} as ${role.toLowerCase()}.\n\nAccept: ${link}\n\nThis link expires in 7 days.`,
+    { client }
   );
 }
 
@@ -101,7 +147,7 @@ export async function inviteMember(_: FormState, fd: FormData): Promise<FormStat
   const role = z.enum(["MANAGER", "MENTOR", "CANDIDATE"]).safeParse(fd.get("role"));
   if (!email.success || !role.success) return { error: "Enter a valid email and role" };
   if (await db.user.findUnique({ where: { email: email.data } })) return { error: "That person already has an account" };
-  await issueInvite(me.orgId, me.org.name, me.id, me.name, email.data, role.data);
+  await issueInvite(db, me.orgId, me.org.name, me.id, me.name, email.data, role.data);
   await audit(me.orgId, me.id, "invite.sent", email.data);
   revalidatePath("/team");
 }
@@ -119,7 +165,7 @@ export async function resendInvite(fd: FormData) {
   const inv = await db.invitation.findFirst({ where: { id: String(fd.get("id")), orgId: me.orgId } });
   if (!inv || inv.status === "ACCEPTED") return;
   await db.invitation.update({ where: { id: inv.id }, data: { status: "REVOKED" } });
-  await issueInvite(me.orgId, me.org.name, me.id, me.name, inv.email, inv.role);
+  await issueInvite(db, me.orgId, me.org.name, me.id, me.name, inv.email, inv.role);
   await audit(me.orgId, me.id, "invite.resent", inv.email);
   revalidatePath("/team");
 }
@@ -141,6 +187,7 @@ export async function acceptInvite(token: string, _: FormState, fd: FormData): P
   await db.invitation.update({ where: { id: inv.id }, data: { status: "ACCEPTED" } });
   await audit(inv.orgId, user.id, "invite.accepted", inv.email);
   await notify(inv.invitedBy, "Invite accepted", `${name} (${inv.email}) joined.`);
+  await issueEmailVerification(db, user.id);
   if (inv.pathId) {
     const inviter = await db.user.findUnique({ where: { id: inv.invitedBy } });
     await createAssignment({

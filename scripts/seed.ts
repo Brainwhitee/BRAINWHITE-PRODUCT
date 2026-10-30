@@ -5,6 +5,12 @@ import { db } from "../src/lib/db";
 import { syncRepository } from "../src/lib/analyser/pipeline";
 import { createAssignment } from "../src/lib/domain/assign";
 
+// Guard: never run seed in production
+if (process.env.NODE_ENV === "production") {
+  console.error("Seed script cannot run in production. Set NODE_ENV=development to run.");
+  process.exit(1);
+}
+
 const PASSWORD = "demo12345";
 
 async function main() {
