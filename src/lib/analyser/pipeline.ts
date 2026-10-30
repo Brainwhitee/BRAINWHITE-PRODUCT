@@ -6,9 +6,11 @@ import { languageOf, makeFilter } from "./filter";
 import { redactSecrets } from "./secrets";
 import { isParsable, parseSource } from "./parse";
 import { moduleNameFor } from "./modules";
+import { STALE_SYNC_MS } from "./constants";
 import { assignModules, type FileGraph } from "./cluster";
-import { createResolver, emptyImportStats } from "./resolve";
+import { createResolver, emptyImportStats } from "./resolve-ts";
 import { buildChunks } from "./chunk";
+import { buildSymbolEdges, withSymbolIds, CALL_EDGE_LANGS, type FileFacts, type SymbolWithId } from "./edges";
 import { heuristicChunk, llmEnabled, newStats, summariseChunk, summariseRollup } from "./summarise";
 
 const sha1 = (s: string) => createHash("sha1").update(s).digest("hex");
@@ -25,8 +27,26 @@ async function pool<T>(items: T[], n: number, fn: (x: T) => Promise<void>) {
 // Entry point. Runs in-process for the MVP; swap for a queue worker when PLT-08 lands.
 export async function syncRepository(repoId: string): Promise<string> {
   const repo = await db.repository.findUniqueOrThrow({ where: { id: repoId }, include: { project: true } });
-  const run = await db.syncRun.create({ data: { repoId } });
-  await db.repository.update({ where: { id: repoId }, data: { syncStatus: "RUNNING" } });
+  // Per-repo lock: claim the repo atomically so two syncs (double click, webhook + manual) never overlap.
+  // A RUNNING status whose newest run is older than STALE_SYNC_MS is a crashed sync and can be taken over.
+  const claimed = await db.repository.updateMany({
+    where: {
+      id: repoId,
+      OR: [
+        { syncStatus: { not: "RUNNING" } },
+        { syncRuns: { none: { status: "RUNNING", startedAt: { gte: new Date(Date.now() - STALE_SYNC_MS) } } } },
+      ],
+    },
+    data: { syncStatus: "RUNNING" },
+  });
+  if (claimed.count === 0) return ""; // another sync is already running for this repo
+  let run: { id: string };
+  try {
+    run = await db.syncRun.create({ data: { repoId } });
+  } catch (e) {
+    await db.repository.update({ where: { id: repoId }, data: { syncStatus: "FAILED" } });
+    throw e;
+  }
   const progress = (progress: string, extra: object = {}) =>
     db.syncRun.update({ where: { id: run.id }, data: { progress, ...extra } });
 
@@ -65,6 +85,7 @@ export async function syncRepository(repoId: string): Promise<string> {
     const fileIds = new Map<string, string>();
     const imports = new Map<string, string[]>();
     const symbolsByFile = new Map<string, Awaited<ReturnType<typeof parseSource>>>();
+    const symIdsByFile = new Map<string, SymbolWithId[]>();
     let parsed = 0;
 
     for (const l of loaded) {
@@ -85,10 +106,12 @@ export async function syncRepository(repoId: string): Promise<string> {
       symbolsByFile.set(l.path, res);
       imports.set(l.path, res?.imports ?? []);
       await db.symbol.deleteMany({ where: { fileId: row.id } });
-      if (res?.symbols.length)
+      const withIds = withSymbolIds(repoId, l.path, res?.symbols ?? []);
+      symIdsByFile.set(l.path, withIds);
+      if (withIds.length)
         await db.symbol.createMany({
-          data: res.symbols.map((s) => ({
-            fileId: row.id, kind: s.kind, name: s.name, signature: s.signature, doc: s.doc,
+          data: withIds.map((s) => ({
+            id: s.id, fileId: row.id, kind: s.kind, name: s.name, signature: s.signature, doc: s.doc,
             startLine: s.startLine, endLine: s.endLine,
           })),
         });
@@ -145,6 +168,15 @@ export async function syncRepository(repoId: string): Promise<string> {
           return { repoId, fromId, toId, type: "DEPENDS_ON", fromKind: "module", toKind: "module" };
         }),
       });
+
+    // ---- symbol edges (calls / JSX / new / extends / implements), JS/TS only ----
+    await progress("Linking symbols (calls, references)");
+    const facts: FileFacts[] = loaded.map((l) => ({
+      path: l.path, lang: l.lang, fileId: fileIds.get(l.path)!,
+      symbols: symIdsByFile.get(l.path) ?? [], refs: symbolsByFile.get(l.path)?.refs,
+    }));
+    const symEdges = buildSymbolEdges(facts, resolve).map((e) => ({ repoId, ...e }));
+    for (let i = 0; i < symEdges.length; i += 2000) await db.graphEdge.createMany({ data: symEdges.slice(i, i + 2000) });
 
     // ---- chunks (stable ids) ----
     await progress("Generating learning chunks");
@@ -218,7 +250,7 @@ export async function syncRepository(repoId: string): Promise<string> {
 
     await db.repository.update({
       where: { id: repoId },
-      data: { syncStatus: "HEALTHY", lastSyncedSha: sha, lastSyncedAt: new Date(), summary: repoSummary, languages: JSON.stringify(langCount) },
+      data: { syncStatus: "HEALTHY", lastSyncedSha: sha, lastSyncedAt: new Date(), summary: repoSummary, languages: JSON.stringify(langCount), graphCoverage: JSON.stringify({ callEdges: CALL_EDGE_LANGS }) },
     });
     await db.syncRun.update({
       where: { id: run.id },
@@ -226,6 +258,7 @@ export async function syncRepository(repoId: string): Promise<string> {
         status: "SUCCESS", finishedAt: new Date(), sha, filesParsed: parsed,
         progress: `Done. Imports: ${importStats.internal} internal resolved, ${importStats.unresolved} unresolved, ${importStats.external} external`,
         summariesGenerated: stats.calls,
+        importsResolved: importStats.internal, importsUnresolved: importStats.unresolved,
       },
     });
     return run.id;

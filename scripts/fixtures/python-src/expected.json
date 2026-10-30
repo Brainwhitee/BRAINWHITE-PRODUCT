@@ -1,0 +1,8 @@
+{
+  "edges": [
+    ["src/app/views.py", "src/app/models.py"],
+    ["tests/test_views.py", "src/app/views.py"]
+  ],
+  "unresolved": [["src/app/views.py", "app.missing"]],
+  "external": ["os"]
+}

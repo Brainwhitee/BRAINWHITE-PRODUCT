@@ -16,7 +16,8 @@ import { isParsable, parseSource } from "../src/lib/analyser/parse";
 import { modulePathFor, moduleNameFor, resolveImport as legacyResolve } from "../src/lib/analyser/modules";
 import { buildChunks } from "../src/lib/analyser/chunk";
 import { assignModules } from "../src/lib/analyser/cluster";
-import { createResolver, emptyImportStats } from "../src/lib/analyser/resolve";
+import { createResolver, emptyImportStats } from "../src/lib/analyser/resolve-ts";
+import { buildSymbolEdges, withSymbolIds, CALL_EDGE_LANGS, type FileFacts } from "../src/lib/analyser/edges";
 
 try { (process as unknown as { loadEnvFile?: (p?: string) => void }).loadEnvFile?.(); } catch { /* no .env is fine */ }
 process.env.ALLOW_LOCAL_REPOS = "true"; // this tool only reads; local folders are the point
@@ -25,7 +26,7 @@ function args() {
   const a = process.argv.slice(2);
   const opt = (name: string) => { const i = a.indexOf(name); return i >= 0 ? a[i + 1] : undefined; };
   const target = a.find((x, i) => !x.startsWith("--") && !(i > 0 && a[i - 1].startsWith("--")));
-  return { target, branch: opt("--branch") ?? "main", json: opt("--json"), mermaid: opt("--mermaid"), samples: Number(opt("--samples") ?? 15) };
+  return { target, branch: opt("--branch") ?? "main", json: opt("--json"), mermaid: opt("--mermaid"), samples: Number(opt("--samples") ?? 15), callers: opt("--callers") };
 }
 
 const sha1 = (s: string) => createHash("sha1").update(s).digest("hex");
@@ -33,7 +34,7 @@ const pct = (a: number, b: number) => (b ? `${((a / b) * 100).toFixed(1)}%` : "n
 const row = (...c: (string | number)[]) => c.map((x, i) => (i === 0 ? String(x).padEnd(34) : String(x).padStart(8))).join(" ");
 
 async function main() {
-  const { target, branch, json, mermaid, samples } = args();
+  const { target, branch, json, mermaid, samples, callers } = args();
   if (!target) {
     console.error("Usage: npm run inspect -- <folder | owner/name> [--branch main] [--json out.json] [--mermaid graph.md] [--samples 15]");
     process.exit(1);
@@ -131,6 +132,23 @@ async function main() {
       mods.get(modOf.get(l.path)!)!.chunks += c.length;
     }
 
+    // ---- symbol edges (JS/TS) ----
+    const facts: FileFacts[] = loaded.map((l) => ({
+      path: l.path, lang: l.lang, fileId: "f:" + l.path,
+      symbols: withSymbolIds("inspect", l.path, parsed.get(l.path)?.symbols ?? []), refs: parsed.get(l.path)?.refs,
+    }));
+    const symEdges = buildSymbolEdges(facts, resolve);
+    const symInfo = new Map<string, { name: string; path: string; kind: string }>();
+    for (const f of facts) for (const s of f.symbols) symInfo.set(s.id, { name: s.name, path: f.path, kind: s.kind });
+    const label = (kind: string, id: string) => (kind === "file" ? id.replace(/^f:/, "") + " (top level)" : `${symInfo.get(id)?.name} [${symInfo.get(id)?.path}]`);
+    const byType = new Map<string, number>();
+    for (const e of symEdges) byType.set(`${e.type}/${e.confidence}`, (byType.get(`${e.type}/${e.confidence}`) ?? 0) + 1);
+    const inCount = new Map<string, number>(), outCount = new Map<string, number>();
+    for (const e of symEdges) {
+      inCount.set(e.toId, (inCount.get(e.toId) ?? 0) + 1);
+      if (e.fromKind === "symbol") outCount.set(e.fromId, (outCount.get(e.fromId) ?? 0) + 1);
+    }
+
     // ---- fan-in ----
     const fanIn = new Map<string, number>();
     for (const tos of fileEdges.values()) for (const t of tos) fanIn.set(t, (fanIn.get(t) ?? 0) + 1);
@@ -158,6 +176,23 @@ async function main() {
       console.log(`\n== Unresolved internal-looking imports (first ${Math.min(samples, unresolved.length)} of ${unresolved.length})`);
       for (const u of unresolved.slice(0, samples)) console.log(`   ${u.from}  ->  ${u.spec}`);
     }
+    console.log(`\n== Symbol edges (call graph; languages covered: ${CALL_EDGE_LANGS.join(", ")})`);
+    console.log(row("total symbol edges", symEdges.length));
+    for (const [k, v] of [...byType].sort()) console.log(row(k, v));
+    console.log("  most called:");
+    for (const [id, n] of [...inCount].sort((a, b) => b[1] - a[1]).slice(0, 8)) console.log("   " + row(label("symbol", id), n));
+    console.log("  calls the most:");
+    for (const [id, n] of [...outCount].sort((a, b) => b[1] - a[1]).slice(0, 8)) console.log("   " + row(label("symbol", id), n));
+    if (callers) {
+      const targets = [...symInfo].filter(([, v]) => v.name === callers).map(([id]) => id);
+      console.log(`\n== Callers of "${callers}" (${targets.length} matching symbol${targets.length === 1 ? "" : "s"})`);
+      if (!targets.length) console.log("   no parsed symbol with that name");
+      for (const t of targets) {
+        const es = symEdges.filter((e) => e.toId === t);
+        console.log(`   ${label("symbol", t)}: ${es.length} incoming`);
+        for (const e of es) console.log(`      ${e.type.padEnd(10)} ${e.confidence.padEnd(10)} from ${label(e.fromKind, e.fromId)}`);
+      }
+    }
     console.log(`\n== Most imported files`);
     for (const [f, n] of [...fanIn].sort((a, b) => b[1] - a[1]).slice(0, 10)) console.log(row(f, n));
     console.log(`\n== Modules: folders only vs folders + graph split`);
@@ -175,6 +210,7 @@ async function main() {
       fs.writeFileSync(json, JSON.stringify({
         target, stats, specTotal, files: loaded.length, symbols, chunks,
         fileEdges: [...newEdgeKeys].map((k) => k.split("|")), moduleEdges: [...modEdges].map(([k, w]) => ({ from: k.split("|")[0], to: k.split("|")[1], weight: w })),
+        symbolEdges: symEdges.map((e) => ({ ...e, from: label(e.fromKind, e.fromId), to: label("symbol", e.toId) })),
         modules: Object.fromEntries(mods), unresolved,
       }, null, 2));
       console.log(`Full graph JSON written to ${json}`);

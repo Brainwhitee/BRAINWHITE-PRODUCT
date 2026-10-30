@@ -1,7 +1,7 @@
 import { createHash } from "crypto";
 import type { ParsedSymbol } from "./parse";
 import type { Refs } from "./refs";
-import type { Resolver } from "./resolve";
+import type { Resolver } from "./resolve-ts";
 
 // Symbol-level graph edges (CBA-09): who calls / renders / extends what.
 // EXACT      = reached through an import binding or a name defined in the same file.

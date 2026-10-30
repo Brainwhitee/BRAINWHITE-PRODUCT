@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requirePermission } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -65,6 +66,8 @@ export default async function RepoPage({ params }: { params: Promise<{ id: strin
           {langs.length > 0 && <p className="text-slate-600">Languages: {langs.map(([l, n]) => `${l} ${n}`).join(" · ")}</p>}
         </section>
       )}
+
+      <p className="mb-4 text-sm"><Link href={`/projects/repos/${repo.id}/graph`} className="text-indigo-700 underline">Open architecture graph →</Link></p>
 
       {repo.summary && <p className="mb-6 text-sm text-slate-700">{repo.summary}</p>}
 

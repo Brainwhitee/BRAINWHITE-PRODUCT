@@ -1,7 +1,7 @@
 // Core tests (no DB, no network): import extraction + resolution. Run: npm run test:core
-import test from "node:test";
+import { test } from "vitest";
 import assert from "node:assert/strict";
-import { createResolver } from "../src/lib/analyser/resolve";
+import { createResolver } from "../src/lib/analyser/resolve-ts";
 import { parseSource } from "../src/lib/analyser/parse";
 import { assignModules, type FileGraph } from "../src/lib/analyser/cluster";
 import { moduleNameFor } from "../src/lib/analyser/modules";
