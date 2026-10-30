@@ -46,7 +46,13 @@ function ResetPasswordContent() {
         body: JSON.stringify({ token, password, confirm }),
         credentials: "include",
       });
-      const data = await res.json();
+      const text = await res.text();
+      let data: { error?: string; home?: string } = {};
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch {
+        data = { error: `Server error (${res.status || 500}). Please try again.` };
+      }
       if (!res.ok || data.error) throw new Error(data.error || "Password reset failed");
       if (data.home) {
         router.push(data.home);

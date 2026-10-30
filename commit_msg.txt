@@ -1,0 +1,7 @@
+fix(auth): make config and OAuth resolution resilient to missing envs and handle response parsing safely
+
+- Refactor appUrl() in config.ts to safely resolve base URL without requiring ENCRYPTION_KEY or hardcoded APP_URL on Vercel.
+- Provide fallback default for ENCRYPTION_KEY in serverEnv so missing optional variables never crash route handlers with 500.
+- Use dynamic origin with cookie persistence (g_redirect_uri / gh_redirect_uri) in OAuth start and callback routes so redirect_uri always matches in any environment.
+- Wrap all auth route handlers (login, signup, forgot-password, reset-password, OAuth start/callback) in try/catch to return structured JSON errors instead of unhandled 500 pages.
+- Handle response text parsing safely in auth-section-1, forgot-password, and reset-password forms, preventing 'Unexpected end of JSON input' SyntaxError.

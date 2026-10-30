@@ -86,7 +86,13 @@ export default function AuthSectionOne({ mode = "login", initialError }: AuthSec
           body: JSON.stringify({ email, password }),
           credentials: "include",
         });
-        const data = await res.json();
+        const text = await res.text();
+        let data: { error?: string; home?: string } = {};
+        try {
+          data = text ? JSON.parse(text) : {};
+        } catch {
+          data = { error: `Server error (${res.status || 500}). Please try again.` };
+        }
         if (!res.ok || data.error) throw new Error(data.error || "Login failed");
         const destination = getRedirectDestination(data.home || "/dashboard");
         router.push(destination);
@@ -106,7 +112,13 @@ export default function AuthSectionOne({ mode = "login", initialError }: AuthSec
           }),
           credentials: "include",
         });
-        const data = await res.json();
+        const text = await res.text();
+        let data: { error?: string; home?: string } = {};
+        try {
+          data = text ? JSON.parse(text) : {};
+        } catch {
+          data = { error: `Server error (${res.status || 500}). Please try again.` };
+        }
         if (!res.ok || data.error) throw new Error(data.error || "Sign up failed");
         const destination = getRedirectDestination(data.home || "/dashboard");
         router.push(destination);
