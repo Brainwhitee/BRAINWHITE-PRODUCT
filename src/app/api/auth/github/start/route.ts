@@ -1,5 +1,6 @@
 import { NextResponse, NextRequest } from "next/server";
 import { newToken } from "@/lib/crypto";
+import { appUrl } from "@/lib/config";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -17,7 +18,7 @@ export async function GET(req: NextRequest) {
   url.searchParams.set("client_id", process.env.GITHUB_CLIENT_ID);
   url.searchParams.set("scope", "read:user user:email");
   url.searchParams.set("state", state);
-  url.searchParams.set("redirect_uri", `${process.env.APP_URL}/api/auth/github/callback`);
+  url.searchParams.set("redirect_uri", `${appUrl()}/api/auth/github/callback`);
   url.searchParams.set("mode", mode);
 
   const res = NextResponse.redirect(url);

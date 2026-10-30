@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { createSession, homeFor } from "@/lib/auth";
 import { audit } from "@/lib/audit";
 import { resolveOAuthUser } from "@/lib/domain/auth";
+import { appUrl } from "@/lib/config";
 
 export async function GET(req: NextRequest) {
   const code = req.nextUrl.searchParams.get("code");
@@ -30,7 +31,7 @@ export async function GET(req: NextRequest) {
       code,
       client_id: process.env.GOOGLE_CLIENT_ID,
       client_secret: process.env.GOOGLE_CLIENT_SECRET,
-      redirect_uri: `${process.env.APP_URL}/api/auth/google/callback`,
+      redirect_uri: `${appUrl()}/api/auth/google/callback`,
       grant_type: "authorization_code",
     }),
   });

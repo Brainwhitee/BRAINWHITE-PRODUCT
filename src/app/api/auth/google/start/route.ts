@@ -1,5 +1,6 @@
 import { NextResponse, NextRequest } from "next/server";
 import { newToken } from "@/lib/crypto";
+import { appUrl } from "@/lib/config";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -18,7 +19,7 @@ export async function GET(req: NextRequest) {
   url.searchParams.set("response_type", "code");
   url.searchParams.set("scope", "openid email profile");
   url.searchParams.set("state", state);
-  url.searchParams.set("redirect_uri", `${process.env.APP_URL}/api/auth/google/callback`);
+  url.searchParams.set("redirect_uri", `${appUrl()}/api/auth/google/callback`);
   url.searchParams.set("prompt", "select_account");
 
   const res = NextResponse.redirect(url);
