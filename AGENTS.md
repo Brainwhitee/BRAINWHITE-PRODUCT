@@ -127,3 +127,11 @@ unrelated code • ship a screen that isn't wired to real data.
 - No Backend Internal Leakage: Never disclose backend LLM or infrastructure providers in user-facing UI (e.g. NEVER show "⚡ via grok", "powered by gemini", "served via groq", etc.). The user interface must remain clean, professional, and brand-native.
 - No Decorative Emojis or Fake Versioning: Do not litter titles, cards, or buttons with emojis (⚡, 🚀, 🎉, etc.) or artificial labels like "v1", "part1", "beta".
 - Minimalist Typography: Use high-contrast, clean typography (slate-950 / white) with subtle muted secondary text (slate-500). Maintain an uncluttered, modern enterprise aesthetic.
+
+## 11. MCP-First Component & Design Discipline
+- **Search Before Writing UI**: When creating or enhancing frontend components, pages, or widgets, the agent MUST first check available MCP tools rather than writing boilerplate or generic UI from scratch:
+  - **`21st-dev` MCP**: Query for polished, production-grade UI blocks, layout sections, interactive cards, micro-animations, and styled elements. Adapt fetched code to our strict minimalist styling (no badges/emojis/colored status pills).
+  - **`shadcn` MCP**: Query the registry (`search_items_in_registries`, `get_add_command_for_items`) for UI primitives (dialogs, dropdown menus, sheets, tooltips, popovers, tabs, buttons, forms). Always prefer standard shadcn components for consistent architecture.
+  - **`framelink-figma` MCP**: When a Figma design link or node is referenced, use Figma MCP tools to extract exact layouts, spacing, and styling tokens rather than estimating.
+- **Strict Aesthetic Adherence**: Any component fetched from 21st.dev or shadcn MUST be sanitized to comply with Section 10 (Strict Minimalism): strip out colored pill badges, emojis, and noisy borders; ensure dark/light high-contrast typography.
+
