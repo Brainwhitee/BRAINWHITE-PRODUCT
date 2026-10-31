@@ -23,7 +23,12 @@ async function walk(root: string, rel = "", out: SourceFile[] = []): Promise<Sou
   return out;
 }
 
-export async function loadSource(source: string, location: string, branch: string): Promise<LoadedSource> {
+export async function loadSource(
+  source: string,
+  location: string,
+  branch: string,
+  token?: string | null
+): Promise<LoadedSource> {
   if (source === "local") {
     // Reading arbitrary server paths is only acceptable for local development.
     if (process.env.ALLOW_LOCAL_REPOS !== "true") throw new Error("Local folder sources are disabled (set ALLOW_LOCAL_REPOS=true for dev)");
@@ -32,13 +37,14 @@ export async function loadSource(source: string, location: string, branch: strin
     return { root, files: await walk(root), sha: null, cleanup: async () => {} };
   }
 
-  // GitHub public repo (or private with GITHUB_TOKEN) via tarball download
+  // GitHub public repo (or private with GitHub App installation token / custom PAT) via tarball download
   if (!/^[\w.-]+\/[\w.-]+$/.test(location)) throw new Error("GitHub source must look like owner/name");
+  const authToken = token || process.env.GITHUB_TOKEN;
   const headers: Record<string, string> = { "User-Agent": "brainwhite" };
-  if (process.env.GITHUB_TOKEN) headers.Authorization = `Bearer ${process.env.GITHUB_TOKEN}`;
+  if (authToken) headers.Authorization = `Bearer ${authToken}`;
 
   const res = await fetch(`https://codeload.github.com/${location}/tar.gz/${encodeURIComponent(branch)}`, { headers });
-  if (!res.ok || !res.body) throw new Error(`GitHub download failed (${res.status}). Check owner/name, branch and access.`);
+  if (!res.ok || !res.body) throw new Error(`GitHub download failed (${res.status}). Check owner/name, branch and access permissions.`);
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), "brainwhite-"));
   await streamPipeline(Readable.fromWeb(res.body as never), tar.x({ cwd: dir, strip: 1 }));
 

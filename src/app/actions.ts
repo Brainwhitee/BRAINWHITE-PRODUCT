@@ -285,3 +285,43 @@ export async function disconnectRepo(fd: FormData) {
   await audit(me.orgId, me.id, "repo.disconnected", String(fd.get("id")));
   redirect("/projects");
 }
+
+export async function disconnectGithubApp(fd: FormData) {
+  const me = await requirePermission("codebase:manage");
+  await db.organisation.update({
+    where: { id: me.orgId },
+    data: {
+      githubInstallationId: null,
+      githubOrgName: null,
+    },
+  });
+  await audit(me.orgId, me.id, "org.github_app_disconnected");
+  revalidatePath("/projects");
+}
+
+export async function saveCustomGithubPat(_: FormState, fd: FormData): Promise<FormState> {
+  const me = await requirePermission("codebase:manage");
+  const rawToken = String(fd.get("token") ?? "").trim();
+
+  if (!rawToken) {
+    await db.organisation.update({
+      where: { id: me.orgId },
+      data: { githubTokenEnc: null },
+    });
+    await audit(me.orgId, me.id, "org.github_pat_cleared");
+    revalidatePath("/projects");
+    return { success: true, message: "Custom token removed" };
+  }
+
+  if (rawToken.length < 20) {
+    return { error: "Please enter a valid GitHub Personal Access Token (classic or fine-grained)" };
+  }
+
+  await db.organisation.update({
+    where: { id: me.orgId },
+    data: { githubTokenEnc: encrypt(rawToken) },
+  });
+  await audit(me.orgId, me.id, "org.github_pat_saved");
+  revalidatePath("/projects");
+  return { success: true, message: "GitHub Personal Access Token saved securely" };
+}

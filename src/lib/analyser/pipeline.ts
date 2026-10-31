@@ -1,3 +1,4 @@
+import { getOrgGithubToken } from "../domain/github-app";
 import fs from "fs/promises";
 import { createHash } from "crypto";
 import { db } from "../db";
@@ -31,7 +32,8 @@ export async function syncRepository(repoId: string): Promise<string> {
   let cleanup: () => Promise<void> = async () => {};
   try {
     await progress("Fetching source");
-    const src = await loadSource(repo.source, repo.location, repo.branch);
+    const token = await getOrgGithubToken(repo.orgId);
+    const src = await loadSource(repo.source, repo.location, repo.branch, token);
     cleanup = src.cleanup;
 
     const readText = async (p: string) => fs.readFile(`${src.root}/${p}`, "utf8").catch(() => "");

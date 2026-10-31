@@ -1,17 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { createSession, homeFor } from "@/lib/auth";
+import { createSession, getUser, homeFor } from "@/lib/auth";
 import { audit } from "@/lib/audit";
 import { resolveOAuthUser } from "@/lib/domain/auth";
+import { encrypt } from "@/lib/crypto";
 
 export async function GET(req: NextRequest) {
   const code = req.nextUrl.searchParams.get("code");
   const state = req.nextUrl.searchParams.get("state");
-  const mode = req.cookies.get("gh_mode")?.value === "signup" ? "signup" : "login";
+  const rawMode = req.cookies.get("gh_mode")?.value;
+  const mode = rawMode === "link" ? "link" : rawMode === "signup" ? "signup" : "login";
   const expectedState = req.cookies.get("gh_state")?.value;
 
   const fail = (reason: string) => {
-    const url = new URL("/login", req.url);
+    const targetPath = mode === "link" ? "/connect-github" : "/login";
+    const url = new URL(targetPath, req.url);
     url.searchParams.set("error", reason);
     const res = NextResponse.redirect(url);
     res.cookies.delete("gh_state");
@@ -46,8 +49,57 @@ export async function GET(req: NextRequest) {
     const ghHeaders = {
       Authorization: `Bearer ${accessToken}`,
       Accept: "application/vnd.github+json",
+      "User-Agent": "brainwhite",
     };
     const gh = await (await fetch("https://api.github.com/user", { headers: ghHeaders })).json();
+
+    // MODE = LINK (candidate linking their GitHub account)
+    if (mode === "link") {
+      const me = await getUser();
+      if (!me) {
+        return fail("unauthorized");
+      }
+
+      await db.user.update({
+        where: { id: me.id },
+        data: {
+          githubUserId: String(gh.id),
+          githubUsername: gh.login,
+          githubTokenEnc: encrypt(accessToken),
+        },
+      });
+
+      // Keep OAuthAccount in sync for 1-click login
+      await db.oAuthAccount.upsert({
+        where: {
+          provider_providerUserId: {
+            provider: "GITHUB",
+            providerUserId: String(gh.id),
+          },
+        },
+        update: {
+          userId: me.id,
+          email: typeof gh.email === "string" && gh.email ? gh.email.toLowerCase() : undefined,
+        },
+        create: {
+          provider: "GITHUB",
+          providerUserId: String(gh.id),
+          userId: me.id,
+          email: typeof gh.email === "string" && gh.email ? gh.email.toLowerCase() : me.email,
+        },
+      });
+
+      await audit(me.orgId, me.id, "github.linked", gh.login);
+
+      const res = NextResponse.redirect(new URL("/learn", req.url));
+      res.cookies.delete("gh_state");
+      res.cookies.delete("gh_mode");
+      res.cookies.delete("gh_redirect_uri");
+      res.cookies.delete("auth_redirect");
+      return res;
+    }
+
+    // MODE = LOGIN / SIGNUP
     let email = typeof gh.email === "string" && gh.email ? gh.email : null;
 
     // Private emails are not on /user — ask the emails endpoint for a verified primary.
