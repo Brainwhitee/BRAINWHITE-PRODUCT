@@ -43,8 +43,8 @@ export default async function Team() {
     <Shell user={me}>
       <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-black text-slate-950 tracking-tight">Team & Members</h1>
-          <p className="text-sm text-slate-500 mt-0.5">
+          <h1 className="text-xl font-bold text-slate-950 tracking-tight">Team & Members</h1>
+          <p className="text-xs text-slate-500 mt-0.5">
             Manage organization members, engineer roles, permissions, and pending invitations.
           </p>
         </div>

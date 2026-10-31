@@ -5,60 +5,184 @@ import { can } from "@/lib/rbac";
 import { Shell } from "@/components/Shell";
 import { ActionForm, inputCls } from "@/components/ActionForm";
 import { addRepository } from "../actions";
-
-const badge: Record<string, string> = {
-  HEALTHY: "bg-green-100 text-green-800",
-  RUNNING: "bg-blue-100 text-blue-800",
-  FAILED: "bg-red-100 text-red-800",
-  PENDING: "bg-slate-100 text-slate-700",
-};
+import {
+  FolderGit2,
+  GitBranch,
+  Plus,
+  ArrowRight,
+  Layers,
+  CheckCircle2,
+  AlertTriangle,
+  Clock,
+  Sparkles,
+} from "lucide-react";
 
 export default async function Projects() {
   const me = await requirePermission("codebase:view");
   const projects = await db.project.findMany({
     where: { orgId: me.orgId },
-    include: { repos: true },
+    include: {
+      repos: {
+        include: {
+          _count: { select: { modules: true, files: true } },
+        },
+      },
+    },
     orderBy: { createdAt: "desc" },
   });
   const local = process.env.ALLOW_LOCAL_REPOS === "true";
 
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "HEALTHY":
+        return "bg-emerald-50 text-emerald-700 border-emerald-200/60";
+      case "RUNNING":
+        return "bg-blue-50 text-blue-700 border-blue-200/60";
+      case "FAILED":
+        return "bg-red-50 text-red-700 border-red-200/60";
+      default:
+        return "bg-amber-50 text-amber-700 border-amber-200/60";
+    }
+  };
+
   return (
     <Shell user={me}>
-      <h1 className="mb-4 text-xl font-semibold">Codebase</h1>
-
-      {can(me.role, "codebase:manage") && (
-        <section className="mb-8 rounded-lg border bg-white p-4">
-          <h2 className="mb-1 font-medium">Connect a repository</h2>
-          <p className="mb-3 text-xs text-slate-500">
-            Public GitHub repos work now (owner/name). Private repos need a GitHub App or GITHUB_TOKEN on the server.
+      {/* 1. Header */}
+      <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-xl font-bold text-slate-950 tracking-tight">Codebase & Repositories</h1>
+          <p className="text-xs text-slate-500 mt-0.5">
+            Connected repositories, automated AST architecture graphs, and modular learning chunks.
           </p>
-          <ActionForm action={addRepository} submit="Connect and analyse" className="flex flex-wrap items-start gap-2">
-            <input name="projectName" placeholder="Project name" className={inputCls + " !w-44"} required />
+        </div>
+      </div>
+
+      {/* 2. Connect Repository Section */}
+      {can(me.role, "codebase:manage") && (
+        <section className="mb-8 rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs">
+          <div className="flex items-center gap-2 mb-3">
+            <Plus className="size-4 text-slate-700" />
+            <h2 className="font-bold text-slate-900 text-sm">Connect New Repository</h2>
+          </div>
+          <p className="mb-3 text-xs text-slate-500">
+            Enter the public GitHub repo (<code>owner/name</code>) or connect a local directory in development mode.
+          </p>
+          <ActionForm action={addRepository} submit="Connect & Sync" className="flex flex-wrap items-start gap-2.5">
+            <input
+              name="projectName"
+              placeholder="Project name (e.g. Core Platform)"
+              className={inputCls + " !w-56"}
+              required
+            />
             <select name="source" className={inputCls + " !w-36"} defaultValue="github">
               <option value="github">GitHub</option>
               {local && <option value="local">Local folder</option>}
             </select>
-            <input name="location" placeholder="owner/name or folder path" className={inputCls + " !w-64"} required />
+            <input
+              name="location"
+              placeholder="owner/name (e.g. facebook/react)"
+              className={inputCls + " !w-64"}
+              required
+            />
             <input name="branch" placeholder="main" className={inputCls + " !w-24"} />
           </ActionForm>
         </section>
       )}
 
-      {projects.length === 0 && <p className="text-sm text-slate-500">No repositories connected yet.</p>}
-      {projects.map((p) => (
-        <section key={p.id} className="mb-4 rounded-lg border bg-white p-4">
-          <h2 className="mb-2 font-medium">{p.name}</h2>
-          <ul className="space-y-1 text-sm">
-            {p.repos.map((r) => (
-              <li key={r.id} className="flex items-center gap-3">
-                <Link className="text-indigo-700 underline" href={`/projects/repos/${r.id}`}>{r.name}</Link>
-                <span className={`rounded px-2 py-0.5 text-xs ${badge[r.syncStatus]}`}>{r.syncStatus}</span>
-                <span className="text-slate-500">{r.source}: {r.location}</span>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ))}
+      {/* 3. Empty State */}
+      {projects.length === 0 && (
+        <div className="rounded-2xl border border-dashed border-slate-300 p-8 text-center bg-white shadow-xs">
+          <FolderGit2 className="mx-auto size-10 text-slate-400 mb-3" />
+          <h3 className="font-semibold text-slate-900 text-base">No Repositories Connected</h3>
+          <p className="text-xs text-slate-500 max-w-md mx-auto mt-1">
+            Connect your primary GitHub repository above to automatically map dependencies and generate onboarding chunks.
+          </p>
+        </div>
+      )}
+
+      {/* 4. Connected Projects & Repositories Grid */}
+      <div className="space-y-6">
+        {projects.map((p) => (
+          <div key={p.id} className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs">
+            <div className="flex items-center justify-between mb-4 border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2">
+                <FolderGit2 className="size-4 text-slate-700" />
+                <h2 className="font-bold text-slate-950 text-base">{p.name}</h2>
+              </div>
+              <span className="text-xs font-semibold text-slate-500">
+                {p.repos.length} {p.repos.length === 1 ? "repository" : "repositories"}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {p.repos.map((r) => (
+                <div
+                  key={r.id}
+                  className="rounded-xl border border-slate-200/90 bg-slate-50/50 p-4 hover:border-black hover:bg-white transition-all shadow-2xs group flex flex-col justify-between"
+                >
+                  <div>
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                      <div className="flex items-center gap-2 truncate">
+                        <GitBranch className="size-4 text-slate-500 shrink-0" />
+                        <span className="font-bold text-slate-900 text-sm truncate">{r.name}</span>
+                      </div>
+                      <span
+                        className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold border shrink-0 ${getStatusBadge(
+                          r.syncStatus
+                        )}`}
+                      >
+                        <span
+                          className={`w-1.5 h-1.5 rounded-full ${
+                            r.syncStatus === "HEALTHY"
+                              ? "bg-emerald-500"
+                              : r.syncStatus === "RUNNING"
+                              ? "bg-blue-500 animate-pulse"
+                              : r.syncStatus === "FAILED"
+                              ? "bg-red-500"
+                              : "bg-amber-500"
+                          }`}
+                        />
+                        <span>{r.syncStatus.toLowerCase()}</span>
+                      </span>
+                    </div>
+
+                    <div className="text-xs font-mono text-slate-500 mb-3 truncate">
+                      {r.source}: {r.location} @ {r.branch}
+                    </div>
+
+                    {r.summary ? (
+                      <p className="text-xs text-slate-600 line-clamp-2 mb-3 leading-relaxed">
+                        {r.summary}
+                      </p>
+                    ) : (
+                      <p className="text-xs text-slate-400 italic mb-3">
+                        {r.syncStatus === "RUNNING"
+                          ? "Generating architecture graph and summaries..."
+                          : "No summary generated yet."}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="pt-3 border-t border-slate-200/70 flex items-center justify-between text-xs text-slate-500">
+                    <div className="flex items-center gap-3">
+                      <span>{r._count.modules} modules</span>
+                      <span>·</span>
+                      <span>{r._count.files} files</span>
+                    </div>
+                    <Link
+                      href={`/projects/repos/${r.id}`}
+                      className="inline-flex items-center gap-1 font-bold text-slate-900 group-hover:text-indigo-600 transition-colors"
+                    >
+                      <span>Explore</span>
+                      <ArrowRight className="size-3" />
+                    </Link>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
     </Shell>
   );
 }

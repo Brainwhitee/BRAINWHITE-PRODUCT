@@ -54,8 +54,8 @@ export default async function Tasks({ searchParams }: { searchParams: Promise<{ 
       <Shell user={me} wide>
         <div className="mb-6 flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-black text-slate-950 tracking-tight">My Tasks & Kanban</h1>
-            <p className="text-sm text-slate-500 mt-0.5">
+            <h1 className="text-xl font-bold text-slate-950 tracking-tight">My Tasks & Kanban</h1>
+            <p className="text-xs text-slate-500 mt-0.5">
               Review your onboarding assignments, PR reviews, and upcoming task deadlines.
             </p>
           </div>
@@ -139,8 +139,8 @@ export default async function Tasks({ searchParams }: { searchParams: Promise<{ 
     <Shell user={me}>
       <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-black text-slate-950 tracking-tight">Onboarding Tasks</h1>
-          <p className="text-sm text-slate-500 mt-0.5">
+          <h1 className="text-xl font-bold text-slate-950 tracking-tight">Onboarding Tasks</h1>
+          <p className="text-xs text-slate-500 mt-0.5">
             Configure practical milestones, pull request reviews, and deadline checkpoints.
           </p>
         </div>

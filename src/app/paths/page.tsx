@@ -32,8 +32,8 @@ export default async function Paths() {
     <Shell user={me}>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-black text-slate-950 tracking-tight">Learning Paths & Tracks</h1>
-          <p className="text-sm text-slate-500 mt-0.5">
+          <h1 className="text-xl font-bold text-slate-950 tracking-tight">Learning Paths & Tracks</h1>
+          <p className="text-xs text-slate-500 mt-0.5">
             Structured onboarding curricula and technical tracks for your engineering team.
           </p>
         </div>
