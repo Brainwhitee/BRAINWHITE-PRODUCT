@@ -23,7 +23,7 @@ export default async function ConnectGithub({ searchParams }: { searchParams: Pr
       </ul>
       {error && <p className="text-sm text-red-600">GitHub connection failed ({error}). Please try again.</p>}
       {oauth ? (
-        <a href="/api/github/start" className={btnCls + " inline-block"}>Continue with GitHub</a>
+        <a href="/api/auth/github/start?mode=link" className={btnCls + " inline-block"}>Continue with GitHub</a>
       ) : (
         <div className="space-y-2 rounded-md border border-amber-300 bg-amber-50 p-3">
           <p className="text-xs text-amber-800">

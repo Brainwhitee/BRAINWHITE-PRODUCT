@@ -13,6 +13,10 @@ model Organisation {
   slug        String   @unique
   timezone    String   @default("UTC")
   workingDays String   @default("Mon,Tue,Wed,Thu,Fri")
+  githubInstallationId   String?  // GitHub App installation ID
+  githubOrgName          String?  // Name of connected GitHub org or account
+  githubTokenEnc         String?  // Optional encrypted custom PAT fallback
+  githubWebhookSecretEnc String?  // Optional encrypted custom webhook secret
   createdAt   DateTime @default(now())
   users       User[]
   invitations Invitation[]
