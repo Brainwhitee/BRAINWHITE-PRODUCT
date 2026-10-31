@@ -54,3 +54,10 @@ Agents: read this before every task and update it when you change anything below
 - `AuthToken` — single-use hashed tokens for password reset + email verification
 - `LoginAttempt` — fixed-window rate limiting + lockout (global, not org-scoped)
 - `OAuthAccount` — Google/GitHub links, unique on (provider, providerUserId), keeps GitHub legacy fields in sync
+
+## F. Design & UI Aesthetics Standards
+- Strict Executive Hierarchy: Only clean Heading (h1) and Subheading (p). No redundant secondary subheadings.
+- No Clutter Badges or Colored Banners: Absolutely no colored pill banners, micro-labels (text-[9px]/text-[10px]), pulsing colored dots (animate-pulse), or red/green status boxes on cards.
+- No Backend Internal Leakage: Never disclose backend LLM or infrastructure providers in user-facing UI (e.g. NEVER show "⚡ via grok", "powered by gemini", "served via groq", etc.).
+- No Decorative Emojis or Artificial Versioning: Do not litter titles, cards, or buttons with emojis (⚡, 🚀, 🎉) or artificial labels like "v1", "part1", "beta".
+- Minimalist Typography: Use high-contrast, clean typography (slate-950 / white) with subtle muted secondary text (slate-500). Maintain an uncluttered, modern enterprise aesthetic.

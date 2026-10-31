@@ -11,21 +11,6 @@ export default async function Audit() {
     take: 150,
   });
 
-  const getActionBadge = (action: string) => {
-    if (action.startsWith("auth.")) {
-      return "bg-purple-50 text-purple-700 border-purple-200/60";
-    }
-    if (action.startsWith("invite.")) {
-      return "bg-blue-50 text-blue-700 border-blue-200/60";
-    }
-    if (action.startsWith("repo.")) {
-      return "bg-emerald-50 text-emerald-700 border-emerald-200/60";
-    }
-    if (action.startsWith("member.")) {
-      return "bg-amber-50 text-amber-700 border-amber-200/60";
-    }
-    return "bg-slate-100 text-slate-700 border-slate-200";
-  };
 
   return (
     <Shell user={me}>
@@ -76,14 +61,8 @@ export default async function Audit() {
                         <span>{l.createdAt.toISOString().slice(0, 19).replace("T", " ")}</span>
                       </span>
                     </td>
-                    <td className="px-4 py-3">
-                      <span
-                        className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold border ${getActionBadge(
-                          l.action
-                        )}`}
-                      >
-                        {l.action}
-                      </span>
+                    <td className="px-4 py-3 text-xs font-mono text-slate-800">
+                      {l.action}
                     </td>
                     <td className="px-4 py-3 text-xs text-slate-700 font-mono max-w-md truncate">
                       {l.target || "—"}

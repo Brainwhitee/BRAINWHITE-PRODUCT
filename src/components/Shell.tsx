@@ -61,20 +61,6 @@ export function Shell({
     return name.slice(0, 2).toUpperCase();
   };
 
-  const getRoleBadgeClass = (role: string) => {
-    switch (role.toUpperCase()) {
-      case "OWNER":
-        return "bg-purple-100 text-purple-700 border-purple-200";
-      case "MANAGER":
-        return "bg-blue-100 text-blue-700 border-blue-200";
-      case "MENTOR":
-        return "bg-emerald-100 text-emerald-700 border-emerald-200";
-      case "CANDIDATE":
-        return "bg-amber-100 text-amber-700 border-amber-200";
-      default:
-        return "bg-slate-100 text-slate-700 border-slate-200";
-    }
-  };
 
   // Email verification banner for unverified users
   const isVerified = user.emailVerifiedAt !== undefined && user.emailVerifiedAt !== null;
@@ -194,13 +180,9 @@ export function Shell({
             <div className="font-bold text-slate-900 text-sm truncate leading-tight">
               {user.name}
             </div>
-            <div className="flex items-center gap-1.5 mt-1">
-              <span
-                className={`text-[10px] font-semibold tracking-wider uppercase px-1.5 py-0.5 rounded border ${getRoleBadgeClass(
-                  user.role
-                )}`}
-              >
-                {user.role}
+            <div className="mt-0.5">
+              <span className="text-xs text-slate-500 font-medium capitalize">
+                {user.role.toLowerCase()}
               </span>
             </div>
             {user.githubUsername ? (
@@ -253,9 +235,8 @@ export function Shell({
 
           {/* Clean space for top-right MENU pill */}
           <div className="flex items-center gap-3 pr-24 md:pr-28">
-            <span className="hidden sm:inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 px-2.5 py-1 rounded-full bg-slate-50 border border-slate-200/60">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              <span>{user.org.name}</span>
+            <span className="hidden sm:inline-block text-xs font-medium text-slate-500">
+              {user.org.name}
             </span>
           </div>
         </header>

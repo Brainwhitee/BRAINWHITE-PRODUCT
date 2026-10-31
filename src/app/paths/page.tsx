@@ -82,7 +82,7 @@ export default async function Paths() {
             const cardData: CardData = {
               id: p.id,
               colorClass,
-              date: `v${p.version} · ${p.type.replace(/_/g, " ").toLowerCase()}`,
+              date: p.type.replace(/_/g, " ").toLowerCase(),
               title: p.title,
               description: p.role ? `Role: ${p.role} · ${totalModules} items` : `${totalModules} modules curated`,
               progressPercent: p.status === "PUBLISHED" ? "100%" : "60%",

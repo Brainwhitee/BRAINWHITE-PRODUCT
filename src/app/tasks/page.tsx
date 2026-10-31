@@ -10,34 +10,6 @@ import { CheckSquare, Plus, GitPullRequest, Calendar, Clock, GitBranch } from "l
 const COLS = ["NOT_STARTED", "IN_PROGRESS", "IN_REVIEW", "CHANGES_REQUESTED", "BLOCKED", "DONE"];
 const label = (s: string) => s.toLowerCase().replace(/_/g, " ");
 
-const getDifficultyBadge = (d: string) => {
-  switch (d.toUpperCase()) {
-    case "HARD":
-      return "bg-red-50 text-red-700 border-red-200";
-    case "MEDIUM":
-      return "bg-amber-50 text-amber-700 border-amber-200";
-    case "EASY":
-      return "bg-emerald-50 text-emerald-700 border-emerald-200";
-    default:
-      return "bg-slate-100 text-slate-700 border-slate-200";
-  }
-};
-
-const getStatusBadge = (s: string) => {
-  switch (s) {
-    case "DONE":
-      return "bg-emerald-50 text-emerald-700 border-emerald-200/60";
-    case "IN_REVIEW":
-      return "bg-blue-50 text-blue-700 border-blue-200/60";
-    case "CHANGES_REQUESTED":
-    case "BLOCKED":
-      return "bg-red-50 text-red-700 border-red-200/60";
-    case "IN_PROGRESS":
-      return "bg-purple-50 text-purple-700 border-purple-200/60";
-    default:
-      return "bg-slate-100 text-slate-600 border-slate-200";
-  }
-};
 
 export default async function Tasks({ searchParams }: { searchParams: Promise<{ path?: string }> }) {
   const me = await requireUser();
@@ -246,8 +218,8 @@ export default async function Tasks({ searchParams }: { searchParams: Promise<{ 
                 <span className="text-xs text-slate-500 font-medium">
                   {t.path?.title ?? "General"} · Day {t.deadlineDay}
                 </span>
-                <span className={`text-[10px] font-semibold uppercase px-2 py-0.5 rounded border ${getDifficultyBadge(t.difficulty)}`}>
-                  {t.difficulty}
+                <span className="text-xs text-slate-500 font-medium capitalize">
+                  {t.difficulty.toLowerCase()}
                 </span>
               </div>
             </div>
@@ -266,7 +238,7 @@ export default async function Tasks({ searchParams }: { searchParams: Promise<{ 
                       {people.get(a.assignment.userId) || "Assigned Engineer"}
                     </Link>
                     <div className="flex items-center gap-3">
-                      <span className={`text-[10px] font-semibold uppercase px-2 py-0.5 rounded-full border ${getStatusBadge(a.status)}`}>
+                      <span className="text-xs text-slate-500 font-medium capitalize">
                         {label(a.status)}
                       </span>
                       <span className="text-slate-400">

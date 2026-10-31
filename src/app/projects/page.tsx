@@ -32,18 +32,6 @@ export default async function Projects() {
   });
   const local = process.env.ALLOW_LOCAL_REPOS === "true";
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "HEALTHY":
-        return "bg-emerald-50 text-emerald-700 border-emerald-200/60";
-      case "RUNNING":
-        return "bg-blue-50 text-blue-700 border-blue-200/60";
-      case "FAILED":
-        return "bg-red-50 text-red-700 border-red-200/60";
-      default:
-        return "bg-amber-50 text-amber-700 border-amber-200/60";
-    }
-  };
 
   return (
     <Shell user={me}>
@@ -126,23 +114,8 @@ export default async function Projects() {
                         <GitBranch className="size-4 text-slate-500 shrink-0" />
                         <span className="font-bold text-slate-900 text-sm truncate">{r.name}</span>
                       </div>
-                      <span
-                        className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold border shrink-0 ${getStatusBadge(
-                          r.syncStatus
-                        )}`}
-                      >
-                        <span
-                          className={`w-1.5 h-1.5 rounded-full ${
-                            r.syncStatus === "HEALTHY"
-                              ? "bg-emerald-500"
-                              : r.syncStatus === "RUNNING"
-                              ? "bg-blue-500 animate-pulse"
-                              : r.syncStatus === "FAILED"
-                              ? "bg-red-500"
-                              : "bg-amber-500"
-                          }`}
-                        />
-                        <span>{r.syncStatus.toLowerCase()}</span>
+                      <span className="text-xs text-slate-500 font-medium capitalize shrink-0">
+                        {r.syncStatus.toLowerCase()}
                       </span>
                     </div>
 

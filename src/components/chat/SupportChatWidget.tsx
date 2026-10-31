@@ -182,11 +182,6 @@ export function SupportChatWidget() {
                   }`}
                 >
                   <p className="whitespace-pre-wrap text-[13px]">{m.content}</p>
-                  {m.provider && m.provider !== "fallback" && (
-                    <div className="mt-1.5 text-[9px] uppercase tracking-wider text-black/40">
-                      ⚡ via {m.provider}
-                    </div>
-                  )}
                 </div>
               </div>
             ))}

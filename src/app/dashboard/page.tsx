@@ -101,14 +101,8 @@ export default async function Dashboard({
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {/* Metric 1: Active Members */}
         <div className="relative overflow-hidden rounded-2xl bg-white p-5 border border-slate-200/80 shadow-xs hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between">
-            <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
-              <Users className="size-5" />
-            </div>
-            <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/50">
-              <TrendingUp className="size-3" />
-              <span>Verified</span>
-            </span>
+          <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
+            <Users className="size-5" />
           </div>
           <div className="mt-4">
             <div className="text-2xl font-bold text-slate-950 tracking-tight">{members}</div>
@@ -122,13 +116,8 @@ export default async function Dashboard({
 
         {/* Metric 2: Active Onboardings */}
         <div className="relative overflow-hidden rounded-2xl bg-white p-5 border border-slate-200/80 shadow-xs hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between">
-            <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center font-bold">
-              <Rocket className="size-5" />
-            </div>
-            <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200/50">
-              In Flight
-            </span>
+          <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center font-bold">
+            <Rocket className="size-5" />
           </div>
           <div className="mt-4">
             <div className="text-2xl font-bold text-slate-950 tracking-tight">{rows.length}</div>
@@ -142,19 +131,10 @@ export default async function Dashboard({
 
         {/* Metric 3: At Risk */}
         <div className="relative overflow-hidden rounded-2xl bg-white p-5 border border-slate-200/80 shadow-xs hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between">
-            <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold ${
-              atRisk > 0 ? "bg-red-50 text-red-600" : "bg-emerald-50 text-emerald-600"
-            }`}>
-              {atRisk > 0 ? <AlertTriangle className="size-5" /> : <CheckCircle2 className="size-5" />}
-            </div>
-            <span className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full border ${
-              atRisk > 0
-                ? "bg-red-50 text-red-700 border-red-200/60"
-                : "bg-emerald-50 text-emerald-700 border-emerald-200/60"
-            }`}>
-              {atRisk > 0 ? "Needs Attention" : "Optimal"}
-            </span>
+          <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold ${
+            atRisk > 0 ? "bg-red-50 text-red-600" : "bg-emerald-50 text-emerald-600"
+          }`}>
+            {atRisk > 0 ? <AlertTriangle className="size-5" /> : <CheckCircle2 className="size-5" />}
           </div>
           <div className="mt-4">
             <div className={`text-2xl font-bold tracking-tight ${atRisk > 0 ? "text-red-600" : "text-slate-950"}`}>
@@ -172,13 +152,8 @@ export default async function Dashboard({
 
         {/* Metric 4: Pending Invites */}
         <div className="relative overflow-hidden rounded-2xl bg-white p-5 border border-slate-200/80 shadow-xs hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between">
-            <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold">
-              <MailCheck className="size-5" />
-            </div>
-            <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200/50">
-              Invitations
-            </span>
+          <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold">
+            <MailCheck className="size-5" />
           </div>
           <div className="mt-4">
             <div className="text-2xl font-bold text-slate-950 tracking-tight">{pending}</div>
@@ -214,7 +189,7 @@ export default async function Dashboard({
               const cardData: CardData = {
                 id: p.id,
                 colorClass: COLORS[idx % COLORS.length],
-                date: `v${p.version} · ${p.type.replace(/_/g, " ").toLowerCase()}`,
+                date: p.type.replace(/_/g, " ").toLowerCase(),
                 title: p.title,
                 description: p.role ? `Role: ${p.role}` : "Core Curriculum Track",
                 progressPercent: p.status === "PUBLISHED" ? "100%" : "50%",

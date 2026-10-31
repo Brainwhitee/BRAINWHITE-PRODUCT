@@ -120,3 +120,10 @@ comment: fix it, or reply with a reasoned explanation.
 Commit secrets • force-push shared branches • weaken auth/validation to make a test pass
 • leave debug logs/console.log • add dependencies without justification • rewrite
 unrelated code • ship a screen that isn't wired to real data.
+
+## 10. Design & UI Aesthetics — Strict Minimalism
+- Strict Executive Hierarchy: Only clean Heading (h1) and Subheading (p). No redundant "subheading 2", no noisy tag clouds.
+- No Clutter Badges or Colored Banners: Absolutely no colored pill banners, micro-labels (text-[9px]/text-[10px]), pulsing colored dots (animate-pulse), or red/green status boxes on cards.
+- No Backend Internal Leakage: Never disclose backend LLM or infrastructure providers in user-facing UI (e.g. NEVER show "⚡ via grok", "powered by gemini", "served via groq", etc.). The user interface must remain clean, professional, and brand-native.
+- No Decorative Emojis or Fake Versioning: Do not litter titles, cards, or buttons with emojis (⚡, 🚀, 🎉, etc.) or artificial labels like "v1", "part1", "beta".
+- Minimalist Typography: Use high-contrast, clean typography (slate-950 / white) with subtle muted secondary text (slate-500). Maintain an uncluttered, modern enterprise aesthetic.

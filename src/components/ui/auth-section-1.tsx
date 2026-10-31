@@ -169,31 +169,14 @@ export default function AuthSectionOne({ mode = "login", initialError }: AuthSec
           <div className="mx-auto w-full max-w-[590px]">
             <div>
               <h1 className="text-3xl font-medium tracking-[-0.04em] sm:text-4xl lg:text-[42px] lg:leading-[1.05] xl:text-[48px]">
-                {isSignup ? "Create Organization" : "Welcome back"}
+                {isSignup ? "Create an account" : "Welcome back"}
               </h1>
               <p className="mt-3 text-base leading-snug text-black/60 dark:text-white/55 sm:text-lg lg:text-xl">
                 {isSignup
-                  ? "Owner & Company Administration Workspace"
-                  : "Sign in with your registered email."}
+                  ? "Set up your workspace"
+                  : "Sign in to your Brainwhite workspace"}
               </p>
             </div>
-
-            {isSignup ? (
-              <div className="mt-6 p-4 rounded-xl border border-indigo-500/20 bg-indigo-50/70 dark:bg-indigo-950/30 text-indigo-950 dark:text-indigo-200 text-xs flex items-start gap-3">
-                <Sparkles className="w-4 h-4 shrink-0 text-indigo-600 dark:text-indigo-400 mt-0.5" />
-                <div className="leading-relaxed">
-                  <strong className="font-semibold">Company Owner Setup:</strong> This registration creates a new enterprise organization. If you were invited as a <strong>Candidate</strong> or <strong>Team Member</strong>, please use the invitation link sent to your email.
-                </div>
-              </div>
-            ) : (
-              <div className="mt-6 p-3 rounded-xl border border-emerald-500/20 bg-emerald-50/70 dark:bg-emerald-950/30 text-emerald-950 dark:text-emerald-200 text-xs flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                  <span className="font-semibold">Automatic Smart Routing Active</span>
-                </div>
-                <span className="text-[11px] text-emerald-800 dark:text-emerald-300">Candidates ➔ /learn · Staff ➔ /dashboard</span>
-              </div>
-            )}
 
             <div className="mt-12 grid gap-5 sm:grid-cols-2">
               <SocialButton
