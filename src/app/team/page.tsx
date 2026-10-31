@@ -1,3 +1,4 @@
+import { CopyInviteButton } from "@/components/CopyInviteButton";
 import { requirePermission } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { can } from "@/lib/rbac";
@@ -240,6 +241,7 @@ export default async function Team() {
                       </td>
                       <td className="px-4 py-3 text-right">
                         <div className="flex items-center justify-end gap-2 text-xs">
+                          {s === "PENDING" && <CopyInviteButton tokenHash={i.tokenHash} />}
                           {canInvite && s !== "ACCEPTED" && (
                             <form action={resendInvite}>
                               <input type="hidden" name="id" value={i.id} />

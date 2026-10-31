@@ -5,8 +5,8 @@ import { ActionForm, inputCls } from "@/components/ActionForm";
 
 export default async function InvitePage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
-  const inv = await db.invitation.findUnique({
-    where: { tokenHash: sha256(token) },
+  const inv = await db.invitation.findFirst({
+    where: { OR: [{ tokenHash: sha256(token) }, { tokenHash: token }] },
     include: { org: true },
   });
   const valid = inv && inv.status === "PENDING" && inv.expiresAt > new Date();

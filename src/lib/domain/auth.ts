@@ -248,6 +248,7 @@ export async function resolveOAuthUser(
   profile: OAuthProfile,
   mode: "login" | "signup"
 ): Promise<Result<{ userId: string; linked: boolean }>> {
+  // 1. Link by existing OAuthAccount (same provider & providerUserId)
   const linked = await client.oAuthAccount.findUnique({
     where: { provider_providerUserId: { provider: profile.provider, providerUserId: profile.providerUserId } },
     include: { user: true },
@@ -255,48 +256,57 @@ export async function resolveOAuthUser(
   if (linked) {
     if (linked.user.status !== "ACTIVE")
       return { ok: false, error: "This account has been deactivated" };
-    await client.oAuthAccount.update({
-      where: { id: linked.id },
-      data: { email: linked.email },
-    });
+    if (profile.email) {
+      await client.oAuthAccount.update({
+        where: { id: linked.id },
+        data: { email: profile.email.toLowerCase() },
+      });
+      if (!linked.user.emailVerifiedAt) {
+        await client.user.update({
+          where: { id: linked.userId },
+          data: { emailVerifiedAt: new Date() },
+        });
+      }
+    }
     return { ok: true, data: { userId: linked.userId, linked: true } };
   }
 
-  if (profile.email && profile.emailVerified) {
-    const byEmail = await client.user.findUnique({ where: { email: profile.email.toLowerCase() } });
+  // 2. Link by email if user account exists
+  if (profile.email) {
+    const normalizedEmail = profile.email.toLowerCase();
+    const byEmail = await client.user.findUnique({ where: { email: normalizedEmail } });
     if (byEmail) {
       if (byEmail.status !== "ACTIVE")
         return { ok: false, error: "This account has been deactivated" };
-      if (mode === "signup")
-        return { ok: false, error: "An account with this email already exists. Sign in instead." };
+
       await client.oAuthAccount.create({
         data: {
           provider: profile.provider,
           providerUserId: profile.providerUserId,
           userId: byEmail.id,
-          email: profile.email.toLowerCase(),
+          email: normalizedEmail,
         },
       });
-      if (profile.provider === "GITHUB") {
+
+      const updateData: { emailVerifiedAt?: Date; githubUsername?: string | null; githubUserId?: string | null } = {};
+      if (!byEmail.emailVerifiedAt) {
+        updateData.emailVerifiedAt = new Date();
+      }
+      if (profile.provider === "GITHUB" && (!byEmail.githubUsername || !byEmail.githubUserId)) {
+        updateData.githubUsername = profile.username;
+        updateData.githubUserId = profile.providerUserId;
+      }
+      if (Object.keys(updateData).length > 0) {
         await client.user.update({
           where: { id: byEmail.id },
-          data: { githubUsername: profile.username, githubUserId: profile.providerUserId },
+          data: updateData,
         });
       }
       return { ok: true, data: { userId: byEmail.id, linked: true } };
     }
   }
 
-  if (mode === "login")
-    return {
-      ok: false,
-      code: "oauth_no_account",
-      error:
-        profile.provider === "GOOGLE"
-          ? "No Brainwhite account uses this Google profile. Create an account first."
-          : "No Brainwhite account uses this GitHub profile. Create an account first.",
-    };
-
+  // 3. User does not exist yet: Auto-provision Workspace + OWNER account (frictionless 1-click OAuth)
   if (!profile.email)
     return {
       ok: false,
@@ -308,16 +318,25 @@ export async function resolveOAuthUser(
     };
 
   const email = profile.email.toLowerCase();
-  const base = slugify(profile.name || email.split("@")[0]) || "workspace";
+  const displayName = (profile.name || email.split("@")[0] || "Workspace").trim();
+  const base = slugify(displayName) || "workspace";
   let slug = base;
   for (let i = 2; await client.organisation.findUnique({ where: { slug } }); i++) {
     slug = `${base}-${i}`;
   }
   const org = await client.organisation.create({
-    data: { name: profile.name || email.split("@")[0], slug },
+    data: { name: `${displayName}'s Workspace`, slug },
   });
   const user = await client.user.create({
-    data: { orgId: org.id, name: profile.name || email.split("@")[0], email, role: "OWNER" },
+    data: {
+      orgId: org.id,
+      name: displayName,
+      email,
+      role: "OWNER",
+      emailVerifiedAt: new Date(),
+      githubUsername: profile.provider === "GITHUB" ? profile.username : undefined,
+      githubUserId: profile.provider === "GITHUB" ? profile.providerUserId : undefined,
+    },
   });
   await client.oAuthAccount.create({
     data: {
@@ -327,12 +346,7 @@ export async function resolveOAuthUser(
       email,
     },
   });
-  if (profile.provider === "GITHUB") {
-    await client.user.update({
-      where: { id: user.id },
-      data: { githubUsername: profile.username, githubUserId: profile.providerUserId },
-    });
-  }
+
   return { ok: true, data: { userId: user.id, linked: false } };
 }
 

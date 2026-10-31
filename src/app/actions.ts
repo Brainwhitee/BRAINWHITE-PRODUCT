@@ -9,6 +9,7 @@ import { db } from "@/lib/db";
 import type { DbClient } from "@/lib/db";
 import { createSession, destroySession, homeFor, requirePermission, requireUser } from "@/lib/auth";
 import { encrypt, newToken, sha256 } from "@/lib/crypto";
+import { appUrl } from "@/lib/config";
 import { audit } from "@/lib/audit";
 import { notify, sendEmail } from "@/lib/mailer";
 import { rateLimitDb } from "@/lib/rate-limit";
@@ -23,7 +24,7 @@ import {
   verifyEmailWithToken,
 } from "@/lib/domain/auth";
 
-export type FormState = { error?: string; success?: boolean; home?: string; emailSent?: boolean } | undefined;
+export type FormState = { error?: string; success?: boolean; home?: string; emailSent?: boolean; message?: string } | undefined;
 
 // Best-effort client IP for rate limiting (proxy headers first).
 async function clientIp(): Promise<string> {
@@ -131,7 +132,7 @@ async function issueInvite(
       expiresAt: new Date(Date.now() + INVITE_TTL_MS),
     },
   });
-  const link = `${process.env.APP_URL}/invite/${token}`;
+  const link = `${appUrl()}/invite/${token}`;
   await sendEmail(
     orgId,
     email,
@@ -182,7 +183,7 @@ export async function acceptInvite(token: string, _: FormState, fd: FormData): P
 
   // email is locked to the invited address
   const user = await db.user.create({
-    data: { orgId: inv.orgId, name, email: inv.email, role: inv.role, passwordHash: await bcrypt.hash(password, 12) },
+    data: { orgId: inv.orgId, name, email: inv.email, role: inv.role, passwordHash: await bcrypt.hash(password, 12), emailVerifiedAt: new Date() },
   });
   await db.invitation.update({ where: { id: inv.id }, data: { status: "ACCEPTED" } });
   await audit(inv.orgId, user.id, "invite.accepted", inv.email);

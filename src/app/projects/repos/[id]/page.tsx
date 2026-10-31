@@ -22,8 +22,14 @@ export default async function RepoPage({ params }: { params: Promise<{ id: strin
   const run = repo.syncRuns[0];
   const edges = await db.graphEdge.findMany({ where: { repoId: id, type: "DEPENDS_ON" } });
   const modName = new Map(repo.modules.map((m) => [m.id, m.name]));
-  const langs = Object.entries(JSON.parse(repo.languages) as Record<string, number>).sort((a, b) => b[1] - a[1]);
-  const running = repo.syncStatus === "RUNNING";
+  let langs: [string, number][] = [];
+  try {
+    if (repo.languages) {
+      langs = Object.entries(JSON.parse(repo.languages) as Record<string, number>).sort((a, b) => b[1] - a[1]);
+    }
+  } catch {}
+  const isStalled = Boolean(run && repo.syncStatus === "RUNNING" && (Date.now() - new Date(run.startedAt).getTime() > 2 * 60 * 1000));
+  const running = repo.syncStatus === "RUNNING" && !isStalled;
   const manage = can(me.role, "codebase:manage");
 
   return (
@@ -42,7 +48,7 @@ export default async function RepoPage({ params }: { params: Promise<{ id: strin
           <div className="flex gap-3 text-sm">
             <form action={syncNow}>
               <input type="hidden" name="id" value={repo.id} />
-              <button disabled={running} className="rounded-md bg-indigo-600 px-3 py-1.5 text-white disabled:opacity-50">Sync now</button>
+              <button disabled={running} className="rounded-md bg-indigo-600 px-3 py-1.5 text-white disabled:opacity-50 cursor-pointer">{isStalled ? "Restart Sync" : "Sync now"}</button>
             </form>
             <form action={disconnectRepo}>
               <input type="hidden" name="id" value={repo.id} />

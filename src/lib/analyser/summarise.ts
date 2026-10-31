@@ -13,7 +13,7 @@ async function callLlm(
   prompt: string,
   stats: LlmStats,
 ): Promise<string | null> {
-  if (!llmEnabled() || stats.failures >= 3 || stats.calls >= stats.budget)
+  if (!llmEnabled() || stats.failures >= 2 || stats.calls >= stats.budget)
     return null;
   stats.calls++;
   try {

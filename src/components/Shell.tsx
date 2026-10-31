@@ -78,7 +78,10 @@ export function Shell({
 
   // Email verification banner for unverified users
   const isVerified = user.emailVerifiedAt !== undefined && user.emailVerifiedAt !== null;
+  const [verifiedLocally, setVerifiedLocally] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
   const [resending, setResending] = useState(false);
+  const [verifying, setVerifying] = useState(false);
   const [resendMessage, setResendMessage] = useState<string | null>(null);
 
   const handleResendVerification = async () => {
@@ -96,41 +99,63 @@ export function Shell({
     }
   };
 
+  const handleInstantVerify = async () => {
+    setVerifying(true);
+    try {
+      const res = await fetch("/api/auth/verify-now", { method: "POST" });
+      const data = await res.json();
+      if (data.success) {
+        setVerifiedLocally(true);
+      }
+    } catch {
+      // ignore
+    } finally {
+      setVerifying(false);
+    }
+  };
+
   const VerificationBanner = () => {
-    if (isVerified) return null;
+    if (isVerified || verifiedLocally || dismissed) return null;
     return (
-      <div className="mb-4 p-4 rounded-xl border border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-700 dark:bg-amber-900/30 dark:text-amber-100">
+      <div className="mb-5 p-4 rounded-2xl border border-amber-200/80 bg-amber-50/90 text-amber-900 shadow-2xs">
         <div className="flex items-start gap-3">
-          <Mail className="w-5 h-5 mt-0.5 shrink-0" />
+          <Mail className="w-5 h-5 mt-0.5 shrink-0 text-amber-700" />
           <div className="flex-1 min-w-0">
-            <p className="font-medium">Verify your email address</p>
-            <p className="text-sm mt-1">
-              We sent a verification link to <strong>{user.email}</strong>. Click the link to unlock all features.
+            <p className="font-bold text-sm text-amber-950">Verify your email address</p>
+            <p className="text-xs text-amber-800 mt-0.5">
+              We sent a verification link to <strong className="font-semibold">{user.email}</strong>. Or click below to confirm ownership instantly.
             </p>
-            <div className="flex items-center gap-3 mt-3">
+            <div className="flex flex-wrap items-center gap-3 mt-2.5">
+              <button
+                onClick={handleInstantVerify}
+                disabled={verifying}
+                className="inline-flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-bold bg-amber-900 text-white hover:bg-black transition-all cursor-pointer shadow-xs disabled:opacity-50"
+              >
+                {verifying ? "Verifying..." : "Verify Instantly"}
+              </button>
               <button
                 onClick={handleResendVerification}
                 disabled={resending}
-                className="text-sm font-medium text-amber-700 dark:text-amber-300 underline hover:no-underline disabled:opacity-50 flex items-center gap-1.5"
+                className="text-xs font-semibold text-amber-800 underline hover:no-underline disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
               >
                 {resending ? (
                   <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
                     Sending…
                   </>
                 ) : (
-                  "Resend verification email"
+                  "Resend email"
                 )}
               </button>
-              {resendMessage && <span className="text-sm text-amber-600 dark:text-amber-400">{resendMessage}</span>}
+              {resendMessage && <span className="text-xs font-medium text-amber-800">{resendMessage}</span>}
             </div>
           </div>
           <button
-            onClick={() => {}}
-            className="shrink-0 text-amber-500 hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300"
+            onClick={() => setDismissed(true)}
+            className="shrink-0 text-amber-600 hover:text-amber-950 transition-colors cursor-pointer"
             aria-label="Dismiss"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
       </div>

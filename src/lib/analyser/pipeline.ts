@@ -215,8 +215,12 @@ export async function syncRepository(repoId: string): Promise<string> {
     return run.id;
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
-    await db.repository.update({ where: { id: repoId }, data: { syncStatus: "FAILED" } });
-    await db.syncRun.update({ where: { id: run.id }, data: { status: "FAILED", finishedAt: new Date(), error: msg, progress: "Failed" } });
+    try {
+      await db.repository.update({ where: { id: repoId }, data: { syncStatus: "FAILED" } });
+      await db.syncRun.update({ where: { id: run.id }, data: { status: "FAILED", finishedAt: new Date(), error: msg, progress: "Failed" } });
+    } catch (err) {
+      console.error("[pipeline] Failed to record error state:", err);
+    }
     return run.id;
   } finally {
     await cleanup();

@@ -154,10 +154,10 @@ export async function callAi(options: AiRequestOptions): Promise<{ text: string 
     if (provider === "gemini" && process.env.GEMINI_API_KEY) {
       const model =
         options.task === "report"
-          ? process.env.GEMINI_REPORT_MODEL || "gemini-2.5-pro"
-          : process.env.GEMINI_MODEL || "gemini-3.8-flash";
+          ? process.env.GEMINI_REPORT_MODEL || "gemini-1.5-pro"
+          : process.env.GEMINI_MODEL || "gemini-1.5-flash";
 
-      const geminiModels = [model, "gemini-2.5-flash", "gemini-2.0-flash"].filter(
+      const geminiModels = [model, "gemini-1.5-flash", "gemini-2.0-flash"].filter(
         (v, i, a) => a.indexOf(v) === i
       );
       for (const m of geminiModels) {
@@ -174,10 +174,10 @@ export async function callAi(options: AiRequestOptions): Promise<{ text: string 
     } else if (provider === "groq" && process.env.GROQ_API_KEY) {
       const model =
         options.task === "public_chat"
-          ? process.env.GROQ_FAST_MODEL || "openai/gpt-oss-20b"
-          : process.env.GROQ_MODEL || "qwen/qwen3.8-27b";
+          ? process.env.GROQ_FAST_MODEL || "llama-3.1-8b-instant"
+          : process.env.GROQ_MODEL || "llama-3.3-70b-versatile";
 
-      const groqModels = [...new Set([model, "qwen/qwen3.8-27b", "openai/gpt-oss-20b", "openai/gpt-oss-120b"])].filter(Boolean);
+      const groqModels = [...new Set([model, "llama-3.3-70b-versatile", "llama-3.1-8b-instant", "llama-3.1-8b-instant"])].filter(Boolean);
       for (const m of groqModels) {
         result = await callOpenAiCompatible(
           "https://api.groq.com/openai/v1/chat/completions",

@@ -72,24 +72,14 @@ export default async function Dashboard({
 
   return (
     <Shell user={me} wide>
-      {/* 1. TOP HEADER & WORKSPACE BANNER */}
+      {/* 1. TOP HEADER */}
       <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-              Operations Center
-            </span>
-            <span className="text-slate-300">·</span>
-            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/60">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              Realtime Active
-            </span>
-          </div>
-          <h1 className="text-2xl font-black text-slate-950 tracking-tight">
-            Engineering Onboarding Dashboard
+          <h1 className="text-xl font-bold text-slate-950 tracking-tight">
+            Engineering Overview
           </h1>
-          <p className="text-sm text-slate-500 mt-0.5">
-            Monitor active developer cohorts, path progress, PR quality scores, and risk alerts.
+          <p className="text-xs text-slate-500 mt-0.5">
+            Cohort progress, pull request health, and developer onboarding telemetry.
           </p>
         </div>
 
@@ -97,11 +87,11 @@ export default async function Dashboard({
           <form action={runJobsNow}>
             <button
               type="submit"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-black text-white text-xs font-bold hover:bg-slate-800 transition-all duration-150 shadow-xs hover:scale-102 cursor-pointer"
+              className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-black text-white text-xs font-semibold hover:bg-slate-800 transition-all duration-150 shadow-2xs cursor-pointer"
               title="Trigger automated deadline reminders, weekly summaries, and risk audits"
             >
-              <Play className="size-3.5 fill-current" />
-              <span>Run Background Jobs Now</span>
+              <Play className="size-3 fill-current" />
+              <span>Run Background Jobs</span>
             </button>
           </form>
         )}
@@ -121,7 +111,7 @@ export default async function Dashboard({
             </span>
           </div>
           <div className="mt-4">
-            <div className="text-3xl font-black text-slate-950 tracking-tight">{members}</div>
+            <div className="text-2xl font-bold text-slate-950 tracking-tight">{members}</div>
             <div className="text-xs font-semibold text-slate-500 mt-0.5">Active Team Members</div>
           </div>
           <div className="mt-3 pt-3 border-t border-slate-100 text-[11px] text-slate-500 flex items-center justify-between">
@@ -141,7 +131,7 @@ export default async function Dashboard({
             </span>
           </div>
           <div className="mt-4">
-            <div className="text-3xl font-black text-slate-950 tracking-tight">{rows.length}</div>
+            <div className="text-2xl font-bold text-slate-950 tracking-tight">{rows.length}</div>
             <div className="text-xs font-semibold text-slate-500 mt-0.5">Active Onboardings</div>
           </div>
           <div className="mt-3 pt-3 border-t border-slate-100 text-[11px] text-slate-500 flex items-center justify-between">
@@ -167,7 +157,7 @@ export default async function Dashboard({
             </span>
           </div>
           <div className="mt-4">
-            <div className={`text-3xl font-black tracking-tight ${atRisk > 0 ? "text-red-600" : "text-slate-950"}`}>
+            <div className={`text-2xl font-bold tracking-tight ${atRisk > 0 ? "text-red-600" : "text-slate-950"}`}>
               {atRisk}
             </div>
             <div className="text-xs font-semibold text-slate-500 mt-0.5">Candidates At Risk</div>
@@ -191,7 +181,7 @@ export default async function Dashboard({
             </span>
           </div>
           <div className="mt-4">
-            <div className="text-3xl font-black text-slate-950 tracking-tight">{pending}</div>
+            <div className="text-2xl font-bold text-slate-950 tracking-tight">{pending}</div>
             <div className="text-xs font-semibold text-slate-500 mt-0.5">Pending Invitations</div>
           </div>
           <div className="mt-3 pt-3 border-t border-slate-100 text-[11px] text-slate-500 flex items-center justify-between">

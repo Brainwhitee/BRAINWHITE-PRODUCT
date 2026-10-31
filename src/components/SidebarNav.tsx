@@ -90,22 +90,7 @@ export function SidebarNav({ items }: { items: NavItemConfig[] }) {
         );
       })}
 
-      {/* Quick Action: Back to Home */}
-      <div className="pt-4 mt-3 border-t border-slate-100">
-        <div className="px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-          Quick Actions
-        </div>
-        <Link
-          href="/"
-          className="group flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:text-black hover:bg-slate-100/80 transition-all duration-150"
-        >
-          <div className="flex items-center gap-3">
-            <Home className="size-4.5 shrink-0 text-slate-500 group-hover:text-black" />
-            <span>Back to Home</span>
-          </div>
-          <ExternalLink className="size-3.5 text-slate-400 group-hover:text-slate-600" />
-        </Link>
-      </div>
+
     </div>
   );
 }

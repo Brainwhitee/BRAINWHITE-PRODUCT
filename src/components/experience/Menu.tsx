@@ -59,14 +59,14 @@ export function Menu({ isDashboard: isDashboardProp }: { isDashboard?: boolean }
 
   const links = isDashboard
     ? [
-        { label: "BACK TO HOME", href: "/" },
         { label: "DASHBOARD", href: "/dashboard" },
-        { label: "MY LEARNING", href: "/learn" },
         { label: "LEARNING PATHS", href: "/paths" },
-        { label: "MY TASKS", href: "/tasks" },
+        { label: "TASKS & REVIEWS", href: "/tasks" },
         { label: "CODEBASE GRAPH", href: "/projects" },
         { label: "TEAM DIRECTORY", href: "/team" },
         { label: "AUDIT LOG", href: "/audit" },
+        { label: "SLIDE DECKS", href: "/slides" },
+        { label: "LANDING PAGE", href: "/" },
       ]
     : [
         { label: "PRODUCT", href: "/product" },
