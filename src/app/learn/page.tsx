@@ -11,7 +11,7 @@ export default async function Learn() {
   const me = await requireUser();
   // Candidates cannot enter the app until GitHub is linked (PLT-03)
   if (me.role === "CANDIDATE" && !me.githubUserId) redirect("/connect-github");
-  if (me.role === "OWNER" || me.role === "MANAGER") redirect("/paths");
+  if (me.role === "OWNER" || me.role === "MANAGER" || me.role === "MENTOR") redirect("/paths");
 
   const assignments = await db.assignment.findMany({
     where: { userId: me.id },

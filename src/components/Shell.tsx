@@ -81,7 +81,6 @@ export function Shell({
   const [verifiedLocally, setVerifiedLocally] = useState(false);
   const [dismissed, setDismissed] = useState(false);
   const [resending, setResending] = useState(false);
-  const [verifying, setVerifying] = useState(false);
   const [resendMessage, setResendMessage] = useState<string | null>(null);
 
   const handleResendVerification = async () => {
@@ -99,21 +98,6 @@ export function Shell({
     }
   };
 
-  const handleInstantVerify = async () => {
-    setVerifying(true);
-    try {
-      const res = await fetch("/api/auth/verify-now", { method: "POST" });
-      const data = await res.json();
-      if (data.success) {
-        setVerifiedLocally(true);
-      }
-    } catch {
-      // ignore
-    } finally {
-      setVerifying(false);
-    }
-  };
-
   const VerificationBanner = () => {
     if (isVerified || verifiedLocally || dismissed) return null;
     return (
@@ -123,20 +107,13 @@ export function Shell({
           <div className="flex-1 min-w-0">
             <p className="font-bold text-sm text-amber-950">Verify your email address</p>
             <p className="text-xs text-amber-800 mt-0.5">
-              We sent a verification link to <strong className="font-semibold">{user.email}</strong>. Or click below to confirm ownership instantly.
+              We sent a verification link to <strong className="font-semibold">{user.email}</strong>. Check your inbox and spam folder to confirm your address.
             </p>
             <div className="flex flex-wrap items-center gap-3 mt-2.5">
               <button
-                onClick={handleInstantVerify}
-                disabled={verifying}
-                className="inline-flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-bold bg-amber-900 text-white hover:bg-black transition-all cursor-pointer shadow-xs disabled:opacity-50"
-              >
-                {verifying ? "Verifying..." : "Verify Instantly"}
-              </button>
-              <button
                 onClick={handleResendVerification}
                 disabled={resending}
-                className="text-xs font-semibold text-amber-800 underline hover:no-underline disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-900 text-white hover:bg-black transition-all cursor-pointer shadow-xs disabled:opacity-50"
               >
                 {resending ? (
                   <>
@@ -144,7 +121,10 @@ export function Shell({
                     Sending…
                   </>
                 ) : (
-                  "Resend email"
+                  <>
+                    <Mail className="w-3.5 h-3.5" />
+                    Resend verification email
+                  </>
                 )}
               </button>
               {resendMessage && <span className="text-xs font-medium text-amber-800">{resendMessage}</span>}
