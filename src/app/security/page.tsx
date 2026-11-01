@@ -1,16 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { 
-  ShieldCheck, 
-  Lock, 
-  KeyRound, 
-  EyeOff, 
-  FileCheck2, 
-  Server, 
-  ArrowRight 
-} from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { ExperienceFooter } from "@/components/experience/footer";
 import { SonarGrid } from "@/components/ui/sonar-grid";
+import { GradientCard } from "@/components/ui/gradient-card";
 
 export const metadata: Metadata = {
   title: "Security & Compliance — Enterprise Code Protection",
@@ -26,38 +19,32 @@ export const metadata: Metadata = {
 
 const securityPillars = [
   {
-    icon: EyeOff,
-    badge: "Zero Retention",
+    iconName: "eye",
     title: "Ephemeral Code Indexing",
     desc: "Codebases are ingested inside ephemeral sandbox memory containers. Once the Abstract Syntax Tree symbols and dependency graph are generated, all source code checkouts are immediately destroyed.",
   },
   {
-    icon: ShieldCheck,
-    badge: "No Model Training",
+    iconName: "shield",
     title: "Zero Model Training Guarantee",
     desc: "Your proprietary software code is never stored in public databases or used to train, fine-tune, or improve any foundational AI models. Strict enterprise zero-data-retention agreements apply.",
   },
   {
-    icon: Lock,
-    badge: "Cryptography",
+    iconName: "lock",
     title: "AES-256-GCM Authenticated Encryption",
     desc: "All GitHub OAuth tokens, access credentials, and database secrets are encrypted at rest using AES-256-GCM with unique cryptographic nonces.",
   },
   {
-    icon: KeyRound,
-    badge: "Authorization",
+    iconName: "key",
     title: "Strict Role-Based Access Control",
     desc: "Granular separation of duties across Owner, Admin, Manager, and Candidate roles. Candidates only access their assigned learning paths and cannot inspect unauthorized repositories.",
   },
   {
-    icon: Server,
-    badge: "Infrastructure",
+    iconName: "server",
     title: "Database Isolation & Connection Pooling",
     desc: "Hosted on enterprise PostgreSQL instances with enforced SSL TLS 1.3 transport security, strict connection timeouts, and isolated tenant org boundaries.",
   },
   {
-    icon: FileCheck2,
-    badge: "Defense In Depth",
+    iconName: "filecheck",
     title: "Rate Limiting & Brute-Force Lockout",
     desc: "Database-backed rate limiting protects authentication endpoints against credential stuffing and brute-force attacks (5 failed attempts trigger a 15-minute lockout).",
   },
@@ -119,10 +106,12 @@ export default function SecurityPage() {
         </div>
       </section>
 
-      {/* 6 Security Pillars Grid */}
-      <section className="py-20 px-6 sm:px-10 md:px-16 max-w-7xl mx-auto border-t border-neutral-200">
+      {/* 6 Security Pillars Grid - Replaced with GradientCards without micro badges */}
+      <section className="py-24 sm:py-32 px-6 sm:px-10 md:px-16 max-w-7xl mx-auto border-t border-neutral-200">
         <div className="text-center max-w-3xl mx-auto mb-16">
-          <div className="text-xs font-mono uppercase tracking-widest text-neutral-500 mb-2 font-medium">Defense-In-Depth</div>
+          <span className="text-xs font-mono uppercase tracking-widest text-neutral-500 block mb-2 font-medium">
+            Enterprise Protection
+          </span>
           <h2 className="text-3xl sm:text-5xl font-black uppercase tracking-tight text-neutral-950 mb-4">
             Six Guarantees for Enterprise Code
           </h2>
@@ -131,38 +120,25 @@ export default function SecurityPage() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {securityPillars.map((p) => {
-            const Icon = p.icon;
-            return (
-              <div
-                key={p.title}
-                className="rounded-3xl border border-neutral-200 bg-white p-8 hover:border-neutral-400 transition-all shadow-xs flex flex-col justify-between"
-              >
-                <div>
-                  <div className="flex items-center justify-between mb-6">
-                    <div className="w-12 h-12 rounded-2xl bg-neutral-100 flex items-center justify-center text-neutral-900">
-                      <Icon className="w-6 h-6" />
-                    </div>
-                    <span className="text-[10px] font-mono uppercase tracking-wider text-neutral-600 border border-neutral-200 px-2.5 py-1 rounded-full bg-neutral-50 font-medium">
-                      {p.badge}
-                    </span>
-                  </div>
-                  <h3 className="text-lg font-bold mb-3 tracking-tight text-neutral-950">{p.title}</h3>
-                  <p className="text-xs sm:text-sm text-neutral-600 leading-relaxed font-sans font-light">
-                    {p.desc}
-                  </p>
-                </div>
-              </div>
-            );
-          })}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+          {securityPillars.map((p, idx) => (
+            <GradientCard
+              key={p.title}
+              iconName={p.iconName}
+              title={p.title}
+              description={p.desc}
+              gradient={idx % 2 === 0 ? "mesh" : "subtle-slate"}
+            />
+          ))}
         </div>
       </section>
 
       {/* Security FAQs */}
-      <section className="py-20 px-6 sm:px-10 md:px-16 max-w-5xl mx-auto border-t border-neutral-200">
+      <section className="py-24 sm:py-32 px-6 sm:px-10 md:px-16 max-w-5xl mx-auto border-t border-neutral-200">
         <div className="text-center mb-16">
-          <div className="text-xs font-mono uppercase tracking-widest text-neutral-500 mb-2 font-medium">Compliance &amp; Privacy</div>
+          <span className="text-xs font-mono uppercase tracking-widest text-neutral-500 block mb-2 font-medium">
+            FAQ
+          </span>
           <h2 className="text-3xl sm:text-5xl font-black uppercase tracking-tight text-neutral-950 mb-4">
             Security Questions Answered
           </h2>
@@ -170,8 +146,8 @@ export default function SecurityPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {faqs.map((faq, i) => (
-            <div key={i} className="p-8 rounded-3xl border border-neutral-200 bg-neutral-50/60 shadow-xs">
-              <h3 className="text-sm font-bold text-neutral-950 mb-2">{faq.q}</h3>
+            <div key={i} className="p-8 rounded-3xl border border-neutral-200 bg-neutral-50/60 shadow-xs hover:border-neutral-900 transition-colors">
+              <h3 className="text-base font-bold text-neutral-950 mb-3">{faq.q}</h3>
               <p className="text-xs sm:text-sm text-neutral-600 leading-relaxed font-sans font-light">{faq.a}</p>
             </div>
           ))}

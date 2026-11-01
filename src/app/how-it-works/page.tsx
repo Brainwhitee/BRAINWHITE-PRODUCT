@@ -1,14 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { 
-  ArrowRight, 
-  CheckCircle, 
-  Users, 
-  Briefcase, 
-  Code2 
-} from "lucide-react";
+import { ArrowRight, CheckCircle } from "lucide-react";
 import { ExperienceFooter } from "@/components/experience/footer";
 import { SonarGrid } from "@/components/ui/sonar-grid";
+import { GradientCard } from "@/components/ui/gradient-card";
 
 export const metadata: Metadata = {
   title: "How It Works — The 5-Step Developer Onboarding Engine",
@@ -26,7 +21,6 @@ const steps = [
   {
     num: "01",
     title: "Connect Your Organization & Repositories",
-    subtitle: "1-Click GitHub Integration",
     desc: "Connect your GitHub organization with read-only access. Choose repositories to index, set your team's working days, and configure custom branch triggers.",
     bullets: [
       "OAuth 2.0 or GitHub App read-only permissions",
@@ -37,7 +31,6 @@ const steps = [
   {
     num: "02",
     title: "Neural Codebase Ingestion & Graphing",
-    subtitle: "Automated AST Architecture Mapping",
     desc: "BrainWhite parses AST symbols across all modules, files, and functions. It builds a bi-directional dependency graph capturing how services communicate.",
     bullets: [
       "Under 60-second full AST parsing",
@@ -48,7 +41,6 @@ const steps = [
   {
     num: "03",
     title: "Adaptive Learning Path Synthesis",
-    subtitle: "Tailored to Candidate Seniority",
     desc: "The engine synthesizes a personalized onboarding roadmap based on the candidate's target role (Frontend, Backend, Fullstack, AI) and seniority tier.",
     bullets: [
       "Interactive architectural handouts & symbol deep-dives",
@@ -59,7 +51,6 @@ const steps = [
   {
     num: "04",
     title: "Real Milestone Tasks & Pull Requests",
-    subtitle: "No Toy Exercises — Real Code Only",
     desc: "Candidates write real code on feature branches. They build features, fix seeded bugs, and submit pull requests directly to GitHub.",
     bullets: [
       "Real GitHub webhook PR event tracking",
@@ -70,7 +61,6 @@ const steps = [
   {
     num: "05",
     title: "7-Pillar Telemetry & Executive Reports",
-    subtitle: "Objective Readiness Benchmarks",
     desc: "Engineering managers receive real-time telemetry on candidate progress, code hygiene, and readiness scores, complete with automated weekly digests and slide decks.",
     bullets: [
       "Quantitative 7-pillar developer evaluation",
@@ -82,17 +72,17 @@ const steps = [
 
 const personas = [
   {
-    icon: Briefcase,
+    iconName: "briefcase",
     role: "Engineering Leaders (CTO / VP Eng)",
     benefit: "Shorten engineering ramp time from 6 months to 2 weeks. Cut onboarding budget and accelerate time-to-first-production PR across new hires.",
   },
   {
-    icon: Users,
+    iconName: "users",
     role: "Engineering Managers & Leads",
     benefit: "Eliminate 20+ hours of repetitive weekly 1-on-1 walkthroughs. Get objective telemetry and weekly reports on how candidates grasp the codebase.",
   },
   {
-    icon: Code2,
+    iconName: "code",
     role: "Software Engineers & Candidates",
     benefit: "No more stale wikis or guessing which file does what. Learn the codebase with an interactive graph and an AI mentor grounded in company code.",
   },
@@ -136,20 +126,17 @@ export default function HowItWorksPage() {
       </section>
 
       {/* 5-Step Process */}
-      <section className="py-20 px-6 sm:px-10 md:px-16 max-w-7xl mx-auto border-t border-neutral-200">
+      <section className="py-24 sm:py-32 px-6 sm:px-10 md:px-16 max-w-7xl mx-auto border-t border-neutral-200">
         <div className="space-y-8">
           {steps.map((step) => (
             <div
               key={step.num}
-              className="rounded-3xl border border-neutral-200 bg-neutral-50/50 p-8 sm:p-12 hover:border-neutral-400 transition-all shadow-xs grid grid-cols-1 lg:grid-cols-12 gap-8 items-start"
+              className="rounded-3xl border border-neutral-200 bg-neutral-50/50 p-8 sm:p-12 hover:border-neutral-900 hover:bg-white transition-all duration-300 shadow-xs grid grid-cols-1 lg:grid-cols-12 gap-8 items-start group"
             >
               <div className="lg:col-span-3">
-                <span className="text-5xl sm:text-7xl font-mono font-black text-neutral-300">
+                <span className="text-5xl sm:text-7xl font-mono font-black text-neutral-300 group-hover:text-neutral-950 transition-colors">
                   {step.num}
                 </span>
-                <div className="text-xs font-mono uppercase tracking-widest text-neutral-500 mt-2 font-medium">
-                  {step.subtitle}
-                </div>
               </div>
 
               <div className="lg:col-span-9">
@@ -174,10 +161,12 @@ export default function HowItWorksPage() {
         </div>
       </section>
 
-      {/* Persona Benefits Section */}
-      <section className="py-20 px-6 sm:px-10 md:px-16 max-w-7xl mx-auto border-t border-neutral-200">
+      {/* Persona Benefits Section - GradientCards */}
+      <section className="py-24 sm:py-32 px-6 sm:px-10 md:px-16 max-w-7xl mx-auto border-t border-neutral-200">
         <div className="text-center max-w-3xl mx-auto mb-16">
-          <div className="text-xs font-mono uppercase tracking-widest text-neutral-500 mb-2 font-medium">Role-Based Impact</div>
+          <span className="text-xs font-mono uppercase tracking-widest text-neutral-500 block mb-2 font-medium">
+            Role-Based Impact
+          </span>
           <h2 className="text-3xl sm:text-5xl font-black uppercase tracking-tight text-neutral-950 mb-4">
             Engineered for Every Stakeholder
           </h2>
@@ -186,26 +175,16 @@ export default function HowItWorksPage() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {personas.map((p) => {
-            const Icon = p.icon;
-            return (
-              <div
-                key={p.role}
-                className="rounded-3xl border border-neutral-200 bg-white p-8 hover:border-neutral-400 transition-all shadow-xs flex flex-col justify-between"
-              >
-                <div>
-                  <div className="w-12 h-12 rounded-2xl bg-neutral-100 flex items-center justify-center text-neutral-900 mb-6">
-                    <Icon className="w-6 h-6" />
-                  </div>
-                  <h3 className="text-lg font-bold mb-3 tracking-tight text-neutral-950">{p.role}</h3>
-                  <p className="text-xs sm:text-sm text-neutral-600 leading-relaxed font-sans">
-                    {p.benefit}
-                  </p>
-                </div>
-              </div>
-            );
-          })}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
+          {personas.map((p, idx) => (
+            <GradientCard
+              key={p.role}
+              iconName={p.iconName}
+              title={p.role}
+              description={p.benefit}
+              gradient={idx % 2 === 0 ? "mesh" : "subtle-slate"}
+            />
+          ))}
         </div>
       </section>
 

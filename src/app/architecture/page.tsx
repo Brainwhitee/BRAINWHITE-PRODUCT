@@ -1,18 +1,17 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { 
-  ArrowRight, 
-  Check
-} from "lucide-react";
+import { ArrowRight, Check } from "lucide-react";
 import { ExperienceFooter } from "@/components/experience/footer";
 import { SonarGrid } from "@/components/ui/sonar-grid";
+import { Icon3DHoverCard } from "@/components/ui/icon-3d-hover";
+import { GradientCard } from "@/components/ui/gradient-card";
 
 export const metadata: Metadata = {
-  title: "Architecture — BrainWhite Technical Specifications",
-  description: "Deep dive into BrainWhite's AST symbol resolution, bi-directional dependency graphs, hybrid RAG embeddings, and multi-tier LLM gateway with instant failover.",
+  title: "Architecture — The BrainWhite AST & Ingestion Engine",
+  description: "Deterministic graph processing, ephemeral containers, bidirectional AST maps, and an intelligent multi-model failover gateway.",
   openGraph: {
-    title: "BrainWhite Engine Architecture",
-    description: "Deterministic AST Graph Processing Meets Sub-Second Generative Inference.",
+    title: "BrainWhite Engine Architecture — Deterministic Graph Processing",
+    description: "Deep dive into AST parsing, bi-directional dependency graphs, and our enterprise inference pipeline.",
     url: "https://brainwhite.com/architecture",
     siteName: "BrainWhite",
     type: "website",
@@ -22,33 +21,33 @@ export const metadata: Metadata = {
 const pipelineStages = [
   {
     step: "01",
-    title: "Source Ingestion & POSIX Normalization",
-    desc: "Traverses project repositories, filters binaries and lockfiles, and normalizes file paths across operating systems into POSIX format for deterministic lookups.",
-    tags: ["POSIX Paths", "Tar Stream", "Ignore Rules"],
+    title: "Source Ingestion & Normalization",
+    desc: "Traverses project repositories, filters binaries and lockfiles, and normalizes file paths into standard POSIX structures for deterministic symbol resolution.",
+    iconName: "workflow",
   },
   {
     step: "02",
     title: "Lexical & AST Symbol Extraction",
-    desc: "Parses source files into Abstract Syntax Trees. Extracts exported types, functions, classes, HTTP routes, and maps entry points into discrete database symbols.",
-    tags: ["TypeScript AST", "Babel Core", "Regex Fallbacks"],
+    desc: "Parses source files into Abstract Syntax Trees. Extracts exported types, functions, classes, and HTTP routes into discrete database entities.",
+    iconName: "cpu",
   },
   {
     step: "03",
     title: "Bi-Directional Graph Assembly",
-    desc: "Resolves dependency relationships between files and symbols. Populates GraphEdge entities (IMPORTS, CALLS, INHERITS) to construct a traversable knowledge web.",
-    tags: ["Prisma GraphEdge", "Foreign Keys", "Topological Sort"],
+    desc: "Resolves dependency relationships between files and symbols. Populates GraphEdge entities (IMPORTS, CALLS, INHERITS) to construct a traversable knowledge topology.",
+    iconName: "network",
   },
   {
     step: "04",
-    title: "Semantic Chunking & Embedding Index",
-    desc: "Splits file bodies into semantic chunks with context headers. Chunks retain symbol provenance so AI models can locate the exact line ranges for any implementation.",
-    tags: ["Semantic Windows", "Symbol Anchors", "Vector Alignment"],
+    title: "Semantic Chunking & Anchors",
+    desc: "Splits file bodies into semantic chunks with context headers. Chunks retain symbol provenance so AI models locate exact line ranges for any implementation.",
+    iconName: "layers",
   },
   {
     step: "05",
-    title: "Multi-Model AI Gateway & Failover",
+    title: "Intelligent Inference Gateway",
     desc: "Routes queries across high-throughput inference engines with automated 5,000ms AbortSignal failover to secondary reasoning models.",
-    tags: ["High-Throughput Inference", "Auto-Failover Circuit", "Deterministic Routing"],
+    iconName: "share",
   },
 ];
 
@@ -56,7 +55,7 @@ const technicalSpecs = [
   { label: "AST Parsing Speed", value: "~1,200 files/min" },
   { label: "AI Gateway Latency", value: "< 850ms (Primary)" },
   { label: "Failover Threshold", value: "5,000ms circuit breaker" },
-  { label: "Database Engine", value: "PostgreSQL via Supabase Pooler" },
+  { label: "Database Engine", value: "PostgreSQL Connection Pool" },
   { label: "Token Encryption", value: "AES-256-GCM authenticated" },
   { label: "Memory Isolation", value: "Ephemeral memory containers" },
 ];
@@ -98,10 +97,12 @@ export default function ArchitecturePage() {
         </div>
       </section>
 
-      {/* Pipeline Progression */}
-      <section className="py-20 px-6 sm:px-10 md:px-16 max-w-7xl mx-auto border-t border-neutral-200">
+      {/* Pipeline Progression - 3D Icon Hover Cards */}
+      <section className="py-24 sm:py-32 px-6 sm:px-10 md:px-16 max-w-7xl mx-auto border-t border-neutral-200">
         <div className="text-center max-w-3xl mx-auto mb-16">
-          <div className="text-xs font-mono uppercase tracking-widest text-neutral-500 mb-2 font-medium">Deterministic Processing</div>
+          <span className="text-xs font-mono uppercase tracking-widest text-neutral-500 block mb-2 font-medium">
+            Deterministic Processing
+          </span>
           <h2 className="text-3xl sm:text-5xl font-black uppercase tracking-tight text-neutral-950 mb-4">
             The Ingestion &amp; Synthesis Pipeline
           </h2>
@@ -110,46 +111,27 @@ export default function ArchitecturePage() {
           </p>
         </div>
 
-        <div className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
           {pipelineStages.map((stage) => (
-            <div
+            <Icon3DHoverCard
               key={stage.step}
-              className="rounded-3xl border border-neutral-200 bg-neutral-50/50 p-6 sm:p-8 hover:border-neutral-400 transition-all shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-6"
-            >
-              <div className="flex items-start gap-6">
-                <span className="text-3xl sm:text-4xl font-mono font-black text-neutral-400">
-                  {stage.step}
-                </span>
-                <div className="max-w-2xl">
-                  <h3 className="text-lg sm:text-xl font-bold mb-2 tracking-tight text-neutral-950">
-                    {stage.title}
-                  </h3>
-                  <p className="text-xs sm:text-sm text-neutral-600 leading-relaxed font-sans">
-                    {stage.desc}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex flex-wrap gap-2 md:justify-end">
-                {stage.tags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="text-[11px] font-mono text-neutral-700 bg-white border border-neutral-200 px-3 py-1 rounded-full whitespace-nowrap shadow-2xs"
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            </div>
+              stepNumber={stage.step}
+              iconName={stage.iconName}
+              title={stage.title}
+              description={stage.desc}
+              footerText="Stage Active"
+            />
           ))}
         </div>
       </section>
 
-      {/* Technical Specs Matrix */}
-      <section className="py-20 px-6 sm:px-10 md:px-16 max-w-7xl mx-auto border-t border-neutral-200">
+      {/* Technical Specs Matrix - Gradient Cards */}
+      <section className="py-24 sm:py-32 px-6 sm:px-10 md:px-16 max-w-7xl mx-auto border-t border-neutral-200">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
           <div className="lg:col-span-5">
-            <div className="text-xs font-mono uppercase tracking-widest text-neutral-500 mb-2 font-medium">Runtime Benchmarks</div>
+            <span className="text-xs font-mono uppercase tracking-widest text-neutral-500 block mb-2 font-medium">
+              Runtime Benchmarks
+            </span>
             <h2 className="text-3xl sm:text-5xl font-black uppercase tracking-tight text-neutral-950 mb-6">
               Engineered for Enterprise Scale
             </h2>
@@ -163,38 +145,32 @@ export default function ArchitecturePage() {
           </div>
 
           <div className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {technicalSpecs.map((spec) => (
-              <div
+            {technicalSpecs.map((spec, idx) => (
+              <GradientCard
                 key={spec.label}
-                className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-xs hover:border-neutral-400 transition-colors"
-              >
-                <div className="text-xs font-mono text-neutral-400 uppercase tracking-widest mb-2 font-medium">
-                  {spec.label}
-                </div>
-                <div className="text-lg sm:text-xl font-mono font-bold text-neutral-950">
-                  {spec.value}
-                </div>
-              </div>
+                title={spec.value}
+                description={spec.label}
+                gradient={idx % 2 === 0 ? "mesh" : "subtle-slate"}
+              />
             ))}
           </div>
         </div>
       </section>
 
       {/* Intelligent AI Gateway Breakdown */}
-      <section className="py-20 px-6 sm:px-10 md:px-16 max-w-7xl mx-auto border-t border-neutral-200">
+      <section className="py-24 sm:py-32 px-6 sm:px-10 md:px-16 max-w-7xl mx-auto border-t border-neutral-200">
         <div className="rounded-3xl border border-neutral-200 bg-neutral-50/60 p-8 sm:p-12 shadow-xs relative overflow-hidden">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 pb-6 border-b border-neutral-200">
-            <div>
-              <div className="text-xs font-mono uppercase tracking-widest text-neutral-500 mb-1 font-medium">Failover Architecture</div>
-              <h3 className="text-2xl sm:text-3xl font-black tracking-tight text-neutral-950">Multi-Provider Intelligent Gateway</h3>
-            </div>
-            <span className="text-xs font-mono bg-white text-neutral-800 border border-neutral-200 px-3 py-1.5 rounded-full w-fit shadow-2xs">
-              High Availability Architecture
+          <div className="mb-8 pb-6 border-b border-neutral-200">
+            <span className="text-xs font-mono uppercase tracking-widest text-neutral-500 block mb-1 font-medium">
+              Failover Architecture
             </span>
+            <h3 className="text-2xl sm:text-3xl font-black tracking-tight text-neutral-950">
+              Multi-Provider Intelligent Gateway
+            </h3>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 font-mono text-xs">
-            <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-xs">
+            <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-xs hover:border-neutral-900 transition-colors">
               <div className="text-neutral-950 font-bold mb-3 flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-neutral-950" />
                 Primary High-Throughput Engine
@@ -209,7 +185,7 @@ export default function ArchitecturePage() {
               </div>
             </div>
 
-            <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-xs">
+            <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-xs hover:border-neutral-900 transition-colors">
               <div className="text-neutral-950 font-bold mb-3 flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-neutral-600" />
                 Deep Synthesis Reasoning Engine

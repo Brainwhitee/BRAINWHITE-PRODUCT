@@ -1,20 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
-import { Check, ArrowRight, Sparkles } from "lucide-react";
+import { Check, ArrowRight } from "lucide-react";
 
 export function PricingSection() {
   const [annual, setAnnual] = useState(true);
 
   const tiers = [
     {
-      name: "Starter Trial",
-      badge: "14 Days Free",
+      name: "Starter",
       monthlyPrice: "$0",
       annualPrice: "$0",
-      period: "for 14 days",
-      desc: "Experience automated AST knowledge graphs and test candidate onboarding on your first repo.",
+      period: "14 days free trial",
+      desc: "For small teams and engineering leads evaluating automated AST code maps and candidate workflows.",
       features: [
         "1 Connected GitHub Repository",
         "Up to 3 Active Engineers",
@@ -29,7 +28,6 @@ export function PricingSection() {
     },
     {
       name: "Growth Team",
-      badge: "Most Popular",
       monthlyPrice: "$59",
       annualPrice: "$47",
       period: "per engineer / month",
@@ -49,7 +47,6 @@ export function PricingSection() {
     },
     {
       name: "Enterprise",
-      badge: "Custom Scale",
       monthlyPrice: "Custom",
       annualPrice: "Custom",
       period: "annual agreements",
@@ -87,14 +84,9 @@ export function PricingSection() {
             }`}
           />
         </button>
-        <div className="flex items-center gap-2">
-          <span className={`text-xs font-semibold ${annual ? "text-neutral-950" : "text-neutral-400"}`}>
-            Annual Billing
-          </span>
-          <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-neutral-100 text-neutral-800 border border-neutral-300">
-            Save 20%
-          </span>
-        </div>
+        <span className={`text-xs font-semibold ${annual ? "text-neutral-950" : "text-neutral-400"}`}>
+          Annual Billing (20% Off)
+        </span>
       </div>
 
       {/* Pricing Cards Grid */}
@@ -105,26 +97,14 @@ export function PricingSection() {
             className={`relative rounded-3xl p-8 sm:p-10 flex flex-col justify-between transition-all duration-300 ${
               tier.popular
                 ? "bg-neutral-950 text-white border-2 border-neutral-950 shadow-xl scale-102 lg:-translate-y-2"
-                : "bg-white text-neutral-900 border border-neutral-200 shadow-xs hover:border-neutral-400 hover:bg-neutral-50/50"
+                : "bg-white text-neutral-900 border border-neutral-200 shadow-xs hover:border-neutral-900 hover:bg-neutral-50/50"
             }`}
           >
-            {tier.popular && (
-              <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-white text-neutral-950 font-bold text-[10px] uppercase tracking-widest shadow-md flex items-center gap-1.5 border border-neutral-200">
-                <Sparkles className="w-3 h-3 text-neutral-950" />
-                <span>{tier.badge}</span>
-              </div>
-            )}
-
             <div>
-              <div className="flex items-center justify-between mb-4">
+              <div className="mb-4">
                 <h3 className={`text-xl font-bold tracking-tight ${tier.popular ? "text-white" : "text-neutral-950"}`}>
                   {tier.name}
                 </h3>
-                {!tier.popular && (
-                  <span className="text-[10px] font-mono uppercase tracking-wider px-2.5 py-1 rounded-full bg-neutral-100 text-neutral-700 border border-neutral-200 font-medium">
-                    {tier.badge}
-                  </span>
-                )}
               </div>
 
               <p className={`text-xs leading-relaxed font-sans mb-6 ${tier.popular ? "text-neutral-300" : "text-neutral-600"}`}>

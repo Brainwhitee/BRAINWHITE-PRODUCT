@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { MarketingHeader } from "@/components/marketing-header";
 import { SupportChatWidget } from "@/components/chat/SupportChatWidget";
+import { SmoothScroll } from "@/components/ui/smooth-scroll";
+import "lenis/dist/lenis.css";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -29,6 +31,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <SmoothScroll />
         <MarketingHeader />
         {children}
         <SupportChatWidget />
