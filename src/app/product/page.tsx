@@ -12,8 +12,7 @@ import {
   CheckCircle2,
   GitBranch,
   Terminal,
-  Cpu,
-  Clock
+  Cpu
 } from "lucide-react";
 import { ExperienceFooter } from "@/components/experience/footer";
 
@@ -60,7 +59,7 @@ const capabilities = [
     title: "Context-Grounded Pair Mentor",
     description: "An AI tutor grounded exclusively in your company's actual codebase symbols and architecture. No hallucinations—answers cite exact file paths and line numbers.",
     metric: "< 1.2s",
-    metricLabel: "Groq & Gemini sub-second response",
+    metricLabel: "Sub-second inference response",
   },
   {
     icon: GitPullRequest,
@@ -87,7 +86,6 @@ const pipelineStages = [
     tag: "Native GitHub App",
     desc: "1-Click multi-tenant GitHub connection. Clones private tarballs into isolated, ephemeral memory containers.",
     icon: GitBranch,
-    accent: "bg-blue-500",
   },
   {
     id: "02",
@@ -95,7 +93,6 @@ const pipelineStages = [
     tag: "Tree-Sitter Parser",
     desc: "Resolves function signatures, classes, modules, and bidirectional imports into an interactive knowledge topology.",
     icon: Cpu,
-    accent: "bg-emerald-500",
   },
   {
     id: "03",
@@ -103,7 +100,6 @@ const pipelineStages = [
     tag: "Role-Tailored Track",
     desc: "Generates hands-on coding checkpoints and architectural handouts directly from your repo's live modules.",
     icon: Terminal,
-    accent: "bg-purple-500",
   },
   {
     id: "04",
@@ -111,7 +107,6 @@ const pipelineStages = [
     tag: "7-Pillar Telemetry",
     desc: "Scores PR quality, conflict resolution, and iteration speed automatically before granting production access.",
     icon: CheckCircle2,
-    accent: "bg-amber-500",
   },
 ];
 
@@ -129,33 +124,23 @@ export default function ProductPage() {
   return (
     <main className="min-h-screen bg-[#050505] text-white selection:bg-white selection:text-black">
       
-      {/* 1. DARK HERO SECTION */}
+      {/* 1. HERO SECTION - STRICT EXECUTIVE MINIMALISM */}
       <section className="relative pt-32 sm:pt-40 pb-20 px-6 sm:px-10 md:px-16 max-w-7xl mx-auto overflow-hidden">
-        {/* Ambient glow backdrop */}
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-gradient-to-tr from-white/10 via-emerald-500/10 to-transparent blur-[120px] rounded-full pointer-events-none" />
-
         <div className="relative z-10 flex flex-col items-center text-center max-w-4xl mx-auto">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/10 bg-white/5 backdrop-blur-md text-xs font-mono uppercase tracking-widest text-emerald-400 mb-6">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            <span>Continuous Developer Readiness</span>
-          </div>
-
-          <h1 className="text-4xl sm:text-6xl md:text-7xl font-black uppercase tracking-tighter leading-[0.95] mb-6">
-            From Unknown Codebase to <br className="hidden sm:block" />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-white/80 to-white/40">
-              Production-Ready
-            </span>{" "}
-            in Days
+          {/* Heading - Black & White, No Badges */}
+          <h1 className="text-4xl sm:text-6xl md:text-7xl font-extrabold uppercase tracking-tight text-white mb-6">
+            From Unknown Codebase to Production-Ready in Days
           </h1>
 
-          <p className="text-base sm:text-lg md:text-xl text-white/60 font-light max-w-2xl leading-relaxed mb-10">
+          {/* Subheading - Single Muted Neutral, No Subheading 2 */}
+          <p className="text-base sm:text-lg md:text-xl text-neutral-400 font-sans max-w-2xl leading-relaxed mb-10">
             BrainWhite transforms complex enterprise software repositories into interactive AST knowledge graphs, role-tailored learning paths, and real-time pull request telemetry.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
             <Link
               href="/signup"
-              className="inline-flex items-center justify-center gap-3 w-full sm:w-auto bg-white text-black font-bold text-xs uppercase tracking-wider px-8 py-4 rounded-full hover:scale-105 transition-all shadow-[0_0_30px_rgba(255,255,255,0.25)]"
+              className="inline-flex items-center justify-center gap-3 w-full sm:w-auto bg-white text-black font-bold text-xs uppercase tracking-wider px-8 py-4 rounded-full hover:scale-105 transition-all shadow-lg"
             >
               <span>Start Free Trial</span>
               <ArrowRight className="w-4 h-4" />
@@ -169,11 +154,11 @@ export default function ProductPage() {
           </div>
         </div>
 
-        {/* 2. DEPLOY PIPELINE COMPONENT (21st.dev deploy-pipeline reference) */}
+        {/* 2. DEPLOY PIPELINE COMPONENT */}
         <div className="mt-20 rounded-3xl border border-white/10 bg-neutral-950/80 p-6 sm:p-10 shadow-2xl backdrop-blur-xl relative overflow-hidden">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-white/10 mb-8">
             <div>
-              <div className="text-xs font-mono uppercase tracking-widest text-emerald-400">
+              <div className="text-xs font-mono uppercase tracking-widest text-neutral-400">
                 End-to-End Onboarding Pipeline
               </div>
               <p className="text-xs text-white/60 mt-1">
@@ -181,13 +166,12 @@ export default function ProductPage() {
               </p>
             </div>
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[11px] font-mono text-white/70 self-start sm:self-auto">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
               <span>Realtime Pipeline Active</span>
             </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 relative">
-            {pipelineStages.map((stage, i) => {
+            {pipelineStages.map((stage) => {
               const Icon = stage.icon;
               return (
                 <div 
@@ -215,7 +199,7 @@ export default function ProductPage() {
                     </p>
                   </div>
 
-                  <div className="pt-4 mt-4 border-t border-white/5 flex items-center gap-2 text-[11px] font-mono text-emerald-400">
+                  <div className="pt-4 mt-4 border-t border-white/5 flex items-center gap-2 text-[11px] font-mono text-neutral-300">
                     <Check className="w-3.5 h-3.5" />
                     <span>Automated Stage</span>
                   </div>
@@ -226,12 +210,12 @@ export default function ProductPage() {
         </div>
       </section>
 
-      {/* 3. CRISP WHITE BACKGROUND SECTION (DUAL-TONE DESIGN FOR MAXIMUM CONTRAST) */}
+      {/* 3. DUAL-TONE CONTRAST SECTION */}
       <section className="w-full bg-white text-slate-900 py-24 sm:py-32 px-6 sm:px-10 md:px-16 transition-colors duration-500">
         <div className="max-w-7xl mx-auto">
           
           <div className="max-w-3xl mx-auto text-center mb-16 sm:mb-20">
-            <span className="text-xs font-mono uppercase tracking-widest text-indigo-600 font-bold block mb-2">
+            <span className="text-xs font-mono uppercase tracking-widest text-neutral-500 font-bold block mb-2">
               Engineering Advantage
             </span>
             <h2 className="text-3xl sm:text-5xl font-black uppercase tracking-tight text-slate-950 mb-4">
@@ -242,7 +226,7 @@ export default function ProductPage() {
             </p>
           </div>
 
-          {/* Interactive Values Grid (21st.dev interactive-values-grid style) */}
+          {/* Interactive Values Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
             {capabilities.map((cap) => {
               const Icon = cap.icon;
@@ -291,7 +275,7 @@ export default function ProductPage() {
       {/* 4. 7-PILLARS OF READINESS ASSESSMENT */}
       <section className="py-24 sm:py-32 px-6 sm:px-10 md:px-16 max-w-7xl mx-auto border-t border-white/10">
         <div className="max-w-3xl mx-auto text-center mb-16">
-          <span className="text-xs font-mono uppercase tracking-widest text-emerald-400 block mb-2">
+          <span className="text-xs font-mono uppercase tracking-widest text-neutral-400 block mb-2">
             Verifiable Engineering Telemetry
           </span>
           <h2 className="text-3xl sm:text-5xl font-black uppercase tracking-tight text-white mb-4">
@@ -313,7 +297,7 @@ export default function ProductPage() {
                 <h4 className="text-sm font-bold text-white mb-1.5">{p.title}</h4>
                 <p className="text-xs text-white/60 leading-relaxed font-sans">{p.desc}</p>
               </div>
-              <div className="pt-4 mt-4 border-t border-white/5 flex items-center gap-1.5 text-[10px] font-mono text-emerald-400">
+              <div className="pt-4 mt-4 border-t border-white/5 flex items-center gap-1.5 text-[10px] font-mono text-neutral-300">
                 <Check className="w-3 h-3" />
                 <span>Audited Automatically</span>
               </div>
@@ -330,7 +314,7 @@ export default function ProductPage() {
                 Ready to cut onboarding ramp time by 75%?
               </h4>
               <p className="text-xs text-slate-700 leading-relaxed font-sans">
-                Connect your organization's repository and launch your first cohort in under 10 minutes.
+                Connect your organization&apos;s repository and launch your first cohort in under 10 minutes.
               </p>
             </div>
             <Link 

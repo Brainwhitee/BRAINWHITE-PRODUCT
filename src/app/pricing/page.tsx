@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Check, ArrowRight, ShieldCheck, HelpCircle } from "lucide-react";
+import { ArrowRight, ShieldCheck } from "lucide-react";
 import { ExperienceFooter } from "@/components/experience/footer";
 import { PricingSection } from "@/components/pricing/pricing-section";
 
@@ -38,24 +38,16 @@ const faqs = [
 export default function PricingPage() {
   return (
     <main className="min-h-screen bg-[#050505] text-white selection:bg-white selection:text-black">
-      {/* Hero Section */}
+      {/* Hero Section - Strict Executive Minimalism */}
       <section className="relative pt-32 sm:pt-40 pb-20 px-6 sm:px-10 md:px-16 max-w-7xl mx-auto overflow-hidden">
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[350px] bg-gradient-to-tr from-white/10 via-emerald-500/10 to-transparent blur-[140px] rounded-full pointer-events-none" />
-
         <div className="relative z-10 flex flex-col items-center text-center max-w-4xl mx-auto mb-16">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/10 bg-white/5 backdrop-blur-md text-xs font-mono uppercase tracking-widest text-emerald-400 mb-6">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            <span>Developer Ramp ROI Guarantee</span>
-          </div>
-
-          <h1 className="text-4xl sm:text-6xl md:text-7xl font-black uppercase tracking-tighter leading-[0.95] mb-6">
-            Predictable Pricing for <br className="hidden sm:block" />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-white/80 to-white/40">
-              High-Velocity Teams
-            </span>
+          {/* Heading - Pure Black & White, No Badges */}
+          <h1 className="text-4xl sm:text-6xl md:text-7xl font-extrabold uppercase tracking-tight text-white mb-6">
+            Predictable Pricing for High-Velocity Teams
           </h1>
 
-          <p className="text-base sm:text-lg md:text-xl text-white/60 font-light max-w-2xl leading-relaxed">
+          {/* Subheading - Single Clean Line, No Subheading 2 */}
+          <p className="text-base sm:text-lg md:text-xl text-neutral-400 font-sans max-w-2xl leading-relaxed">
             Onboarding an engineer traditionally costs over $25,000 in lost senior engineering time. BrainWhite reduces this overhead by 75% from day one.
           </p>
         </div>
@@ -67,10 +59,10 @@ export default function PricingPage() {
         <div className="mt-20 max-w-5xl mx-auto rounded-3xl border border-white/10 bg-white/[0.02] p-8 sm:p-10 flex flex-col md:flex-row items-center justify-between gap-6 backdrop-blur-md">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center shrink-0">
-              <ShieldCheck className="w-6 h-6 text-emerald-400" />
+              <ShieldCheck className="w-6 h-6 text-white/80" />
             </div>
             <div>
-              <h4 className="text-base font-bold text-white mb-1">SOC 2 & Enterprise Security Ready</h4>
+              <h4 className="text-base font-bold text-white mb-1">SOC 2 &amp; Enterprise Security Ready</h4>
               <p className="text-xs text-white/60 font-sans max-w-xl">
                 Dedicated VPC deployments, self-hosted LLM inference, encrypted database keys, and continuous audit trails are standard for enterprise tiers.
               </p>

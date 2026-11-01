@@ -1,16 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { 
-  GitBranch, 
-  Cpu, 
-  Compass, 
-  Code2, 
-  Award, 
   ArrowRight, 
   CheckCircle, 
   Users, 
   Briefcase, 
-  Zap 
+  Code2 
 } from "lucide-react";
 import { ExperienceFooter } from "@/components/experience/footer";
 
@@ -105,31 +100,23 @@ const personas = [
 export default function HowItWorksPage() {
   return (
     <main className="min-h-screen bg-[#050505] text-white selection:bg-white selection:text-black">
-      {/* Hero Section */}
+      {/* Hero Section - Strict Executive Minimalism */}
       <section className="relative pt-32 sm:pt-40 pb-20 px-6 sm:px-10 md:px-16 max-w-7xl mx-auto overflow-hidden">
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[350px] bg-gradient-to-tr from-white/10 via-emerald-500/10 to-transparent blur-[140px] rounded-full pointer-events-none" />
-
         <div className="relative z-10 flex flex-col items-center text-center max-w-4xl mx-auto">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-white/10 bg-white/5 backdrop-blur-md text-xs font-mono uppercase tracking-widest text-emerald-400 mb-6">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            <span>Developer Onboarding Methodology</span>
-          </div>
-
-          <h1 className="text-4xl sm:text-6xl md:text-7xl font-black uppercase tracking-tighter leading-[0.95] mb-6">
-            How BrainWhite Takes Devs <br className="hidden sm:block" />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-white/80 to-white/40">
-              From Day One to Production
-            </span>
+          {/* Heading - Pure Black & White, No Badges */}
+          <h1 className="text-4xl sm:text-6xl md:text-7xl font-extrabold uppercase tracking-tight text-white mb-6">
+            How BrainWhite Takes Devs From Day One to Production
           </h1>
 
-          <p className="text-base sm:text-lg md:text-xl text-white/60 font-light max-w-2xl leading-relaxed mb-10 font-sans">
+          {/* Subheading - Single Muted Line, No Subheading 2 */}
+          <p className="text-base sm:text-lg md:text-xl text-neutral-400 font-sans max-w-2xl leading-relaxed mb-10">
             A structured, automated framework that transforms complex proprietary codebases into guided onboarding journeys without draining senior engineering resources.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
             <Link
               href="/signup"
-              className="inline-flex items-center justify-center gap-3 w-full sm:w-auto bg-white text-black font-bold text-xs uppercase tracking-wider px-8 py-4 rounded-full hover:scale-105 transition-all shadow-[0_0_30px_rgba(255,255,255,0.2)]"
+              className="inline-flex items-center justify-center gap-3 w-full sm:w-auto bg-white text-black font-bold text-xs uppercase tracking-wider px-8 py-4 rounded-full hover:scale-105 transition-all shadow-lg"
             >
               <span>Get Started in 60s</span>
               <ArrowRight className="w-4 h-4" />
@@ -156,7 +143,7 @@ export default function HowItWorksPage() {
                 <span className="text-5xl sm:text-7xl font-mono font-black text-transparent bg-clip-text bg-gradient-to-b from-white to-white/10">
                   {step.num}
                 </span>
-                <div className="text-xs font-mono uppercase tracking-widest text-emerald-400 mt-2">
+                <div className="text-xs font-mono uppercase tracking-widest text-neutral-400 mt-2">
                   {step.subtitle}
                 </div>
               </div>
@@ -172,7 +159,7 @@ export default function HowItWorksPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 border-t border-white/10">
                   {step.bullets.map((b) => (
                     <div key={b} className="flex items-start gap-2 text-xs font-mono text-white/80">
-                      <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                      <CheckCircle className="w-4 h-4 text-white/70 shrink-0 mt-0.5" />
                       <span>{b}</span>
                     </div>
                   ))}
@@ -186,7 +173,7 @@ export default function HowItWorksPage() {
       {/* Persona Benefits Section */}
       <section className="py-20 px-6 sm:px-10 md:px-16 max-w-7xl mx-auto border-t border-white/10">
         <div className="text-center max-w-3xl mx-auto mb-16">
-          <div className="text-xs font-mono uppercase tracking-widest text-emerald-400 mb-2">Role-Based Impact</div>
+          <div className="text-xs font-mono uppercase tracking-widest text-neutral-400 mb-2">Role-Based Impact</div>
           <h2 className="text-3xl sm:text-5xl font-black uppercase tracking-tight mb-4">
             Engineered for Every Stakeholder
           </h2>

@@ -7,9 +7,7 @@ import {
   EyeOff, 
   FileCheck2, 
   Server, 
-  ArrowRight, 
-  CheckCircle2, 
-  ShieldAlert 
+  ArrowRight 
 } from "lucide-react";
 import { ExperienceFooter } from "@/components/experience/footer";
 
@@ -71,7 +69,7 @@ const faqs = [
   },
   {
     q: "Are my repositories used to train AI models?",
-    a: "Never. All AI calls route through enterprise inference agreements (Groq and Google Cloud) with zero-data-retention policies. Your code is never fed into public training datasets.",
+    a: "Never. All AI calls route through enterprise inference agreements with zero-data-retention policies. Your code is never fed into public training datasets.",
   },
   {
     q: "What permissions does the GitHub integration require?",
@@ -86,31 +84,23 @@ const faqs = [
 export default function SecurityPage() {
   return (
     <main className="min-h-screen bg-[#050505] text-white selection:bg-white selection:text-black">
-      {/* Hero Section */}
+      {/* Hero Section - Strict Executive Minimalism */}
       <section className="relative pt-32 sm:pt-40 pb-20 px-6 sm:px-10 md:px-16 max-w-7xl mx-auto overflow-hidden">
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[350px] bg-gradient-to-tr from-white/10 via-emerald-500/10 to-transparent blur-[140px] rounded-full pointer-events-none" />
-
         <div className="relative z-10 flex flex-col items-center text-center max-w-4xl mx-auto">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-white/10 bg-white/5 backdrop-blur-md text-xs font-mono uppercase tracking-widest text-emerald-400 mb-6">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            <span>Enterprise Security & Compliance</span>
-          </div>
-
-          <h1 className="text-4xl sm:text-6xl md:text-7xl font-black uppercase tracking-tighter leading-[0.95] mb-6">
-            Your Intellectual Property <br className="hidden sm:block" />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-white/80 to-white/40">
-              Stays Yours Forever
-            </span>
+          {/* Heading - Pure Black & White, No Badges */}
+          <h1 className="text-4xl sm:text-6xl md:text-7xl font-extrabold uppercase tracking-tight text-white mb-6">
+            Your Intellectual Property Stays Yours
           </h1>
 
-          <p className="text-base sm:text-lg md:text-xl text-white/60 font-light max-w-2xl leading-relaxed mb-10 font-sans">
-            Engineered from ground up with an ephemeral analysis architecture: zero persistent code storage, cryptographic encryption, and zero AI model training.
+          {/* Subheading - Single Clean Line, No Subheading 2 */}
+          <p className="text-base sm:text-lg md:text-xl text-neutral-400 font-sans max-w-2xl leading-relaxed mb-10">
+            Engineered from the ground up with an ephemeral analysis architecture: zero persistent code storage, cryptographic token encryption, and zero AI model training.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
             <Link
               href="/signup"
-              className="inline-flex items-center justify-center gap-3 w-full sm:w-auto bg-white text-black font-bold text-xs uppercase tracking-wider px-8 py-4 rounded-full hover:scale-105 transition-all shadow-[0_0_30px_rgba(255,255,255,0.2)]"
+              className="inline-flex items-center justify-center gap-3 w-full sm:w-auto bg-white text-black font-bold text-xs uppercase tracking-wider px-8 py-4 rounded-full hover:scale-105 transition-all shadow-lg"
             >
               <span>Start Free Trial</span>
               <ArrowRight className="w-4 h-4" />
@@ -128,7 +118,7 @@ export default function SecurityPage() {
       {/* 6 Security Pillars Grid */}
       <section className="py-20 px-6 sm:px-10 md:px-16 max-w-7xl mx-auto border-t border-white/10">
         <div className="text-center max-w-3xl mx-auto mb-16">
-          <div className="text-xs font-mono uppercase tracking-widest text-emerald-400 mb-2">Defense-In-Depth</div>
+          <div className="text-xs font-mono uppercase tracking-widest text-neutral-400 mb-2">Defense-In-Depth</div>
           <h2 className="text-3xl sm:text-5xl font-black uppercase tracking-tight mb-4">
             Six Guarantees for Enterprise Code
           </h2>
@@ -168,7 +158,7 @@ export default function SecurityPage() {
       {/* Security FAQs */}
       <section className="py-20 px-6 sm:px-10 md:px-16 max-w-5xl mx-auto border-t border-white/10">
         <div className="text-center mb-16">
-          <div className="text-xs font-mono uppercase tracking-widest text-emerald-400 mb-2">Compliance & Privacy</div>
+          <div className="text-xs font-mono uppercase tracking-widest text-neutral-400 mb-2">Compliance &amp; Privacy</div>
           <h2 className="text-3xl sm:text-5xl font-black uppercase tracking-tight mb-4">
             Security Questions Answered
           </h2>

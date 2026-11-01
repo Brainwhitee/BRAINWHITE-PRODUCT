@@ -1,16 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { 
-  Binary, 
-  Workflow, 
-  Database, 
-  Zap, 
-  ShieldCheck, 
-  GitBranch, 
   ArrowRight, 
-  Check, 
-  Terminal, 
-  Cpu 
+  Check
 } from "lucide-react";
 import { ExperienceFooter } from "@/components/experience/footer";
 
@@ -54,8 +46,8 @@ const pipelineStages = [
   {
     step: "05",
     title: "Multi-Model AI Gateway & Failover",
-    desc: "Routes queries across high-throughput Groq inference with automated 5000ms AbortSignal failover to Google Gemini 3.8 Flash & 2.5 Pro.",
-    tags: ["Groq LPU", "Gemini 3.8 Flash", "5s Auto-Timeout"],
+    desc: "Routes queries across high-throughput inference engines with automated 5,000ms AbortSignal failover to secondary reasoning models.",
+    tags: ["High-Throughput Inference", "Auto-Failover Circuit", "Deterministic Routing"],
   },
 ];
 
@@ -71,31 +63,23 @@ const technicalSpecs = [
 export default function ArchitecturePage() {
   return (
     <main className="min-h-screen bg-[#050505] text-white selection:bg-white selection:text-black">
-      {/* Header */}
+      {/* Header - Strict Executive Minimalism */}
       <section className="relative pt-32 sm:pt-40 pb-20 px-6 sm:px-10 md:px-16 max-w-7xl mx-auto overflow-hidden">
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[350px] bg-gradient-to-tr from-white/10 via-cyan-500/10 to-transparent blur-[140px] rounded-full pointer-events-none" />
-
         <div className="relative z-10 flex flex-col items-center text-center max-w-4xl mx-auto">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-white/10 bg-white/5 backdrop-blur-md text-xs font-mono uppercase tracking-widest text-cyan-400 mb-6">
-            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
-            <span>Technical Architecture</span>
-          </div>
-
-          <h1 className="text-4xl sm:text-6xl md:text-7xl font-black uppercase tracking-tighter leading-[0.95] mb-6">
-            Deterministic Graph Processing <br className="hidden sm:block" />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-white/80 to-white/40">
-              Meets Generative Reasoning
-            </span>
+          {/* Heading - Pure Black & White, No Badges */}
+          <h1 className="text-4xl sm:text-6xl md:text-7xl font-extrabold uppercase tracking-tight text-white mb-6">
+            Deterministic Graph Processing Meets Generative Reasoning
           </h1>
 
-          <p className="text-base sm:text-lg md:text-xl text-white/60 font-light max-w-2xl leading-relaxed mb-10">
-            A deep dive into how BrainWhite indexes millions of lines of code into actionable symbol graphs, verifies student PRs, and routes inference across multi-tier LLM providers with sub-second failover.
+          {/* Subheading - Single Clean Line, No Subheading 2 */}
+          <p className="text-base sm:text-lg md:text-xl text-neutral-400 font-sans max-w-2xl leading-relaxed mb-10">
+            A deep dive into how BrainWhite indexes millions of lines of code into actionable symbol graphs, verifies candidate PRs, and routes inference with automated sub-second failover.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
             <Link
               href="/signup"
-              className="inline-flex items-center justify-center gap-3 w-full sm:w-auto bg-white text-black font-bold text-xs uppercase tracking-wider px-8 py-4 rounded-full hover:scale-105 transition-all shadow-[0_0_30px_rgba(255,255,255,0.2)]"
+              className="inline-flex items-center justify-center gap-3 w-full sm:w-auto bg-white text-black font-bold text-xs uppercase tracking-wider px-8 py-4 rounded-full hover:scale-105 transition-all shadow-lg"
             >
               <span>Explore Engine Live</span>
               <ArrowRight className="w-4 h-4" />
@@ -113,9 +97,9 @@ export default function ArchitecturePage() {
       {/* Pipeline Progression */}
       <section className="py-20 px-6 sm:px-10 md:px-16 max-w-7xl mx-auto border-t border-white/10">
         <div className="text-center max-w-3xl mx-auto mb-16">
-          <div className="text-xs font-mono uppercase tracking-widest text-cyan-400 mb-2">Deterministic Processing</div>
+          <div className="text-xs font-mono uppercase tracking-widest text-neutral-400 mb-2">Deterministic Processing</div>
           <h2 className="text-3xl sm:text-5xl font-black uppercase tracking-tight mb-4">
-            The Ingestion & Synthesis Pipeline
+            The Ingestion &amp; Synthesis Pipeline
           </h2>
           <p className="text-sm sm:text-base text-white/60">
             From raw Git commit to an interactive curriculum in five deterministic stages.
@@ -129,7 +113,7 @@ export default function ArchitecturePage() {
               className="rounded-3xl border border-white/10 bg-white/[0.02] p-6 sm:p-8 hover:border-white/30 transition-all flex flex-col md:flex-row md:items-center justify-between gap-6"
             >
               <div className="flex items-start gap-6">
-                <span className="text-3xl sm:text-4xl font-mono font-black text-cyan-400/80">
+                <span className="text-3xl sm:text-4xl font-mono font-black text-white/80">
                   {stage.step}
                 </span>
                 <div className="max-w-2xl">
@@ -161,14 +145,14 @@ export default function ArchitecturePage() {
       <section className="py-20 px-6 sm:px-10 md:px-16 max-w-7xl mx-auto border-t border-white/10">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
           <div className="lg:col-span-5">
-            <div className="text-xs font-mono uppercase tracking-widest text-cyan-400 mb-2">Runtime Benchmarks</div>
+            <div className="text-xs font-mono uppercase tracking-widest text-neutral-400 mb-2">Runtime Benchmarks</div>
             <h2 className="text-3xl sm:text-5xl font-black uppercase tracking-tight mb-6">
               Engineered for Enterprise Scale
             </h2>
             <p className="text-sm sm:text-base text-white/60 leading-relaxed mb-6 font-sans">
-              Built on PostgreSQL connection pooling, asynchronous worker queues, and hardware-accelerated Groq inference pipelines. Designed to handle monorepos with hundreds of thousands of lines of code.
+              Built on PostgreSQL connection pooling, asynchronous worker queues, and hardware-accelerated high-throughput inference pipelines. Designed to handle monorepos with hundreds of thousands of lines of code.
             </p>
-            <div className="flex items-center gap-2 font-mono text-xs text-emerald-400">
+            <div className="flex items-center gap-2 font-mono text-xs text-neutral-300">
               <Check className="w-4 h-4" />
               <span>Production tested against repositories up to 500k LOC</span>
             </div>
@@ -192,39 +176,39 @@ export default function ArchitecturePage() {
         </div>
       </section>
 
-      {/* Multi-Model AI Gateway Breakdown */}
+      {/* Intelligent AI Gateway Breakdown */}
       <section className="py-20 px-6 sm:px-10 md:px-16 max-w-7xl mx-auto border-t border-white/10">
         <div className="rounded-3xl border border-white/10 bg-white/[0.02] p-8 sm:p-12 relative overflow-hidden">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 pb-6 border-b border-white/10">
             <div>
-              <div className="text-xs font-mono uppercase tracking-widest text-purple-400 mb-1">Failover Architecture</div>
+              <div className="text-xs font-mono uppercase tracking-widest text-neutral-400 mb-1">Failover Architecture</div>
               <h3 className="text-2xl sm:text-3xl font-black tracking-tight">Multi-Provider Intelligent Gateway</h3>
             </div>
-            <span className="text-xs font-mono bg-purple-500/10 text-purple-400 border border-purple-500/20 px-3 py-1.5 rounded-full w-fit">
+            <span className="text-xs font-mono bg-white/5 text-white/80 border border-white/10 px-3 py-1.5 rounded-full w-fit">
               High Availability Architecture
             </span>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 font-mono text-xs">
             <div className="rounded-2xl border border-white/10 bg-black/50 p-6">
-              <div className="text-emerald-400 font-bold mb-3 flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-emerald-400" />
-                Primary Inference (Groq LPU)
+              <div className="text-white font-bold mb-3 flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-white" />
+                Primary High-Throughput Engine
               </div>
               <p className="text-white/60 mb-4 leading-relaxed font-sans text-sm">
                 Fast conversational pair-programming and code snippet explanations. Instant response times under 900ms.
               </p>
               <div className="space-y-1.5 text-white/50 font-sans text-xs">
-                <div>• High-context code reasoning & symbol lookups</div>
+                <div>• High-context code reasoning &amp; symbol lookups</div>
                 <div>• Ultra-fast micro completions for interactive terminal tasks</div>
-                <div>• Hardware LPU execution for sub-second latency</div>
+                <div>• Hardware-accelerated execution for sub-second latency</div>
               </div>
             </div>
 
             <div className="rounded-2xl border border-white/10 bg-black/50 p-6">
-              <div className="text-cyan-400 font-bold mb-3 flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-cyan-400" />
-                Secondary Inference (Google Gemini)
+              <div className="text-white font-bold mb-3 flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-white/70" />
+                Deep Synthesis Reasoning Engine
               </div>
               <p className="text-white/60 mb-4 leading-relaxed font-sans text-sm">
                 Deep architectural analysis, multi-week progress report generation, and automated fallback if primary encounters limits.
