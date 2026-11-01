@@ -1,6 +1,8 @@
 "use client";
 
 import * as React from "react"
+import Image from "next/image"
+import NextLink from "next/link"
 
 /**
  * Doodle Crew Footer — a site footer drawn like the last page of a sketchbook.
@@ -262,9 +264,9 @@ export interface DoodleCrewFooterProps {
 }
 
 const PRESETS = {
-  auto: { background: "#050505", ink: "#f4f1ea", accent: "#ff8a3d" },
+  auto: { background: "#050505", ink: "#ffffff", accent: "#38bdf8" },
   paper: { background: "#ffffff", ink: "#0d0d0d", accent: "#ff6b2c" },
-  night: { background: "#050505", ink: "#f4f1ea", accent: "#ff8a3d" },
+  night: { background: "#050505", ink: "#ffffff", accent: "#38bdf8" },
   riso: { background: "#f4f2ff", ink: "#2433c9", accent: "#ff4f8b" },
   sunny: { background: "#ffd94a", ink: "#141414", accent: "#e8402a" },
 }
@@ -322,7 +324,7 @@ const DEFAULT_ACTIONS: FooterAction[] = [
   { label: "Start Free Trial", href: "/signup", icon: "bolt", variant: "solid" },
 ]
 
-const DEFAULT_DOODLES: DoodleKind[] = ["flame", "sandwich", "star", "flame", "heart", "sandwich", "bolt", "sparkle"]
+const DEFAULT_DOODLES: DoodleKind[] = ["sparkle", "star", "bolt", "plane", "sparkle", "star", "bolt", "heart"]
 
 const ACCENT = { flame: "#ff7a1a", flameCore: "#ffd23f", gold: "#ffd23f", heart: "#ff5c7a", bread: "#f2c48d", crumb: "#fff1d6", leaf: "#5fb247", beak: "#ff9f1c", cap: "#ff4d4d" }
 
@@ -605,20 +607,28 @@ const Link = ({ link, className }: { link: FooterLink; className?: string }) =>
   )
 
 export default function DoodleCrewFooter({
-  wordmark = "MISCHIEF",
-  brand = "mischief",
-  blurb = "We draw every frame by hand and ship a new chapter every season. Come make a little trouble with us.",
-  tagline = "A hand-drawn world for the troublemaker in all of us.",
+  wordmark = "BRAINWHITE",
+  brand = "BrainWhite",
+  blurb = "B2B Developer Readiness Platform. Automated codebase mapping, role-specific learning paths, and verifiable PR grading.",
+  tagline = "Transform enterprise codebases into day-one engineering readiness.",
   columns = DEFAULT_COLUMNS,
-  actions = DEFAULT_ACTIONS,
-  copyright = " 2026 Mischief Games. Drawn by hand in Lisbon.",
-  legal = [{ label: "Privacy", href: "#" }, { label: "Terms", href: "#" }, { label: "Cookies", href: "#" }],
-  socials = [{ label: "Discord", href: "#" }, { label: "YouTube", href: "#" }, { label: "TikTok", href: "#" }, { label: "X", href: "#" }],
+  actions = [],
+  copyright = "© 2026 BrainWhite Inc. All rights reserved.",
+  legal = [
+    { label: "Privacy", href: "/privacy" },
+    { label: "Terms", href: "/terms" },
+    { label: "Security", href: "/security" },
+  ],
+  socials = [
+    { label: "LKDN", href: "https://www.linkedin.com/company/brain-white/posts/" },
+    { label: "GITHUB", href: "https://github.com/Brainwhitee/BRAINWHITE-PRODUCT" },
+    { label: "EMAIL", href: "mailto:contact@brainwhite.com" },
+  ],
   backToTop = true,
   crew = DEFAULT_CREW,
   doodles = DEFAULT_DOODLES,
-  doodleCount = 12,
-  preset = "auto",
+  doodleCount = 10,
+  preset = "night",
   palette,
   fontFamily = DEFAULT_FONT,
   serifFamily = DEFAULT_SERIF,
@@ -1042,19 +1052,15 @@ export default function DoodleCrewFooter({
 
       <div className="dcf-top dcf-rise" style={{ "--d": "0ms" } as React.CSSProperties}>
         <div className="dcf-brand">
-          <span className="dcf-logo" aria-hidden="true">
-            <svg viewBox="-60 -150 120 120" width="30" height="30">
-              <g className="dcf-art">
-                <path d="M-30 -104 C-40 -112 -44 -124 -40 -138 C-32 -129 -22 -122 -13 -114 Z" />
-                <path d="M18 -114 C26 -124 36 -130 47 -133 C45 -120 41 -110 32 -101 Z" />
-                <path d="M-44 -30 C-54 -56 -54 -70 -42 -90 C-32 -110 -14 -118 2 -118 C22 -118 40 -108 48 -88 C58 -68 56 -54 48 -30 Z" />
-                <circle className="k" cx="-15" cy="-84" r="5.5" />
-                <circle className="k" cx="13" cy="-86" r="5.5" />
-                <path className="n" d="M-12 -66 C-6 -60 6 -60 12 -67" />
-              </g>
-            </svg>
-          </span>
-          <span className="dcf-brandname">{brand}</span>
+          <NextLink href="/" className="inline-flex items-center gap-3 hover:opacity-80 transition-opacity">
+            <Image
+              src="/Brainwhitelogo-transparent.png"
+              alt="BrainWhite"
+              width={140}
+              height={32}
+              className="h-7 w-auto object-contain"
+            />
+          </NextLink>
         </div>
         {blurb && <p className="dcf-blurb">{blurb}</p>}
         {columns.length > 0 && (
