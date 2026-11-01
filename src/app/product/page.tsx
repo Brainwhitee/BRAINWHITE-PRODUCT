@@ -15,6 +15,7 @@ import {
   Cpu
 } from "lucide-react";
 import { ExperienceFooter } from "@/components/experience/footer";
+import { SonarGrid } from "@/components/ui/sonar-grid";
 
 export const metadata: Metadata = {
   title: "Product — BrainWhite AI Developer Readiness Engine",
@@ -124,8 +125,11 @@ export default function ProductPage() {
   return (
     <main className="min-h-screen bg-white text-neutral-900 selection:bg-neutral-900 selection:text-white">
       
-      {/* 1. HERO SECTION - SOLID WHITE WITH STRICT EXECUTIVE MINIMALISM */}
+      {/* 1. HERO SECTION - SOLID WHITE WITH SONAR GRID BACKGROUND */}
       <section className="relative pt-32 sm:pt-40 pb-20 px-6 sm:px-10 md:px-16 max-w-7xl mx-auto overflow-hidden">
+        {/* Interactive Sonar Grid Canvas */}
+        <SonarGrid className="absolute inset-0 z-0" />
+
         <div className="relative z-10 flex flex-col items-center text-center max-w-4xl mx-auto">
           {/* Heading - Pure Black & White, No Badges */}
           <h1 className="text-4xl sm:text-6xl md:text-7xl font-extrabold uppercase tracking-tight text-neutral-950 mb-6">
@@ -154,8 +158,8 @@ export default function ProductPage() {
           </div>
         </div>
 
-        {/* 2. DEPLOY PIPELINE COMPONENT - SOLID WHITE THEME */}
-        <div className="mt-20 rounded-3xl border border-neutral-200 bg-neutral-50/60 p-6 sm:p-10 shadow-xs relative overflow-hidden">
+        {/* 2. DEPLOY PIPELINE COMPONENT */}
+        <div className="mt-20 rounded-3xl border border-neutral-200 bg-neutral-50/60 p-6 sm:p-10 shadow-xs relative z-10 overflow-hidden">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-neutral-200 mb-8">
             <div>
               <div className="text-xs font-mono uppercase tracking-widest text-neutral-500 font-medium">

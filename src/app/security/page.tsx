@@ -10,6 +10,7 @@ import {
   ArrowRight 
 } from "lucide-react";
 import { ExperienceFooter } from "@/components/experience/footer";
+import { SonarGrid } from "@/components/ui/sonar-grid";
 
 export const metadata: Metadata = {
   title: "Security & Compliance — Enterprise Code Protection",
@@ -84,8 +85,11 @@ const faqs = [
 export default function SecurityPage() {
   return (
     <main className="min-h-screen bg-white text-neutral-900 selection:bg-neutral-900 selection:text-white">
-      {/* Hero Section - Solid White with Strict Executive Minimalism */}
+      {/* Hero Section - Solid White with Strict Executive Minimalism & Sonar Grid */}
       <section className="relative pt-32 sm:pt-40 pb-20 px-6 sm:px-10 md:px-16 max-w-7xl mx-auto overflow-hidden">
+        {/* Interactive Sonar Grid Canvas Background */}
+        <SonarGrid className="absolute inset-0 z-0" />
+
         <div className="relative z-10 flex flex-col items-center text-center max-w-4xl mx-auto">
           {/* Heading - Pure Black & White, No Badges */}
           <h1 className="text-4xl sm:text-6xl md:text-7xl font-extrabold uppercase tracking-tight text-neutral-950 mb-6">

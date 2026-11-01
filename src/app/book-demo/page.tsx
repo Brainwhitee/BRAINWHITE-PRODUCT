@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ExperienceFooter } from "@/components/experience/footer";
+import { SonarGrid } from "@/components/ui/sonar-grid";
 
 export default function BookDemoPage() {
   const [isTyping, setIsTyping] = useState(false);
@@ -74,7 +75,10 @@ export default function BookDemoPage() {
   return (
     <main className="min-h-screen bg-white text-neutral-900 selection:bg-neutral-900 selection:text-white flex flex-col justify-between">
       {/* Main Centered Minimal Form */}
-      <div className="flex-1 flex flex-col items-center justify-center px-4 py-24 sm:py-28 relative">
+      <div className="flex-1 flex flex-col items-center justify-center px-4 py-24 sm:py-28 relative overflow-hidden">
+        {/* Interactive Sonar Grid Canvas Background */}
+        <SonarGrid className="absolute inset-0 z-0" />
+
         <div className="relative z-10 w-full max-w-md">
           {/* Header - Black and White, Single Heading and Subheading, No Subheading 2 */}
           <div className="text-center mb-6">

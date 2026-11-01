@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ArrowRight, ShieldCheck } from "lucide-react";
 import { ExperienceFooter } from "@/components/experience/footer";
 import { PricingSection } from "@/components/pricing/pricing-section";
+import { SonarGrid } from "@/components/ui/sonar-grid";
 
 export const metadata: Metadata = {
   title: "Pricing — Transparent Plans for Modern Engineering Teams",
@@ -38,8 +39,11 @@ const faqs = [
 export default function PricingPage() {
   return (
     <main className="min-h-screen bg-white text-neutral-900 selection:bg-neutral-900 selection:text-white">
-      {/* Hero Section - Solid White with Strict Executive Minimalism */}
+      {/* Hero Section - Solid White with Strict Executive Minimalism & Sonar Grid */}
       <section className="relative pt-32 sm:pt-40 pb-20 px-6 sm:px-10 md:px-16 max-w-7xl mx-auto overflow-hidden">
+        {/* Interactive Sonar Grid Canvas Background */}
+        <SonarGrid className="absolute inset-0 z-0" />
+
         <div className="relative z-10 flex flex-col items-center text-center max-w-4xl mx-auto mb-16">
           {/* Heading - Pure Black & White, No Badges */}
           <h1 className="text-4xl sm:text-6xl md:text-7xl font-extrabold uppercase tracking-tight text-neutral-950 mb-6">
@@ -53,10 +57,12 @@ export default function PricingPage() {
         </div>
 
         {/* Interactive Pricing Section */}
-        <PricingSection />
+        <div className="relative z-10">
+          <PricingSection />
+        </div>
 
         {/* Enterprise Security Callout Banner */}
-        <div className="mt-20 max-w-5xl mx-auto rounded-3xl border border-neutral-200 bg-neutral-50/70 p-8 sm:p-10 flex flex-col md:flex-row items-center justify-between gap-6 shadow-xs">
+        <div className="relative z-10 mt-20 max-w-5xl mx-auto rounded-3xl border border-neutral-200 bg-neutral-50/70 p-8 sm:p-10 flex flex-col md:flex-row items-center justify-between gap-6 shadow-xs">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-2xl bg-white border border-neutral-200 flex items-center justify-center shrink-0 shadow-2xs">
               <ShieldCheck className="w-6 h-6 text-neutral-900" />
@@ -78,7 +84,7 @@ export default function PricingPage() {
         </div>
 
         {/* Frequently Asked Questions */}
-        <div className="mt-24 max-w-4xl mx-auto">
+        <div className="relative z-10 mt-24 max-w-4xl mx-auto">
           <h2 className="text-2xl sm:text-4xl font-bold uppercase tracking-tight text-neutral-950 text-center mb-12">
             Frequently Asked Questions
           </h2>
