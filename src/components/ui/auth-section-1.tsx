@@ -165,8 +165,16 @@ export default function AuthSectionOne({ mode = "login", initialError }: AuthSec
   return (
     <section className="min-h-screen bg-white p-3 text-black antialiased [font-synthesis:none] dark:bg-[#050505] dark:text-white">
       <div className="grid min-h-[calc(100vh-1.5rem)] gap-6 lg:grid-cols-[0.94fr_1.06fr]">
-        <div className="flex min-h-[760px] items-start rounded-md border border-black/20 bg-white px-6 py-12 sm:px-10 dark:border-white/10 dark:bg-[#0a0a0a] lg:min-h-0 lg:px-14 lg:py-28 xl:px-20">
+        <div className="flex items-start rounded-2xl border border-black/15 bg-white px-5 py-8 sm:px-10 dark:border-white/10 dark:bg-[#0a0a0a] lg:min-h-0 lg:px-14 lg:py-20 xl:px-20">
           <div className="mx-auto w-full max-w-[590px]">
+            <div className="mb-6">
+              <a 
+                href="/" 
+                className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-black/60 hover:text-black dark:text-white/60 dark:hover:text-white transition-colors"
+              >
+                <span>&larr; Back to Home</span>
+              </a>
+            </div>
             <div>
               <h1 className="text-3xl font-medium tracking-[-0.04em] sm:text-4xl lg:text-[42px] lg:leading-[1.05] xl:text-[48px]">
                 {isSignup ? "Create an account" : "Welcome back"}
@@ -360,7 +368,7 @@ export default function AuthSectionOne({ mode = "login", initialError }: AuthSec
           </div>
         </div>
 
-        <div className="relative flex min-h-[720px] overflow-hidden rounded-md bg-black p-8 text-white sm:p-12 lg:min-h-0">
+        <div className="hidden lg:flex relative overflow-hidden rounded-2xl bg-black p-8 text-white sm:p-12 lg:min-h-0">
           <GrainGradient
             speed={1}
             scale={1}
@@ -383,15 +391,14 @@ export default function AuthSectionOne({ mode = "login", initialError }: AuthSec
               Build faster
             </h2>
 
-            <a
-              href="#"
-              className="mb-0 inline-flex h-12 max-w-full items-center gap-3 rounded-[10px] border border-white/25 px-5 text-base font-medium text-white/85 backdrop-blur-sm transition-colors hover:border-white/45 hover:text-white xl:mb-32 xl:px-6 xl:text-2xl"
+            <div
+              className="mb-0 inline-flex h-11 max-w-full items-center gap-3 rounded-xl border border-white/15 bg-white/5 px-5 text-xs font-mono font-medium text-white/60 backdrop-blur-sm pointer-events-none select-none xl:mb-32 xl:px-6 xl:text-sm"
             >
-              <WindowsIcon className="size-5 shrink-0 xl:size-7" />
+              <WindowsIcon className="size-4 shrink-0 xl:size-5" />
               <span className="truncate whitespace-nowrap">
-                Download the Windows app
+                Windows App · Beta Coming Soon
               </span>
-            </a>
+            </div>
           </div>
         </div>
       </div>

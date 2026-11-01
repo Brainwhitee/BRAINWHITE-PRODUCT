@@ -227,18 +227,26 @@ export function Shell({
 
       {/* MAIN CONTENT AREA */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Top header bar for mobile drawer toggle & breadcrumb context */}
+        {/* Top header bar: Minimal executive brand on mobile, unified Menu handles navigation */}
         <header className="sticky top-0 z-20 flex items-center justify-between border-b border-slate-200/80 bg-white/95 backdrop-blur-md px-4 sm:px-6 py-3">
-          <MobileNavToggle>
-            {renderSidebarContent()}
-          </MobileNavToggle>
+          <Link href="/dashboard" className="flex items-center gap-2 md:hidden">
+            <div className="w-7 h-7 rounded-lg bg-black flex items-center justify-center text-white font-black text-xs shadow-xs">
+              BW
+            </div>
+            <span className="font-bold text-sm text-slate-900 tracking-tight">BrainWhite</span>
+            <span className="text-[10px] font-mono text-slate-500 uppercase px-1.5 py-0.5 rounded bg-slate-100">
+              {user.org.name}
+            </span>
+          </Link>
 
-          {/* Clean space for top-right MENU pill */}
-          <div className="flex items-center gap-3 pr-24 md:pr-28">
-            <span className="hidden sm:inline-block text-xs font-medium text-slate-500">
+          <div className="hidden md:flex items-center gap-3">
+            <span className="text-xs font-semibold text-slate-600">
               {user.org.name}
             </span>
           </div>
+
+          {/* Clean clearance for top-right Menu pill */}
+          <div className="w-20 md:w-28 shrink-0" />
         </header>
 
         {/* Main page content */}

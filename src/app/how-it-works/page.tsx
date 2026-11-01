@@ -106,13 +106,13 @@ export default function HowItWorksPage() {
   return (
     <main className="min-h-screen bg-[#050505] text-white selection:bg-white selection:text-black">
       {/* Hero Section */}
-      <section className="relative pt-32 sm:pt-40 pb-20 px-4 sm:px-6 md:px-12 max-w-7xl mx-auto overflow-hidden">
+      <section className="relative pt-32 sm:pt-40 pb-20 px-6 sm:px-10 md:px-16 max-w-7xl mx-auto overflow-hidden">
         <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[350px] bg-gradient-to-tr from-white/10 via-emerald-500/10 to-transparent blur-[140px] rounded-full pointer-events-none" />
 
         <div className="relative z-10 flex flex-col items-center text-center max-w-4xl mx-auto">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/10 bg-white/5 backdrop-blur-md text-[11px] font-mono uppercase tracking-widest text-emerald-400 mb-6">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-white/10 bg-white/5 backdrop-blur-md text-xs font-mono uppercase tracking-widest text-emerald-400 mb-6">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            WORKFLOW // THE 5-STEP JOURNEY
+            <span>Developer Onboarding Methodology</span>
           </div>
 
           <h1 className="text-4xl sm:text-6xl md:text-7xl font-black uppercase tracking-tighter leading-[0.95] mb-6">
@@ -122,21 +122,21 @@ export default function HowItWorksPage() {
             </span>
           </h1>
 
-          <p className="text-base sm:text-lg md:text-xl text-white/60 font-light max-w-2xl leading-relaxed mb-10">
+          <p className="text-base sm:text-lg md:text-xl text-white/60 font-light max-w-2xl leading-relaxed mb-10 font-sans">
             A structured, automated framework that transforms complex proprietary codebases into guided onboarding journeys without draining senior engineering resources.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
             <Link
               href="/signup"
-              className="inline-flex items-center justify-center gap-3 w-full sm:w-auto bg-white text-black font-semibold text-sm px-8 py-3.5 rounded-full hover:scale-105 transition-all shadow-[0_0_30px_rgba(255,255,255,0.2)]"
+              className="inline-flex items-center justify-center gap-3 w-full sm:w-auto bg-white text-black font-bold text-xs uppercase tracking-wider px-8 py-4 rounded-full hover:scale-105 transition-all shadow-[0_0_30px_rgba(255,255,255,0.2)]"
             >
               <span>Get Started in 60s</span>
               <ArrowRight className="w-4 h-4" />
             </Link>
             <Link
               href="/book-demo"
-              className="inline-flex items-center justify-center gap-2 w-full sm:w-auto border border-white/20 bg-white/5 hover:border-white/50 text-white font-medium text-sm px-8 py-3.5 rounded-full transition-colors backdrop-blur-sm"
+              className="inline-flex items-center justify-center gap-2 w-full sm:w-auto border border-white/20 bg-white/5 hover:border-white/50 text-white font-semibold text-xs uppercase tracking-wider px-8 py-4 rounded-full transition-colors backdrop-blur-sm"
             >
               <span>Book Interactive Demo</span>
             </Link>
@@ -145,12 +145,12 @@ export default function HowItWorksPage() {
       </section>
 
       {/* 5-Step Process */}
-      <section className="py-20 px-4 sm:px-6 md:px-12 max-w-7xl mx-auto border-t border-white/10">
-        <div className="space-y-12">
+      <section className="py-20 px-6 sm:px-10 md:px-16 max-w-7xl mx-auto border-t border-white/10">
+        <div className="space-y-8">
           {steps.map((step) => (
             <div
               key={step.num}
-              className="rounded-2xl border border-white/10 bg-white/[0.02] p-8 sm:p-12 hover:border-white/30 transition-all grid grid-cols-1 lg:grid-cols-12 gap-8 items-start"
+              className="rounded-3xl border border-white/10 bg-white/[0.02] p-8 sm:p-12 hover:border-white/30 transition-all grid grid-cols-1 lg:grid-cols-12 gap-8 items-start"
             >
               <div className="lg:col-span-3">
                 <span className="text-5xl sm:text-7xl font-mono font-black text-transparent bg-clip-text bg-gradient-to-b from-white to-white/10">
@@ -162,10 +162,10 @@ export default function HowItWorksPage() {
               </div>
 
               <div className="lg:col-span-9">
-                <h3 className="text-2xl sm:text-3xl font-bold mb-4 tracking-tight">
+                <h3 className="text-2xl sm:text-3xl font-bold mb-3 tracking-tight">
                   {step.title}
                 </h3>
-                <p className="text-sm sm:text-base text-white/60 leading-relaxed font-light mb-6 max-w-3xl">
+                <p className="text-sm sm:text-base text-white/60 leading-relaxed font-sans mb-6 max-w-3xl">
                   {step.desc}
                 </p>
 
@@ -184,14 +184,14 @@ export default function HowItWorksPage() {
       </section>
 
       {/* Persona Benefits Section */}
-      <section className="py-20 px-4 sm:px-6 md:px-12 max-w-7xl mx-auto border-t border-white/10">
+      <section className="py-20 px-6 sm:px-10 md:px-16 max-w-7xl mx-auto border-t border-white/10">
         <div className="text-center max-w-3xl mx-auto mb-16">
-          <div className="text-xs font-mono uppercase tracking-widest text-emerald-400 mb-3">ROLE-BASED VALUE</div>
+          <div className="text-xs font-mono uppercase tracking-widest text-emerald-400 mb-2">Role-Based Impact</div>
           <h2 className="text-3xl sm:text-5xl font-black uppercase tracking-tight mb-4">
-            Transforming Every Stakeholder's Day
+            Engineered for Every Stakeholder
           </h2>
-          <p className="text-sm sm:text-base text-white/60">
-            Engineered for developers, managers, and leadership alike.
+          <p className="text-sm sm:text-base text-white/60 font-sans">
+            Delivering clarity and velocity for developers, managers, and leadership alike.
           </p>
         </div>
 
@@ -201,14 +201,14 @@ export default function HowItWorksPage() {
             return (
               <div
                 key={p.role}
-                className="rounded-2xl border border-white/10 bg-white/[0.02] p-8 hover:border-white/30 transition-all flex flex-col justify-between"
+                className="rounded-3xl border border-white/10 bg-white/[0.02] p-8 hover:border-white/30 transition-all flex flex-col justify-between"
               >
                 <div>
-                  <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center text-white mb-6">
+                  <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center text-white mb-6">
                     <Icon className="w-6 h-6" />
                   </div>
                   <h3 className="text-lg font-bold mb-3 tracking-tight">{p.role}</h3>
-                  <p className="text-xs sm:text-sm text-white/60 leading-relaxed font-light">
+                  <p className="text-xs sm:text-sm text-white/60 leading-relaxed font-sans">
                     {p.benefit}
                   </p>
                 </div>
@@ -219,24 +219,24 @@ export default function HowItWorksPage() {
       </section>
 
       {/* Bottom CTA */}
-      <section className="py-20 px-4 sm:px-6 md:px-12 max-w-5xl mx-auto text-center border-t border-white/10">
+      <section className="py-20 px-6 sm:px-10 md:px-16 max-w-5xl mx-auto text-center border-t border-white/10">
         <h2 className="text-3xl sm:text-5xl font-black uppercase tracking-tighter mb-6">
           See Your Codebase Graph in Action
         </h2>
-        <p className="text-sm sm:text-base text-white/60 max-w-xl mx-auto mb-8 font-light">
+        <p className="text-sm sm:text-base text-white/60 max-w-xl mx-auto mb-8 font-sans font-light">
           Set up in less than 2 minutes and experience automated candidate onboarding.
         </p>
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
           <Link
             href="/signup"
-            className="inline-flex items-center justify-center gap-3 w-full sm:w-auto bg-white text-black font-semibold text-sm px-8 py-3.5 rounded-full hover:scale-105 transition-transform"
+            className="inline-flex items-center justify-center gap-3 w-full sm:w-auto bg-white text-black font-bold text-xs uppercase tracking-wider px-8 py-4 rounded-full hover:scale-105 transition-transform"
           >
             <span>Start Free Trial</span>
             <ArrowRight className="w-4 h-4" />
           </Link>
           <Link
             href="/book-demo"
-            className="inline-flex items-center justify-center gap-2 w-full sm:w-auto border border-white/20 hover:border-white/50 text-white font-medium text-sm px-8 py-3.5 rounded-full transition-colors"
+            className="inline-flex items-center justify-center gap-2 w-full sm:w-auto border border-white/20 hover:border-white/50 text-white font-semibold text-xs uppercase tracking-wider px-8 py-4 rounded-full transition-colors"
           >
             <span>Request Demo</span>
           </Link>

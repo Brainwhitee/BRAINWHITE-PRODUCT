@@ -1,7 +1,8 @@
 "use client";
+
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import Image from "next/image";
+import { GlassIconReveal } from "@/components/ui/liquid-glass-logo-reveal";
 
 export function Preloader() {
   const [loading, setLoading] = useState(true);
@@ -18,12 +19,12 @@ export function Preloader() {
           setTimeout(() => {
             setLoading(false);
             document.body.style.overflow = "";
-          }, 400); // Short pause at 100%
+          }, 450); // Clean finish at 100%
           return 100;
         }
-        return prev + Math.floor(Math.random() * 15) + 5;
+        return prev + Math.floor(Math.random() * 15) + 6;
       });
-    }, 100);
+    }, 90);
 
     return () => {
       clearInterval(timer);
@@ -38,38 +39,48 @@ export function Preloader() {
           key="preloader"
           initial={{ y: 0 }}
           exit={{ y: "-100%" }}
-          transition={{ duration: 0.8, ease: [0.76, 0, 0.24, 1] }}
-          className="fixed inset-0 z-[1000] flex flex-col items-center justify-center bg-[#050505] text-white"
+          transition={{ duration: 0.85, ease: [0.76, 0, 0.24, 1] }}
+          className="fixed inset-0 z-[1000] flex flex-col items-center justify-center bg-[#050505] text-white select-none"
         >
-          <div className="flex flex-col items-center gap-8">
-            <div className="overflow-hidden flex flex-col items-center gap-3">
-              <Image
-                src="/Brainwhitelogo-transparent.png"
-                alt="BrainWhite"
-                width={180}
-                height={48}
-                className="h-9 w-auto object-contain"
-                priority
+          <div className="flex flex-col items-center gap-6">
+            {/* Liquid Glass Logo Reveal Component */}
+            <div className="w-56 h-36 flex items-center justify-center overflow-hidden rounded-2xl">
+              <GlassIconReveal
+                logo="/Brainwhitelogo-transparent.png"
+                label="BrainWhite"
+                look="dark"
+                background="#050505"
+                logoColor="#ffffff"
+                tileSize={240}
+                logoScale={0.75}
+                finalScale={0.88}
+                className="w-full h-full"
               />
-              <motion.span 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 0.6 }}
-                transition={{ duration: 0.6, ease: "easeOut" }}
-                className="text-[10px] tracking-[0.4em] font-mono uppercase text-white/60"
-              >
-                Developer Readiness Engine
-              </motion.span>
             </div>
-            
-            <div className="text-giant font-light tabular-nums leading-none tracking-tighter">
+
+            {/* Bold White Brain Name */}
+            <div className="flex flex-col items-center gap-1">
+              <motion.h1
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, ease: "easeOut" }}
+                className="text-2xl sm:text-3xl font-black uppercase tracking-wider text-white"
+              >
+                BrainWhite
+              </motion.h1>
+            </div>
+
+            {/* Extra Bold & Large Progress Counter */}
+            <div className="text-7xl sm:text-8xl md:text-9xl font-black font-mono tabular-nums leading-none tracking-tighter text-white mt-2">
               {progress}
-              <span className="text-large opacity-50 ml-1">%</span>
+              <span className="text-3xl sm:text-5xl font-light text-white/40 ml-2">%</span>
             </div>
           </div>
-          
-          <div className="absolute bottom-10 left-1/2 -translate-x-1/2 w-48 h-[1px] bg-white/20 overflow-hidden">
-            <motion.div 
-              className="h-full bg-white"
+
+          {/* Minimalist Progress Track */}
+          <div className="absolute bottom-12 left-1/2 -translate-x-1/2 w-64 h-[2px] bg-white/10 rounded-full overflow-hidden">
+            <motion.div
+              className="h-full bg-white rounded-full shadow-[0_0_12px_rgba(255,255,255,0.8)]"
               initial={{ width: "0%" }}
               animate={{ width: `${progress}%` }}
               transition={{ ease: "linear" }}

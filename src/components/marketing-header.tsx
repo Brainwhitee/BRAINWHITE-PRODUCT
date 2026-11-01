@@ -1,7 +1,8 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { Navbar } from "@/components/navbar";
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import { Menu } from "@/components/experience/Menu";
 
 const DASHBOARD_ROUTES = [
@@ -29,7 +30,7 @@ export function MarketingHeader() {
     "/verify-email",
     "/invite",
   ];
-  if (authPaths.some((p) => pathname === p || pathname.startsWith(p + "/"))) {
+  if (authPaths.some((p) => pathname === p || pathname?.startsWith(p + "/"))) {
     return null;
   }
 
@@ -38,7 +39,6 @@ export function MarketingHeader() {
 
   if (isDashboard) {
     // For all user dashboards:
-    // Remove the landing page navbar (which had "How It Works", "Security", "Pricing", etc.)
     // Only keep the Menu button, configured specifically for the dashboard user.
     return <Menu isDashboard={true} />;
   }
@@ -48,10 +48,19 @@ export function MarketingHeader() {
     return null;
   }
 
-  // Standard public marketing pages (e.g. /product, /architecture, /how-it-works, /security, /pricing)
+  // Standard public marketing pages (e.g. /product, /architecture, /how-it-works, /security, /pricing, /book-demo)
+  // Per user instruction: Remove the floating navbar, keep the Menu, and provide a sleek "Back to Home" option.
   return (
     <>
-      <Navbar />
+      <div className="fixed top-6 left-6 z-50">
+        <Link 
+          href="/" 
+          className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-black/80 hover:bg-white hover:text-black backdrop-blur-md px-4 py-2 text-xs font-bold uppercase tracking-wider text-white transition-all shadow-lg hover:scale-105"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" />
+          <span>Back to Home</span>
+        </Link>
+      </div>
       <Menu isDashboard={false} />
     </>
   );

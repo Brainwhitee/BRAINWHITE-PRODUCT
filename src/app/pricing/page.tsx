@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Check, ArrowRight, Sparkles } from "lucide-react";
+import { Check, ArrowRight, ShieldCheck, HelpCircle } from "lucide-react";
 import { ExperienceFooter } from "@/components/experience/footer";
+import { PricingSection } from "@/components/pricing/pricing-section";
 
 export const metadata: Metadata = {
   title: "Pricing — Transparent Plans for Modern Engineering Teams",
@@ -15,62 +16,22 @@ export const metadata: Metadata = {
   },
 };
 
-const tiers = [
+const faqs = [
   {
-    name: "Starter Trial",
-    badge: "14 DAYS FREE",
-    price: "$0",
-    period: "for 14 days",
-    desc: "Experience automated AST knowledge graphs and test candidate onboarding on your first repo.",
-    features: [
-      "1 Connected GitHub Repository",
-      "Up to 3 Active Candidates",
-      "Automated AST Knowledge Graph",
-      "Personalized Learning Path Generator",
-      "Standard AI Pair-Programmer Tutor",
-      "Community & Discord Support",
-    ],
-    cta: "Start Free Trial",
-    href: "/signup",
-    popular: false,
+    q: "How does the 14-day trial work?",
+    a: "Connect a repository in 1 click via our native GitHub App. You get full access to automated AST knowledge graphs, learning paths, and PR evaluation for up to 3 engineers without entering a credit card.",
   },
   {
-    name: "Growth Team",
-    badge: "MOST POPULAR",
-    price: "$49",
-    period: "per candidate / month",
-    desc: "For engineering teams actively hiring and scaling developer velocity with full telemetry.",
-    features: [
-      "Unlimited GitHub Repositories",
-      "Up to 25 Active Candidates",
-      "Real-time 7-Pillar Developer Telemetry",
-      "Automated Weekly Executive Reports",
-      "Live Pull Request & Git Webhook Sync",
-      "Sub-second AI Inference (Groq + Gemini)",
-      "Priority Email & Slack Support",
-    ],
-    cta: "Start 14-Day Free Trial",
-    href: "/signup",
-    popular: true,
+    q: "Is customer source code stored permanently on BrainWhite servers?",
+    a: "Never. We employ an ephemeral analysis architecture: repository tarballs are loaded into isolated temporary containers for AST parsing and immediately purged. We never train public AI models on your IP.",
   },
   {
-    name: "Enterprise",
-    badge: "CUSTOM SCALE",
-    price: "Custom",
-    period: "annual agreements",
-    desc: "For engineering organizations with strict security requirements, monorepos, and SSO.",
-    features: [
-      "Unlimited Repositories & Monorepo Support",
-      "Unlimited Candidates & Team Workspaces",
-      "Dedicated PostgreSQL Instance / VPC",
-      "Custom Fine-Tuned AI Models on Private Nodes",
-      "SAML / Okta SSO & Directory Sync",
-      "Dedicated Solutions Architect & SLA",
-      "SOC 2 Type II & Security Review Assistance",
-    ],
-    cta: "Talk with Enterprise Team",
-    href: "/book-demo",
-    popular: false,
+    q: "Can I connect private repositories?",
+    a: "Yes. Our native GitHub App automatically issues fine-grained, short-lived tokens per organization with least-privilege read access. Organizations can also supply their own encrypted Personal Access Tokens.",
+  },
+  {
+    q: "What programming languages and frameworks are supported?",
+    a: "BrainWhite provides first-class deep AST symbol resolution for TypeScript, JavaScript, Python, Go, Rust, Java, and C++, with automatic framework detection for Next.js, FastAPI, Django, React, Express, and more.",
   },
 ];
 
@@ -78,13 +39,13 @@ export default function PricingPage() {
   return (
     <main className="min-h-screen bg-[#050505] text-white selection:bg-white selection:text-black">
       {/* Hero Section */}
-      <section className="relative pt-32 sm:pt-40 pb-20 px-4 sm:px-6 md:px-12 max-w-7xl mx-auto overflow-hidden">
+      <section className="relative pt-32 sm:pt-40 pb-20 px-6 sm:px-10 md:px-16 max-w-7xl mx-auto overflow-hidden">
         <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[350px] bg-gradient-to-tr from-white/10 via-emerald-500/10 to-transparent blur-[140px] rounded-full pointer-events-none" />
 
-        <div className="relative z-10 flex flex-col items-center text-center max-w-4xl mx-auto">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/10 bg-white/5 backdrop-blur-md text-[11px] font-mono uppercase tracking-widest text-emerald-400 mb-6">
+        <div className="relative z-10 flex flex-col items-center text-center max-w-4xl mx-auto mb-16">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/10 bg-white/5 backdrop-blur-md text-xs font-mono uppercase tracking-widest text-emerald-400 mb-6">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            TRANSPARENT PRICING // ROI GUARANTEE
+            <span>Developer Ramp ROI Guarantee</span>
           </div>
 
           <h1 className="text-4xl sm:text-6xl md:text-7xl font-black uppercase tracking-tighter leading-[0.95] mb-6">
@@ -94,90 +55,53 @@ export default function PricingPage() {
             </span>
           </h1>
 
-          <p className="text-base sm:text-lg md:text-xl text-white/60 font-light max-w-2xl leading-relaxed mb-10">
+          <p className="text-base sm:text-lg md:text-xl text-white/60 font-light max-w-2xl leading-relaxed">
             Onboarding an engineer traditionally costs over $25,000 in lost senior engineering time. BrainWhite reduces this overhead by 75% from day one.
           </p>
         </div>
-      </section>
 
-      {/* Pricing Cards Grid */}
-      <section className="py-12 px-4 sm:px-6 md:px-12 max-w-7xl mx-auto">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch">
-          {tiers.map((tier) => (
-            <div
-              key={tier.name}
-              className={`relative rounded-3xl p-8 sm:p-10 flex flex-col justify-between transition-all duration-300 ${
-                tier.popular
-                  ? "border-2 border-white bg-white/[0.05] shadow-[0_0_50px_rgba(255,255,255,0.1)] -translate-y-2"
-                  : "border border-white/10 bg-white/[0.02] hover:border-white/30"
-              }`}
-            >
-              {tier.popular && (
-                <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-white text-black font-mono text-[11px] font-bold uppercase tracking-widest px-4 py-1 rounded-full shadow-lg">
-                  Most Popular
-                </div>
-              )}
+        {/* Interactive Pricing Section with Billing Toggle */}
+        <PricingSection />
 
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-xl font-bold">{tier.name}</h3>
-                  <span className="text-[10px] font-mono tracking-widest text-white/50 border border-white/10 px-2.5 py-0.5 rounded-full">
-                    {tier.badge}
-                  </span>
-                </div>
-
-                <p className="text-xs text-white/60 min-h-[36px] mb-6 font-light">
-                  {tier.desc}
-                </p>
-
-                <div className="flex items-baseline gap-2 mb-8 pb-6 border-b border-white/10">
-                  <span className="text-4xl sm:text-5xl font-black font-mono tracking-tight">
-                    {tier.price}
-                  </span>
-                  <span className="text-xs font-mono text-white/50">{tier.period}</span>
-                </div>
-
-                <div className="space-y-3.5 mb-8">
-                  {tier.features.map((f) => (
-                    <div key={f} className="flex items-start gap-3 text-xs sm:text-sm text-white/80 font-light">
-                      <Check className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                      <span>{f}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <Link
-                href={tier.href}
-                className={`inline-flex items-center justify-center gap-2 w-full font-semibold text-sm py-3.5 rounded-full transition-all ${
-                  tier.popular
-                    ? "bg-white text-black hover:scale-105 shadow-[0_0_30px_rgba(255,255,255,0.2)]"
-                    : "border border-white/20 hover:border-white text-white hover:bg-white/5"
-                }`}
-              >
-                <span>{tier.cta}</span>
-                <ArrowRight className="w-4 h-4" />
-              </Link>
+        {/* Enterprise Security Callout Banner */}
+        <div className="mt-20 max-w-5xl mx-auto rounded-3xl border border-white/10 bg-white/[0.02] p-8 sm:p-10 flex flex-col md:flex-row items-center justify-between gap-6 backdrop-blur-md">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center shrink-0">
+              <ShieldCheck className="w-6 h-6 text-emerald-400" />
             </div>
-          ))}
+            <div>
+              <h4 className="text-base font-bold text-white mb-1">SOC 2 & Enterprise Security Ready</h4>
+              <p className="text-xs text-white/60 font-sans max-w-xl">
+                Dedicated VPC deployments, self-hosted LLM inference, encrypted database keys, and continuous audit trails are standard for enterprise tiers.
+              </p>
+            </div>
+          </div>
+          <Link
+            href="/security"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-white/20 text-xs font-semibold text-white hover:bg-white/10 transition-colors shrink-0"
+          >
+            <span>Review Security Whitepaper</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+
+        {/* Frequently Asked Questions */}
+        <div className="mt-24 max-w-4xl mx-auto">
+          <h2 className="text-2xl sm:text-4xl font-bold uppercase tracking-tight text-center mb-12">
+            Frequently Asked Questions
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {faqs.map((faq, i) => (
+              <div key={i} className="p-6 rounded-2xl border border-white/10 bg-white/[0.02]">
+                <h3 className="text-sm font-bold text-white mb-2">{faq.q}</h3>
+                <p className="text-xs text-white/60 leading-relaxed font-sans">{faq.a}</p>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
-      {/* ROI Proof Section */}
-      <section className="py-20 px-4 sm:px-6 md:px-12 max-w-5xl mx-auto border-t border-white/10 mt-12 text-center">
-        <h3 className="text-2xl sm:text-3xl font-bold mb-4">The Real Math on Developer Ramp-up</h3>
-        <p className="text-sm text-white/60 max-w-2xl mx-auto leading-relaxed mb-8">
-          A senior engineer spending 15 hours/week for 2 months onboarding a single hire costs your company ~$18,000 in diverted velocity alone. BrainWhite pays for itself on day 3 of your first cohort.
-        </p>
-        <Link
-          href="/book-demo"
-          className="inline-flex items-center gap-2 text-sm font-semibold text-emerald-400 hover:text-emerald-300 transition-colors"
-        >
-          <span>Calculate custom team savings with an engineer</span>
-          <ArrowRight className="w-4 h-4" />
-        </Link>
-      </section>
-
+      {/* Footer */}
       <ExperienceFooter />
     </main>
   );
