@@ -1,267 +1,294 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
-import { 
-  Terminal, 
-  Cpu, 
-  Send, 
-  CheckCircle2, 
-  Sparkles, 
-  ShieldCheck, 
-  ArrowLeft,
-  Activity,
-  Layers,
-  ArrowRight
-} from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { CheckCircle2, Send, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { ExperienceFooter } from "@/components/experience/footer";
 
 export default function BookDemoPage() {
-  const [submitted, setSubmitted] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
+  const [cursor, setCursor] = useState({ x: 0, y: 0 });
+  const [eyePos, setEyePos] = useState({ x: 0, y: 0 });
+  const [blink, setBlink] = useState(false);
+
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     company: "",
     teamSize: "10-50",
-    repoUrl: "",
     message: "",
   });
+
+  const [loading, setLoading] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
+
+  useEffect(() => {
+    const handleMouse = (e: MouseEvent) => setCursor({ x: e.clientX, y: e.clientY });
+    window.addEventListener("mousemove", handleMouse);
+    return () => window.removeEventListener("mousemove", handleMouse);
+  }, []);
+
+  useEffect(() => {
+    const offsetX = ((cursor.x / (typeof window !== "undefined" ? window.innerWidth : 1000)) - 0.5) * 36;
+    const offsetY = ((cursor.y / (typeof window !== "undefined" ? window.innerHeight : 800)) - 0.5) * 16;
+    setEyePos({ x: offsetX, y: offsetY });
+  }, [cursor]);
+
+  // Natural blinking every 3.2 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setBlink(true);
+      setTimeout(() => setBlink(false), 200);
+    }, 3200);
+    return () => clearInterval(interval);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    // Simulate telemetry submission & feedback
-    await new Promise((r) => setTimeout(r, 900));
-    setLoading(false);
-    setSubmitted(true);
+    setErrorMsg("");
+
+    try {
+      const res = await fetch("/api/book-demo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to schedule demo.");
+      }
+
+      setSubmitted(true);
+    } catch (err: unknown) {
+      setErrorMsg((err as Error).message || "Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <main className="min-h-screen bg-[#050505] text-white selection:bg-white selection:text-black">
-      {/* Top Navigation */}
-      <div className="fixed top-6 left-6 z-50">
-        <Link 
-          href="/" 
-          className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-black/80 hover:bg-white hover:text-black backdrop-blur-md px-4 py-2 text-xs font-bold uppercase tracking-wider text-white transition-all shadow-lg hover:scale-105"
-        >
-          <ArrowLeft className="w-3.5 h-3.5" />
-          <span>Back to Home</span>
-        </Link>
+    <main className="min-h-screen bg-white text-neutral-900 selection:bg-neutral-900 selection:text-white flex flex-col justify-between">
+      {/* Main Centered Minimal Form */}
+      <div className="flex-1 flex flex-col items-center justify-center px-4 py-24 sm:py-28 relative">
+        <div className="relative z-10 w-full max-w-md">
+          {/* Header - Black and White, Single Heading and Subheading, No Subheading 2 */}
+          <div className="text-center mb-6">
+            <h1 className="text-3xl sm:text-4xl font-extrabold uppercase tracking-tight text-neutral-950">
+              Book Architecture Demo
+            </h1>
+            <p className="mt-2 text-sm sm:text-base text-neutral-600 font-sans">
+              Private codebase walkthrough &amp; AST roadmap synthesis.
+            </p>
+          </div>
+
+          {/* Form Card on Solid White */}
+          <div className="bg-white rounded-2xl shadow-[0_10px_35px_rgba(0,0,0,0.06)] p-6 sm:p-8 flex flex-col items-center gap-6 border border-neutral-200 w-full">
+            
+            {/* Animated Character with Cursor Eye Tracking */}
+            <div className="relative w-[280px] h-[160px] select-none pointer-events-none">
+              <img
+                src="/cloud-watch-face.jpg"
+                alt="Cloud Character"
+                className="w-full h-full object-contain"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src =
+                    "https://cdn.21st.dev/assets/mirror/2e/2e429af66b2ad5c13c11326bead739b6e7746470c7af7ac4fd7892d0190b4ab8.jpg";
+                }}
+              />
+
+              {["left", "right"].map((side, idx) => (
+                <div
+                  key={side}
+                  className="absolute flex justify-center items-end overflow-hidden"
+                  style={{
+                    top: 60,
+                    left: idx === 0 ? 80 : 150,
+                    width: 28,
+                    height: isTyping
+                      ? 4 // fully closed when typing
+                      : blink
+                      ? 6 // temporary blink
+                      : 40, // open eye
+                    borderRadius: isTyping || blink ? "2px" : "50% / 60%",
+                    backgroundColor: isTyping ? "#111111" : "#ffffff",
+                    transition: "all 0.15s ease",
+                    boxShadow: isTyping ? "none" : "0 2px 4px rgba(0,0,0,0.1)",
+                  }}
+                >
+                  {!isTyping && (
+                    <div
+                      className="bg-black"
+                      style={{
+                        width: 16,
+                        height: 16,
+                        borderRadius: "50%",
+                        marginBottom: 4,
+                        transform: `translate(${eyePos.x}px, ${eyePos.y}px)`,
+                        transition: "transform 0.08s ease-out",
+                      }}
+                    />
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {submitted ? (
+              <div className="w-full text-center py-6 space-y-4 animate-in fade-in zoom-in-95 duration-300">
+                <div className="w-12 h-12 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-600 mx-auto flex items-center justify-center">
+                  <CheckCircle2 className="w-6 h-6" />
+                </div>
+                <div className="space-y-1.5">
+                  <h3 className="text-base font-bold text-neutral-950 uppercase tracking-wider">
+                    Demo Request Received
+                  </h3>
+                  <p className="text-xs sm:text-sm text-neutral-600 leading-relaxed max-w-xs mx-auto">
+                    We&apos;ve routed your details directly to <span className="text-neutral-900 font-mono font-medium">partnerbrainwhite@gmail.com</span>. Our technical founders will contact you within 24 hours.
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setSubmitted(false);
+                    setFormData({
+                      name: "",
+                      email: "",
+                      company: "",
+                      teamSize: "10-50",
+                      message: "",
+                    });
+                  }}
+                  className="text-xs text-neutral-800 hover:text-neutral-950 border-neutral-300 hover:border-neutral-900 mt-4 rounded-xl"
+                >
+                  Submit Another Request
+                </Button>
+              </div>
+            ) : (
+              /* Input Form */
+              <form onSubmit={handleSubmit} className="w-full flex flex-col gap-4">
+                {errorMsg && (
+                  <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-mono">
+                    {errorMsg}
+                  </div>
+                )}
+
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="demo-name" className="text-xs uppercase tracking-wider text-neutral-700 font-mono font-medium">
+                    Full Name *
+                  </Label>
+                  <Input
+                    id="demo-name"
+                    required
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    onFocus={() => setIsTyping(true)}
+                    onBlur={() => setIsTyping(false)}
+                    placeholder="e.g. Sarah Connor"
+                    className="h-11 text-sm rounded-xl border border-neutral-300 bg-white text-neutral-900 placeholder:text-neutral-400 focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900 transition-all"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="demo-email" className="text-xs uppercase tracking-wider text-neutral-700 font-mono font-medium">
+                    Work Email *
+                  </Label>
+                  <Input
+                    id="demo-email"
+                    type="email"
+                    required
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    onFocus={() => setIsTyping(true)}
+                    onBlur={() => setIsTyping(false)}
+                    placeholder="sarah@company.com"
+                    className="h-11 text-sm rounded-xl border border-neutral-300 bg-white text-neutral-900 placeholder:text-neutral-400 focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900 transition-all"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="demo-company" className="text-xs uppercase tracking-wider text-neutral-700 font-mono font-medium">
+                    Company / Organization *
+                  </Label>
+                  <Input
+                    id="demo-company"
+                    required
+                    value={formData.company}
+                    onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+                    onFocus={() => setIsTyping(true)}
+                    onBlur={() => setIsTyping(false)}
+                    placeholder="Acme Corp"
+                    className="h-11 text-sm rounded-xl border border-neutral-300 bg-white text-neutral-900 placeholder:text-neutral-400 focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900 transition-all"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="demo-team" className="text-xs uppercase tracking-wider text-neutral-700 font-mono font-medium">
+                    Engineering Team Size
+                  </Label>
+                  <select
+                    id="demo-team"
+                    value={formData.teamSize}
+                    onChange={(e) => setFormData({ ...formData, teamSize: e.target.value })}
+                    onFocus={() => setIsTyping(true)}
+                    onBlur={() => setIsTyping(false)}
+                    className="h-11 w-full rounded-xl border border-neutral-300 bg-white px-3.5 text-sm text-neutral-900 focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900 transition-all cursor-pointer"
+                  >
+                    <option value="1-10">1 – 10 engineers</option>
+                    <option value="10-50">10 – 50 engineers</option>
+                    <option value="50-250">50 – 250 engineers</option>
+                    <option value="250+">250+ enterprise developers</option>
+                  </select>
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="demo-message" className="text-xs uppercase tracking-wider text-neutral-700 font-mono font-medium">
+                    Codebase Details / Questions
+                  </Label>
+                  <textarea
+                    id="demo-message"
+                    rows={3}
+                    value={formData.message}
+                    onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                    onFocus={() => setIsTyping(true)}
+                    onBlur={() => setIsTyping(false)}
+                    placeholder="e.g. Next.js + Go monorepo, 30+ microservices..."
+                    className="w-full rounded-xl border border-neutral-300 bg-white p-3 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900 transition-all resize-none"
+                  />
+                </div>
+
+                <Button
+                  type="submit"
+                  disabled={loading}
+                  className="mt-2 w-full h-11 bg-neutral-950 hover:bg-neutral-800 text-white font-bold uppercase tracking-wider text-xs rounded-xl shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>Sending Request...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Schedule Demo</span>
+                      <Send className="w-3.5 h-3.5" />
+                    </>
+                  )}
+                </Button>
+              </form>
+            )}
+
+          </div>
+        </div>
       </div>
 
-      <section className="relative pt-32 sm:pt-40 pb-24 px-6 sm:px-10 md:px-16 max-w-6xl mx-auto overflow-hidden">
-        {/* Ambient backdrop */}
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-gradient-to-tr from-cyan-500/10 via-emerald-500/10 to-transparent blur-[140px] rounded-full pointer-events-none" />
-
-        <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
-          
-          {/* Left Column: Context & Architectural Guarantees */}
-          <div className="lg:col-span-5 space-y-8">
-            <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/10 bg-white/5 backdrop-blur-md text-xs font-mono uppercase tracking-widest text-emerald-400 mb-4">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                <span>Architecture Walkthrough</span>
-              </div>
-              <h1 className="text-3xl sm:text-5xl font-black uppercase tracking-tight text-white leading-tight">
-                Schedule a Private Codebase Ingestion Demo
-              </h1>
-              <p className="mt-4 text-sm sm:text-base text-white/60 leading-relaxed font-sans font-light">
-                See BrainWhite construct an AST graph, synthesize personalized onboarding paths, and test PR telemetry on real production repositories.
-              </p>
-            </div>
-
-            {/* Cloud Watch Telemetry Status Monitor */}
-            <div className="rounded-3xl border border-white/10 bg-white/[0.02] p-6 backdrop-blur-xl space-y-4">
-              <div className="flex items-center justify-between pb-3 border-b border-white/10 text-xs font-mono">
-                <div className="flex items-center gap-2 text-emerald-400">
-                  <Activity className="w-4 h-4" />
-                  <span>DEMO GATEWAY TELEMETRY</span>
-                </div>
-                <span className="text-white/40">ONLINE</span>
-              </div>
-
-              <div className="space-y-2.5 text-xs font-mono text-white/70">
-                <div className="flex items-center justify-between">
-                  <span>Engine Version:</span>
-                  <span className="text-white">v2.0 AST Engine</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span>Inference Latency:</span>
-                  <span className="text-emerald-400">&lt; 850ms Groq LPU</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span>IP Retention:</span>
-                  <span className="text-white">0% Ephemeral Memory</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span>GitHub App:</span>
-                  <span className="text-cyan-400">1-Click Multi-Tenant</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-3 pt-2 text-xs text-white/60 font-sans">
-              <div className="flex items-center gap-2">
-                <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                <span>Strict mutual NDA and zero model training on customer IP</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Cpu className="w-4 h-4 text-cyan-400" />
-                <span>Live AST parser walkthrough tailored to your tech stack</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Right Column: Cloud Watch Style Terminal Form (21st.dev reference) */}
-          <div className="lg:col-span-7">
-            <div className="rounded-3xl border border-white/15 bg-neutral-950 p-7 sm:p-10 shadow-2xl relative overflow-hidden">
-              
-              {submitted ? (
-                <div className="py-12 text-center space-y-5">
-                  <div className="w-16 h-16 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto shadow-lg">
-                    <CheckCircle2 className="w-8 h-8" />
-                  </div>
-                  <h3 className="text-2xl font-bold text-white tracking-tight">
-                    Demo Request Scheduled
-                  </h3>
-                  <p className="text-sm text-white/70 max-w-md mx-auto leading-relaxed font-sans">
-                    Our solutions engineering team will reach out to <strong className="text-white">{formData.email}</strong> within 4 business hours to confirm your private architecture session.
-                  </p>
-                  <div className="pt-4">
-                    <Link
-                      href="/"
-                      className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-white text-black font-bold text-xs uppercase tracking-wider hover:bg-neutral-200 transition-colors"
-                    >
-                      <span>Return to Home</span>
-                      <ArrowRight className="w-3.5 h-3.5" />
-                    </Link>
-                  </div>
-                </div>
-              ) : (
-                <form onSubmit={handleSubmit} className="space-y-5">
-                  <div className="flex items-center justify-between pb-4 border-b border-white/10 mb-2">
-                    <div className="flex items-center gap-2">
-                      <Terminal className="w-4 h-4 text-emerald-400" />
-                      <span className="text-xs font-mono uppercase tracking-widest text-white/80">
-                        Cloud Watch Form // Demo Dispatch
-                      </span>
-                    </div>
-                    <span className="text-[10px] font-mono text-white/40">TLS 1.3 ENCRYPTED</span>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-[11px] font-mono uppercase tracking-wider text-white/60 mb-1.5">
-                        Your Name *
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={formData.name}
-                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                        placeholder="e.g. Alex Rivera"
-                        className="w-full bg-white/5 border border-white/15 rounded-xl px-4 py-3 text-xs text-white placeholder-white/30 focus:border-white focus:outline-none focus:ring-1 focus:ring-white transition-colors"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-[11px] font-mono uppercase tracking-wider text-white/60 mb-1.5">
-                        Work Email *
-                      </label>
-                      <input
-                        type="email"
-                        required
-                        value={formData.email}
-                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                        placeholder="alex@company.com"
-                        className="w-full bg-white/5 border border-white/15 rounded-xl px-4 py-3 text-xs text-white placeholder-white/30 focus:border-white focus:outline-none focus:ring-1 focus:ring-white transition-colors"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-[11px] font-mono uppercase tracking-wider text-white/60 mb-1.5">
-                        Organization Name *
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={formData.company}
-                        onChange={(e) => setFormData({ ...formData, company: e.target.value })}
-                        placeholder="e.g. Stripe, Linear"
-                        className="w-full bg-white/5 border border-white/15 rounded-xl px-4 py-3 text-xs text-white placeholder-white/30 focus:border-white focus:outline-none focus:ring-1 focus:ring-white transition-colors"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-[11px] font-mono uppercase tracking-wider text-white/60 mb-1.5">
-                        Engineering Team Size
-                      </label>
-                      <select
-                        value={formData.teamSize}
-                        onChange={(e) => setFormData({ ...formData, teamSize: e.target.value })}
-                        className="w-full bg-neutral-900 border border-white/15 rounded-xl px-4 py-3 text-xs text-white focus:border-white focus:outline-none focus:ring-1 focus:ring-white transition-colors"
-                      >
-                        <option value="1-10">1 - 10 engineers</option>
-                        <option value="10-50">10 - 50 engineers</option>
-                        <option value="50-250">50 - 250 engineers</option>
-                        <option value="250+">250+ enterprise developers</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-[11px] font-mono uppercase tracking-wider text-white/60 mb-1.5">
-                      GitHub Org or Primary Repo (Optional)
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.repoUrl}
-                      onChange={(e) => setFormData({ ...formData, repoUrl: e.target.value })}
-                      placeholder="e.g. github.com/organization/core-platform"
-                      className="w-full bg-white/5 border border-white/15 rounded-xl px-4 py-3 text-xs text-white placeholder-white/30 focus:border-white focus:outline-none focus:ring-1 focus:ring-white transition-colors"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[11px] font-mono uppercase tracking-wider text-white/60 mb-1.5">
-                      Current Onboarding Challenges / Questions
-                    </label>
-                    <textarea
-                      rows={3}
-                      value={formData.message}
-                      onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                      placeholder="e.g. We have a TypeScript + Python monorepo and freshers take 4 months to understand architecture..."
-                      className="w-full bg-white/5 border border-white/15 rounded-xl p-4 text-xs text-white placeholder-white/30 focus:border-white focus:outline-none focus:ring-1 focus:ring-white transition-colors resize-none"
-                    />
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="w-full py-4 px-6 rounded-2xl bg-white text-black font-bold text-xs uppercase tracking-widest hover:bg-neutral-200 transition-all flex items-center justify-center gap-2 shadow-xl cursor-pointer disabled:opacity-50"
-                  >
-                    {loading ? (
-                      <span>Synthesizing Telemetry...</span>
-                    ) : (
-                      <>
-                        <span>Submit Architecture Request</span>
-                        <Send className="w-3.5 h-3.5" />
-                      </>
-                    )}
-                  </button>
-                </form>
-              )}
-
-            </div>
-          </div>
-
-        </div>
-      </section>
-
-      <ExperienceFooter />
+      <ExperienceFooter 
+        preset="paper" 
+        palette={{ background: "#ffffff", ink: "#0a0a0a", accent: "#0a0a0a" }} 
+      />
     </main>
   );
 }
