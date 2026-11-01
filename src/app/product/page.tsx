@@ -122,50 +122,50 @@ const pillars = [
 
 export default function ProductPage() {
   return (
-    <main className="min-h-screen bg-[#050505] text-white selection:bg-white selection:text-black">
+    <main className="min-h-screen bg-white text-neutral-900 selection:bg-neutral-900 selection:text-white">
       
-      {/* 1. HERO SECTION - STRICT EXECUTIVE MINIMALISM */}
+      {/* 1. HERO SECTION - SOLID WHITE WITH STRICT EXECUTIVE MINIMALISM */}
       <section className="relative pt-32 sm:pt-40 pb-20 px-6 sm:px-10 md:px-16 max-w-7xl mx-auto overflow-hidden">
         <div className="relative z-10 flex flex-col items-center text-center max-w-4xl mx-auto">
-          {/* Heading - Black & White, No Badges */}
-          <h1 className="text-4xl sm:text-6xl md:text-7xl font-extrabold uppercase tracking-tight text-white mb-6">
+          {/* Heading - Pure Black & White, No Badges */}
+          <h1 className="text-4xl sm:text-6xl md:text-7xl font-extrabold uppercase tracking-tight text-neutral-950 mb-6">
             From Unknown Codebase to Production-Ready in Days
           </h1>
 
           {/* Subheading - Single Muted Neutral, No Subheading 2 */}
-          <p className="text-base sm:text-lg md:text-xl text-neutral-400 font-sans max-w-2xl leading-relaxed mb-10">
+          <p className="text-base sm:text-lg md:text-xl text-neutral-600 font-sans max-w-2xl leading-relaxed mb-10">
             BrainWhite transforms complex enterprise software repositories into interactive AST knowledge graphs, role-tailored learning paths, and real-time pull request telemetry.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
             <Link
               href="/signup"
-              className="inline-flex items-center justify-center gap-3 w-full sm:w-auto bg-white text-black font-bold text-xs uppercase tracking-wider px-8 py-4 rounded-full hover:scale-105 transition-all shadow-lg"
+              className="inline-flex items-center justify-center gap-3 w-full sm:w-auto bg-neutral-950 hover:bg-neutral-800 text-white font-bold text-xs uppercase tracking-wider px-8 py-4 rounded-full transition-all shadow-sm"
             >
               <span>Start Free Trial</span>
               <ArrowRight className="w-4 h-4" />
             </Link>
             <Link
               href="/book-demo"
-              className="inline-flex items-center justify-center gap-2 w-full sm:w-auto border border-white/20 bg-white/5 hover:border-white/50 text-white font-semibold text-xs uppercase tracking-wider px-8 py-4 rounded-full transition-colors backdrop-blur-sm"
+              className="inline-flex items-center justify-center gap-2 w-full sm:w-auto border border-neutral-300 hover:border-neutral-900 bg-white text-neutral-900 font-semibold text-xs uppercase tracking-wider px-8 py-4 rounded-full transition-colors"
             >
               <span>Schedule Architecture Demo</span>
             </Link>
           </div>
         </div>
 
-        {/* 2. DEPLOY PIPELINE COMPONENT */}
-        <div className="mt-20 rounded-3xl border border-white/10 bg-neutral-950/80 p-6 sm:p-10 shadow-2xl backdrop-blur-xl relative overflow-hidden">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-white/10 mb-8">
+        {/* 2. DEPLOY PIPELINE COMPONENT - SOLID WHITE THEME */}
+        <div className="mt-20 rounded-3xl border border-neutral-200 bg-neutral-50/60 p-6 sm:p-10 shadow-xs relative overflow-hidden">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-neutral-200 mb-8">
             <div>
-              <div className="text-xs font-mono uppercase tracking-widest text-neutral-400">
+              <div className="text-xs font-mono uppercase tracking-widest text-neutral-500 font-medium">
                 End-to-End Onboarding Pipeline
               </div>
-              <p className="text-xs text-white/60 mt-1">
+              <p className="text-xs text-neutral-600 mt-1">
                 Automated continuous workflow running from initial repository connection to verified production contribution.
               </p>
             </div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[11px] font-mono text-white/70 self-start sm:self-auto">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white border border-neutral-200 text-[11px] font-mono text-neutral-700 self-start sm:self-auto shadow-xs">
               <span>Realtime Pipeline Active</span>
             </div>
           </div>
@@ -176,30 +176,30 @@ export default function ProductPage() {
               return (
                 <div 
                   key={stage.id}
-                  className="p-5 rounded-2xl bg-white/[0.03] border border-white/10 hover:border-white/30 transition-all flex flex-col justify-between group"
+                  className="p-5 rounded-2xl bg-white border border-neutral-200 hover:border-neutral-400 transition-all shadow-xs flex flex-col justify-between group"
                 >
                   <div>
                     <div className="flex items-center justify-between mb-4">
-                      <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-white group-hover:scale-110 transition-transform">
-                        <Icon className="w-5 h-5 text-white" />
+                      <div className="w-10 h-10 rounded-xl bg-neutral-100 flex items-center justify-center text-neutral-900 group-hover:scale-105 transition-transform">
+                        <Icon className="w-5 h-5 text-neutral-900" />
                       </div>
-                      <span className="text-xs font-mono text-white/30">{stage.id}</span>
+                      <span className="text-xs font-mono text-neutral-400">{stage.id}</span>
                     </div>
 
-                    <div className="inline-block px-2 py-0.5 rounded text-[10px] font-mono uppercase tracking-wider bg-white/5 text-white/70 mb-2 border border-white/10">
+                    <div className="inline-block px-2 py-0.5 rounded text-[10px] font-mono uppercase tracking-wider bg-neutral-100 text-neutral-700 mb-2 border border-neutral-200">
                       {stage.tag}
                     </div>
 
-                    <h4 className="text-base font-bold text-white mb-2 tracking-tight">
+                    <h4 className="text-base font-bold text-neutral-950 mb-2 tracking-tight">
                       {stage.title}
                     </h4>
 
-                    <p className="text-xs text-white/60 leading-relaxed font-sans">
+                    <p className="text-xs text-neutral-600 leading-relaxed font-sans">
                       {stage.desc}
                     </p>
                   </div>
 
-                  <div className="pt-4 mt-4 border-t border-white/5 flex items-center gap-2 text-[11px] font-mono text-neutral-300">
+                  <div className="pt-4 mt-4 border-t border-neutral-100 flex items-center gap-2 text-[11px] font-mono text-neutral-700">
                     <Check className="w-3.5 h-3.5" />
                     <span>Automated Stage</span>
                   </div>
@@ -210,56 +210,55 @@ export default function ProductPage() {
         </div>
       </section>
 
-      {/* 3. DUAL-TONE CONTRAST SECTION */}
-      <section className="w-full bg-white text-slate-900 py-24 sm:py-32 px-6 sm:px-10 md:px-16 transition-colors duration-500">
+      {/* 3. CAPABILITIES VALUES GRID */}
+      <section className="w-full bg-white py-24 sm:py-32 px-6 sm:px-10 md:px-16 border-t border-neutral-200">
         <div className="max-w-7xl mx-auto">
           
           <div className="max-w-3xl mx-auto text-center mb-16 sm:mb-20">
             <span className="text-xs font-mono uppercase tracking-widest text-neutral-500 font-bold block mb-2">
               Engineering Advantage
             </span>
-            <h2 className="text-3xl sm:text-5xl font-black uppercase tracking-tight text-slate-950 mb-4">
+            <h2 className="text-3xl sm:text-5xl font-black uppercase tracking-tight text-neutral-950 mb-4">
               Built for Modern Software Organizations
             </h2>
-            <p className="text-sm sm:text-base text-slate-600 leading-relaxed font-sans">
+            <p className="text-sm sm:text-base text-neutral-600 leading-relaxed font-sans">
               Stop losing 20+ hours of senior engineering time per week per new hire. Provide structured, self-directed ramp-up backed by automated assessment.
             </p>
           </div>
 
-          {/* Interactive Values Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
             {capabilities.map((cap) => {
               const Icon = cap.icon;
               return (
                 <div
                   key={cap.title}
-                  className="group rounded-3xl border border-slate-200/90 bg-slate-50/60 p-7 hover:border-black hover:bg-white transition-all duration-300 shadow-xs flex flex-col justify-between"
+                  className="group rounded-3xl border border-neutral-200 bg-neutral-50/50 p-7 hover:border-neutral-900 hover:bg-white transition-all duration-300 shadow-xs flex flex-col justify-between"
                 >
                   <div>
                     <div className="flex items-center justify-between mb-5">
-                      <div className="w-11 h-11 rounded-2xl bg-white border border-slate-200 flex items-center justify-center text-slate-900 shadow-xs group-hover:scale-110 transition-transform">
+                      <div className="w-11 h-11 rounded-2xl bg-white border border-neutral-200 flex items-center justify-center text-neutral-900 shadow-xs group-hover:scale-110 transition-transform">
                         <Icon className="w-5 h-5" />
                       </div>
-                      <span className="text-[10px] font-mono uppercase tracking-wider text-slate-500 border border-slate-200 px-2.5 py-1 rounded-full font-semibold">
+                      <span className="text-[10px] font-mono uppercase tracking-wider text-neutral-600 border border-neutral-200 px-2.5 py-1 rounded-full font-semibold bg-white">
                         {cap.badge}
                       </span>
                     </div>
 
-                    <h3 className="text-lg font-bold text-slate-950 tracking-tight mb-2 group-hover:text-black">
+                    <h3 className="text-lg font-bold text-neutral-950 tracking-tight mb-2 group-hover:text-black">
                       {cap.title}
                     </h3>
 
-                    <p className="text-xs text-slate-600 leading-relaxed font-sans mb-6">
+                    <p className="text-xs text-neutral-600 leading-relaxed font-sans mb-6">
                       {cap.description}
                     </p>
                   </div>
 
-                  <div className="pt-4 border-t border-slate-200/70 flex items-center justify-between">
+                  <div className="pt-4 border-t border-neutral-200/80 flex items-center justify-between">
                     <div>
-                      <div className="text-lg font-black font-mono text-slate-950">
+                      <div className="text-lg font-black font-mono text-neutral-950">
                         {cap.metric}
                       </div>
-                      <div className="text-[11px] font-medium text-slate-500">
+                      <div className="text-[11px] font-medium text-neutral-500">
                         {cap.metricLabel}
                       </div>
                     </div>
@@ -273,15 +272,15 @@ export default function ProductPage() {
       </section>
 
       {/* 4. 7-PILLARS OF READINESS ASSESSMENT */}
-      <section className="py-24 sm:py-32 px-6 sm:px-10 md:px-16 max-w-7xl mx-auto border-t border-white/10">
+      <section className="py-24 sm:py-32 px-6 sm:px-10 md:px-16 max-w-7xl mx-auto border-t border-neutral-200">
         <div className="max-w-3xl mx-auto text-center mb-16">
-          <span className="text-xs font-mono uppercase tracking-widest text-neutral-400 block mb-2">
+          <span className="text-xs font-mono uppercase tracking-widest text-neutral-500 block mb-2">
             Verifiable Engineering Telemetry
           </span>
-          <h2 className="text-3xl sm:text-5xl font-black uppercase tracking-tight text-white mb-4">
+          <h2 className="text-3xl sm:text-5xl font-black uppercase tracking-tight text-neutral-950 mb-4">
             Seven Pillars of Candidate Evaluation
           </h2>
-          <p className="text-sm sm:text-base text-white/60 font-sans">
+          <p className="text-sm sm:text-base text-neutral-600 font-sans">
             Evaluated continuously across real Git commits, test coverage, PR turnaround, and architectural discipline.
           </p>
         </div>
@@ -290,14 +289,14 @@ export default function ProductPage() {
           {pillars.map((p, idx) => (
             <div 
               key={p.title} 
-              className="p-5 rounded-2xl bg-white/[0.03] border border-white/10 hover:border-white/30 transition-all flex flex-col justify-between"
+              className="p-5 rounded-2xl bg-white border border-neutral-200 hover:border-neutral-400 transition-all flex flex-col justify-between shadow-xs"
             >
               <div>
-                <span className="text-[10px] font-mono text-white/40 block mb-2">Pillar 0{idx + 1}</span>
-                <h4 className="text-sm font-bold text-white mb-1.5">{p.title}</h4>
-                <p className="text-xs text-white/60 leading-relaxed font-sans">{p.desc}</p>
+                <span className="text-[10px] font-mono text-neutral-400 block mb-2">Pillar 0{idx + 1}</span>
+                <h4 className="text-sm font-bold text-neutral-950 mb-1.5">{p.title}</h4>
+                <p className="text-xs text-neutral-600 leading-relaxed font-sans">{p.desc}</p>
               </div>
-              <div className="pt-4 mt-4 border-t border-white/5 flex items-center gap-1.5 text-[10px] font-mono text-neutral-300">
+              <div className="pt-4 mt-4 border-t border-neutral-100 flex items-center gap-1.5 text-[10px] font-mono text-neutral-700">
                 <Check className="w-3 h-3" />
                 <span>Audited Automatically</span>
               </div>
@@ -305,21 +304,21 @@ export default function ProductPage() {
           ))}
 
           {/* Call to action card */}
-          <div className="p-5 rounded-2xl bg-white text-black flex flex-col justify-between shadow-xl">
+          <div className="p-5 rounded-2xl bg-neutral-950 text-white flex flex-col justify-between shadow-lg">
             <div>
-              <span className="text-[10px] font-mono uppercase tracking-widest text-slate-500 block mb-2">
+              <span className="text-[10px] font-mono uppercase tracking-widest text-neutral-400 block mb-2">
                 Deploy Now
               </span>
               <h4 className="text-base font-black uppercase tracking-tight leading-tight mb-2">
                 Ready to cut onboarding ramp time by 75%?
               </h4>
-              <p className="text-xs text-slate-700 leading-relaxed font-sans">
+              <p className="text-xs text-neutral-300 leading-relaxed font-sans">
                 Connect your organization&apos;s repository and launch your first cohort in under 10 minutes.
               </p>
             </div>
             <Link 
               href="/signup" 
-              className="mt-4 inline-flex items-center justify-center gap-2 w-full py-2.5 rounded-xl bg-black text-white font-bold text-xs uppercase tracking-wider hover:bg-neutral-800 transition-colors"
+              className="mt-4 inline-flex items-center justify-center gap-2 w-full py-2.5 rounded-xl bg-white text-neutral-950 font-bold text-xs uppercase tracking-wider hover:bg-neutral-200 transition-colors"
             >
               <span>Get Started</span>
               <ArrowRight className="w-3.5 h-3.5" />
@@ -329,7 +328,10 @@ export default function ProductPage() {
       </section>
 
       {/* 5. FOOTER */}
-      <ExperienceFooter />
+      <ExperienceFooter 
+        preset="paper" 
+        palette={{ background: "#ffffff", ink: "#0a0a0a", accent: "#0a0a0a" }} 
+      />
 
     </main>
   );

@@ -83,31 +83,31 @@ const faqs = [
 
 export default function SecurityPage() {
   return (
-    <main className="min-h-screen bg-[#050505] text-white selection:bg-white selection:text-black">
-      {/* Hero Section - Strict Executive Minimalism */}
+    <main className="min-h-screen bg-white text-neutral-900 selection:bg-neutral-900 selection:text-white">
+      {/* Hero Section - Solid White with Strict Executive Minimalism */}
       <section className="relative pt-32 sm:pt-40 pb-20 px-6 sm:px-10 md:px-16 max-w-7xl mx-auto overflow-hidden">
         <div className="relative z-10 flex flex-col items-center text-center max-w-4xl mx-auto">
           {/* Heading - Pure Black & White, No Badges */}
-          <h1 className="text-4xl sm:text-6xl md:text-7xl font-extrabold uppercase tracking-tight text-white mb-6">
+          <h1 className="text-4xl sm:text-6xl md:text-7xl font-extrabold uppercase tracking-tight text-neutral-950 mb-6">
             Your Intellectual Property Stays Yours
           </h1>
 
           {/* Subheading - Single Clean Line, No Subheading 2 */}
-          <p className="text-base sm:text-lg md:text-xl text-neutral-400 font-sans max-w-2xl leading-relaxed mb-10">
+          <p className="text-base sm:text-lg md:text-xl text-neutral-600 font-sans max-w-2xl leading-relaxed mb-10">
             Engineered from the ground up with an ephemeral analysis architecture: zero persistent code storage, cryptographic token encryption, and zero AI model training.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
             <Link
               href="/signup"
-              className="inline-flex items-center justify-center gap-3 w-full sm:w-auto bg-white text-black font-bold text-xs uppercase tracking-wider px-8 py-4 rounded-full hover:scale-105 transition-all shadow-lg"
+              className="inline-flex items-center justify-center gap-3 w-full sm:w-auto bg-neutral-950 hover:bg-neutral-800 text-white font-bold text-xs uppercase tracking-wider px-8 py-4 rounded-full transition-all shadow-sm"
             >
               <span>Start Free Trial</span>
               <ArrowRight className="w-4 h-4" />
             </Link>
             <Link
               href="/book-demo"
-              className="inline-flex items-center justify-center gap-2 w-full sm:w-auto border border-white/20 bg-white/5 hover:border-white/50 text-white font-semibold text-xs uppercase tracking-wider px-8 py-4 rounded-full transition-colors backdrop-blur-sm"
+              className="inline-flex items-center justify-center gap-2 w-full sm:w-auto border border-neutral-300 hover:border-neutral-900 bg-white text-neutral-900 font-semibold text-xs uppercase tracking-wider px-8 py-4 rounded-full transition-colors"
             >
               <span>Request Security Whitepaper</span>
             </Link>
@@ -116,13 +116,13 @@ export default function SecurityPage() {
       </section>
 
       {/* 6 Security Pillars Grid */}
-      <section className="py-20 px-6 sm:px-10 md:px-16 max-w-7xl mx-auto border-t border-white/10">
+      <section className="py-20 px-6 sm:px-10 md:px-16 max-w-7xl mx-auto border-t border-neutral-200">
         <div className="text-center max-w-3xl mx-auto mb-16">
-          <div className="text-xs font-mono uppercase tracking-widest text-neutral-400 mb-2">Defense-In-Depth</div>
-          <h2 className="text-3xl sm:text-5xl font-black uppercase tracking-tight mb-4">
+          <div className="text-xs font-mono uppercase tracking-widest text-neutral-500 mb-2 font-medium">Defense-In-Depth</div>
+          <h2 className="text-3xl sm:text-5xl font-black uppercase tracking-tight text-neutral-950 mb-4">
             Six Guarantees for Enterprise Code
           </h2>
-          <p className="text-sm sm:text-base text-white/60 font-sans">
+          <p className="text-sm sm:text-base text-neutral-600 font-sans">
             How we protect proprietary algorithms and enterprise assets at every layer.
           </p>
         </div>
@@ -133,19 +133,19 @@ export default function SecurityPage() {
             return (
               <div
                 key={p.title}
-                className="rounded-3xl border border-white/10 bg-white/[0.02] p-8 hover:border-white/30 transition-all flex flex-col justify-between"
+                className="rounded-3xl border border-neutral-200 bg-white p-8 hover:border-neutral-400 transition-all shadow-xs flex flex-col justify-between"
               >
                 <div>
                   <div className="flex items-center justify-between mb-6">
-                    <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center text-white">
+                    <div className="w-12 h-12 rounded-2xl bg-neutral-100 flex items-center justify-center text-neutral-900">
                       <Icon className="w-6 h-6" />
                     </div>
-                    <span className="text-[10px] font-mono uppercase tracking-wider text-white/60 border border-white/10 px-2.5 py-1 rounded-full">
+                    <span className="text-[10px] font-mono uppercase tracking-wider text-neutral-600 border border-neutral-200 px-2.5 py-1 rounded-full bg-neutral-50 font-medium">
                       {p.badge}
                     </span>
                   </div>
-                  <h3 className="text-lg font-bold mb-3 tracking-tight">{p.title}</h3>
-                  <p className="text-xs sm:text-sm text-white/60 leading-relaxed font-sans font-light">
+                  <h3 className="text-lg font-bold mb-3 tracking-tight text-neutral-950">{p.title}</h3>
+                  <p className="text-xs sm:text-sm text-neutral-600 leading-relaxed font-sans font-light">
                     {p.desc}
                   </p>
                 </div>
@@ -156,36 +156,36 @@ export default function SecurityPage() {
       </section>
 
       {/* Security FAQs */}
-      <section className="py-20 px-6 sm:px-10 md:px-16 max-w-5xl mx-auto border-t border-white/10">
+      <section className="py-20 px-6 sm:px-10 md:px-16 max-w-5xl mx-auto border-t border-neutral-200">
         <div className="text-center mb-16">
-          <div className="text-xs font-mono uppercase tracking-widest text-neutral-400 mb-2">Compliance &amp; Privacy</div>
-          <h2 className="text-3xl sm:text-5xl font-black uppercase tracking-tight mb-4">
+          <div className="text-xs font-mono uppercase tracking-widest text-neutral-500 mb-2 font-medium">Compliance &amp; Privacy</div>
+          <h2 className="text-3xl sm:text-5xl font-black uppercase tracking-tight text-neutral-950 mb-4">
             Security Questions Answered
           </h2>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {faqs.map((faq, i) => (
-            <div key={i} className="p-8 rounded-3xl border border-white/10 bg-white/[0.02]">
-              <h3 className="text-sm font-bold text-white mb-2">{faq.q}</h3>
-              <p className="text-xs sm:text-sm text-white/60 leading-relaxed font-sans font-light">{faq.a}</p>
+            <div key={i} className="p-8 rounded-3xl border border-neutral-200 bg-neutral-50/60 shadow-xs">
+              <h3 className="text-sm font-bold text-neutral-950 mb-2">{faq.q}</h3>
+              <p className="text-xs sm:text-sm text-neutral-600 leading-relaxed font-sans font-light">{faq.a}</p>
             </div>
           ))}
         </div>
       </section>
 
       {/* Bottom CTA */}
-      <section className="py-20 px-6 sm:px-10 md:px-16 max-w-5xl mx-auto text-center border-t border-white/10">
-        <h2 className="text-3xl sm:text-5xl font-black uppercase tracking-tighter mb-6">
+      <section className="py-20 px-6 sm:px-10 md:px-16 max-w-5xl mx-auto text-center border-t border-neutral-200">
+        <h2 className="text-3xl sm:text-5xl font-black uppercase tracking-tight text-neutral-950 mb-6">
           Ready for Enterprise Deployment
         </h2>
-        <p className="text-sm sm:text-base text-white/60 max-w-xl mx-auto mb-8 font-sans font-light">
+        <p className="text-sm sm:text-base text-neutral-600 max-w-xl mx-auto mb-8 font-sans font-light">
           Request custom VPC isolation, dedicated PostgreSQL tenancy, or a security audit call with our engineering team.
         </p>
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
           <Link
             href="/book-demo"
-            className="inline-flex items-center justify-center gap-3 w-full sm:w-auto bg-white text-black font-bold text-xs uppercase tracking-wider px-8 py-4 rounded-full hover:scale-105 transition-transform"
+            className="inline-flex items-center justify-center gap-3 w-full sm:w-auto bg-neutral-950 hover:bg-neutral-800 text-white font-bold text-xs uppercase tracking-wider px-8 py-4 rounded-full transition-transform shadow-sm"
           >
             <span>Book Security Review</span>
             <ArrowRight className="w-4 h-4" />
@@ -193,7 +193,10 @@ export default function SecurityPage() {
         </div>
       </section>
 
-      <ExperienceFooter />
+      <ExperienceFooter 
+        preset="paper" 
+        palette={{ background: "#ffffff", ink: "#0a0a0a", accent: "#0a0a0a" }} 
+      />
     </main>
   );
 }
