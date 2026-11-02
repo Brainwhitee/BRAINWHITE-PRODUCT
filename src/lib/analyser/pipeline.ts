@@ -15,6 +15,7 @@ import {
   summariseRollup,
   buildConceptualModuleSummary,
 } from "./summarise";
+import { callAi } from "../ai";
 
 const sha1 = (s: string) => createHash("sha1").update(s).digest("hex");
 
@@ -81,34 +82,48 @@ export async function syncRepository(repoId: string): Promise<string> {
       secretsRedacted: redactions,
     });
 
-    // ---- 2. Pre-create and map modules in parallel ----
+    // ---- 2. Pre-parse AST in memory (Pure CPU, 0 database connections used) ----
+    const symbolsByFile = new Map<string, Awaited<ReturnType<typeof parseSource>>>();
+    const imports = new Map<string, string[]>();
+
+    for (const l of loaded) {
+      let res = null;
+      if (isParsable(l.lang)) {
+        try {
+          res = await parseSource(l.lang, l.content);
+          if (res) parsed++;
+        } catch {
+          res = null;
+        }
+      }
+      symbolsByFile.set(l.path, res);
+      imports.set(l.path, res?.imports ?? []);
+    }
+
+    // ---- 3. Pre-create and map modules in parallel ----
     const modPathOf = new Map<string, string>();
     for (const l of loaded) modPathOf.set(l.path, modulePathFor(l.path));
     const distinctModPaths = [...new Set(modPathOf.values())];
     const modIds = new Map<string, string>();
 
-    await Promise.all(
-      distinctModPaths.map(async (mp) => {
-        const m = await db.module.upsert({
-          where: { repoId_path: { repoId, path: mp } },
-          update: {},
-          create: { repoId, path: mp, name: moduleNameFor(mp) },
-        });
-        modIds.set(mp, m.id);
-      })
-    );
+    for (const mp of distinctModPaths) {
+      const m = await db.module.upsert({
+        where: { repoId_path: { repoId, path: mp } },
+        update: {},
+        create: { repoId, path: mp, name: moduleNameFor(mp) },
+      });
+      modIds.set(mp, m.id);
+    }
     await db.module.deleteMany({ where: { repoId, path: { notIn: distinctModPaths } } });
 
-    // ---- 3. Concurrently upsert files with moduleId pre-populated ----
+    // ---- 4. Controlled database persistence with concurrency 2 (avoids pool timeouts) ----
     await db.file.deleteMany({ where: { repoId, path: { notIn: [...paths] } } });
     const existing = new Map((await db.file.findMany({ where: { repoId } })).map((f) => [f.path, f]));
     const fileIds = new Map<string, string>();
-    const imports = new Map<string, string[]>();
-    const symbolsByFile = new Map<string, Awaited<ReturnType<typeof parseSource>>>();
 
     let processedCount = 0;
-    // Process files in a concurrency pool of 12 for blazing fast execution
-    await pool(loaded, 12, async (l) => {
+    // Concurrency strictly set to 2 so database connection pool limit (3 to 5) is never exhausted
+    await pool(loaded, 2, async (l) => {
       const prev = existing.get(l.path);
       const targetModuleId = modIds.get(modPathOf.get(l.path)!)!;
       const data = {
@@ -126,18 +141,7 @@ export async function syncRepository(repoId: string): Promise<string> {
         : await db.file.create({ data: { repoId, path: l.path, ...data } });
       fileIds.set(l.path, row.id);
 
-      let res = null;
-      if (isParsable(l.lang)) {
-        try {
-          res = await parseSource(l.lang, l.content);
-          if (res) parsed++;
-        } catch {
-          res = null;
-        }
-      }
-      symbolsByFile.set(l.path, res);
-      imports.set(l.path, res?.imports ?? []);
-
+      const res = symbolsByFile.get(l.path);
       if (res?.symbols?.length) {
         await db.symbol.deleteMany({ where: { fileId: row.id } });
         await db.symbol.createMany({
@@ -154,12 +158,12 @@ export async function syncRepository(repoId: string): Promise<string> {
       }
 
       processedCount++;
-      if (processedCount % 25 === 0 || processedCount === loaded.length) {
+      if (processedCount % 35 === 0 || processedCount === loaded.length) {
         await progress(`Parsed ${processedCount}/${loaded.length} files`, { filesParsed: parsed });
       }
     });
 
-    // ---- 4. Generate learning chunks with deep conceptual summaries ----
+    // ---- 5. Generate learning chunks with deep conceptual summaries ----
     await progress("Synthesizing learning modules and concept chunks");
     const allChunks: {
       id: string;
@@ -217,16 +221,16 @@ export async function syncRepository(repoId: string): Promise<string> {
       }
     }
 
-    // Batch insert all chunks using high-performance batch chunks of 50
+    // Batch insert all chunks using safe chunks of 40
     await db.chunk.deleteMany({ where: { repoId, id: { notIn: [...seenChunkIds] } } });
-    for (let i = 0; i < allChunks.length; i += 50) {
+    for (let i = 0; i < allChunks.length; i += 40) {
       await db.chunk.createMany({
-        data: allChunks.slice(i, i + 50),
+        data: allChunks.slice(i, i + 40),
         skipDuplicates: true,
       });
     }
 
-    // ---- 5. Build Dependency Graph ----
+    // ---- 6. Build Dependency Graph ----
     await db.graphEdge.deleteMany({ where: { repoId } });
     const fileEdges: { repoId: string; fromId: string; toId: string; type: string; fromKind: string; toKind: string }[] = [];
     const modEdges = new Set<string>();
@@ -263,7 +267,7 @@ export async function syncRepository(repoId: string): Promise<string> {
       });
     }
 
-    // ---- 6. Synthesize Module & Repository Architectural Profiles ----
+    // ---- 7. Synthesize Module & Repository Architectural Profiles with AI support ----
     await progress("Generating architectural blueprint");
     const stats = newStats();
     const modules = await db.module.findMany({ where: { repoId }, include: { files: true } });
@@ -282,10 +286,40 @@ export async function syncRepository(repoId: string): Promise<string> {
       modSummaries.push(modSummary);
     }
 
+    // If an AI provider (NVIDIA, Groq, Gemini) is configured, enrich the top modules with AI summaries
+    if (llmEnabled()) {
+      for (const m of modules.slice(0, 3)) {
+        try {
+          const aiResult = await callAi({
+            task: "summary",
+            messages: [
+              {
+                role: "system",
+                content:
+                  "Explain this module's architectural role and problem solved to a new engineer in 2 concise sentences.",
+              },
+              {
+                role: "user",
+                content: `Module: ${m.name}\nPath: ${m.path}\nFiles: ${m.files.slice(0, 8).map((f) => f.path).join(", ")}`,
+              },
+            ],
+            maxTokens: 140,
+            timeoutMs: 6000,
+          });
+          if (aiResult.text) {
+            stats.calls++;
+            await db.module.update({ where: { id: m.id }, data: { summary: aiResult.text } });
+          }
+        } catch {
+          // Keep rich heuristic if AI call times out
+        }
+      }
+    }
+
     const langCount: Record<string, number> = {};
     for (const l of loaded) langCount[l.lang] = (langCount[l.lang] ?? 0) + 1;
 
-    let repoSummary = `${repo.name}: Multi-tier architecture spanning ${modules.length} modules (${distinctModPaths.slice(0, 5).join(", ")}) across ${loaded.length} indexed files.`;
+    let repoSummary = `${repo.name}: Architecture spanning ${modules.length} modules (${distinctModPaths.slice(0, 5).join(", ")}) across ${loaded.length} indexed files.`;
     if (llmEnabled()) {
       repoSummary = await summariseRollup(
         {
@@ -298,7 +332,7 @@ export async function syncRepository(repoId: string): Promise<string> {
       );
     }
 
-    // ---- 7. Complete and mark HEALTHY ----
+    // ---- 8. Complete and mark HEALTHY ----
     await db.repository.update({
       where: { id: repoId },
       data: {
