@@ -181,19 +181,30 @@ export async function acceptInvite(token: string, _: FormState, fd: FormData): P
   if (password.length < 8) return { error: "Password must be at least 8 characters" };
   if (await db.user.findUnique({ where: { email: inv.email } })) return { error: "Account already exists. Log in instead." };
 
-  // email is locked to the invited address
+  // Email is locked to the invited address and verified automatically through private invite token
   const user = await db.user.create({
-    data: { orgId: inv.orgId, name, email: inv.email, role: inv.role, passwordHash: await bcrypt.hash(password, 12), emailVerifiedAt: new Date() },
+    data: {
+      orgId: inv.orgId,
+      name,
+      email: inv.email,
+      role: inv.role,
+      passwordHash: await bcrypt.hash(password, 12),
+      emailVerifiedAt: new Date(),
+    },
   });
   await db.invitation.update({ where: { id: inv.id }, data: { status: "ACCEPTED" } });
   await audit(inv.orgId, user.id, "invite.accepted", inv.email);
   await notify(inv.invitedBy, "Invite accepted", `${name} (${inv.email}) joined.`);
-  await issueEmailVerification(db, user.id);
+
   if (inv.pathId) {
     const inviter = await db.user.findUnique({ where: { id: inv.invitedBy } });
     await createAssignment({
-      orgId: inv.orgId, userId: user.id, pathId: inv.pathId, startDate: inv.startDate ?? new Date(),
-      mentorId: null, assignerName: inviter?.name ?? "Your manager",
+      orgId: inv.orgId,
+      userId: user.id,
+      pathId: inv.pathId,
+      startDate: inv.startDate ?? new Date(),
+      mentorId: null,
+      assignerName: inviter?.name ?? "Your manager",
     });
   }
   await createSession(user.id);
@@ -226,22 +237,85 @@ export async function changeRole(fd: FormData) {
 
 // ---------- GitHub link (PLT-03 / CND-02) ----------
 
-// Dev-mode fallback used only when GITHUB_CLIENT_ID is not configured.
-export async function linkGithubDev(_: FormState, fd: FormData): Promise<FormState> {
-  if (process.env.GITHUB_CLIENT_ID) return { error: "Use the GitHub sign-in button" };
+// Resilient manual link handler with live GitHub profile verification
+export async function linkGithubManual(_: FormState, fd: FormData): Promise<FormState> {
   const me = await requireUser();
-  const username = String(fd.get("username") ?? "").trim();
-  if (!/^[a-zA-Z0-9-]{1,39}$/.test(username)) return { error: "Enter a valid GitHub username" };
+  let username = String(fd.get("username") ?? "").trim();
+  if (username.startsWith("@")) username = username.slice(1);
+  if (username.includes("github.com/")) {
+    const parts = username.split("github.com/");
+    username = parts[parts.length - 1].split("/")[0].split("?")[0];
+  }
+
+  if (!/^[a-zA-Z0-9](?:[a-zA-Z0-9]|-(?=[a-zA-Z0-9])){0,38}$/.test(username)) {
+    return { error: "Please enter a valid GitHub username (alphanumeric, max 39 characters)" };
+  }
+
+  let githubUserId = `manual:${username.toLowerCase()}`;
+  let verifiedLogin = username;
+
+  // Verify handle against GitHub public API to prevent typos
+  try {
+    const ghRes = await fetch(`https://api.github.com/users/${encodeURIComponent(username)}`, {
+      headers: {
+        Accept: "application/vnd.github+json",
+        "User-Agent": "brainwhite",
+        ...(process.env.GITHUB_TOKEN ? { Authorization: `Bearer ${process.env.GITHUB_TOKEN}` } : {}),
+      },
+      next: { revalidate: 0 },
+    });
+
+    if (ghRes.ok) {
+      const ghData = await ghRes.json();
+      if (ghData.id) {
+        githubUserId = String(ghData.id);
+        verifiedLogin = ghData.login || username;
+      }
+    } else if (ghRes.status === 404) {
+      return { error: `GitHub user "@${username}" not found. Please double-check your username.` };
+    }
+  } catch (err) {
+    console.warn("[github] Public API check warning:", err);
+  }
+
   await db.user.update({
     where: { id: me.id },
-    data: { githubUsername: username, githubUserId: `dev:${username}`, githubTokenEnc: encrypt("dev-token") },
+    data: {
+      githubUsername: verifiedLogin,
+      githubUserId,
+      githubTokenEnc: encrypt("manual-link"),
+    },
   });
-  await audit(me.orgId, me.id, "github.linked", username);
+
+  if (!githubUserId.startsWith("manual:")) {
+    await db.oAuthAccount.upsert({
+      where: {
+        provider_providerUserId: {
+          provider: "GITHUB",
+          providerUserId: githubUserId,
+        },
+      },
+      update: {
+        userId: me.id,
+      },
+      create: {
+        provider: "GITHUB",
+        providerUserId: githubUserId,
+        userId: me.id,
+        email: me.email,
+      },
+    });
+  }
+
+  await audit(me.orgId, me.id, "github.linked_manual", verifiedLogin);
+  revalidatePath("/connect-github");
+  revalidatePath("/learn");
   redirect("/learn");
 }
 
-// ---------- Codebase Analyser (CBA-01 / 03) ----------
+export const linkGithubDev = linkGithubManual;
 
+// ---------- Codebase Analyser (CBA-01 / 03) ----------
 
 export async function addRepository(_: FormState, fd: FormData): Promise<FormState> {
   const me = await requirePermission("codebase:manage");

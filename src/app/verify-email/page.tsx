@@ -15,8 +15,11 @@ function VerifyEmailContent() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    const isAlreadyVerified = searchParams.get("verified") === "true";
     const t = searchParams.get("token");
-    if (t) {
+    if (isAlreadyVerified) {
+      setStatus("success");
+    } else if (t) {
       setToken(t);
       verifyEmail(t);
     } else {
@@ -29,7 +32,9 @@ function VerifyEmailContent() {
     setStatus("verifying");
     setError(null);
     try {
-      const res = await fetch(`/api/auth/verify-email?token=${encodeURIComponent(t)}`);
+      const res = await fetch(`/api/auth/verify-email?token=${encodeURIComponent(t)}`, {
+        headers: { Accept: "application/json" },
+      });
       const data = await res.json();
       if (data.error) throw new Error(data.error);
       setStatus("success");

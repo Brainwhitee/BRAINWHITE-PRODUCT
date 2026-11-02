@@ -22,9 +22,9 @@ const PUBLIC_PREFIXES = [
   "/invite",
   "/verify-email",
   "/api/auth",
+  "/api/github",
   "/api/support-chat",
   "/api/chat",
-  "/api/github/webhook",
 ];
 
 function isPublicPath(pathname: string): boolean {

@@ -1,6 +1,7 @@
 import { NextResponse, NextRequest } from "next/server";
-import { newToken } from "@/lib/crypto";
+import { encrypt, newToken } from "@/lib/crypto";
 import { appUrl } from "@/lib/config";
+import { getUser } from "@/lib/auth";
 
 export async function GET(req: NextRequest) {
   try {
@@ -19,21 +20,43 @@ export async function GET(req: NextRequest) {
       : appUrl();
     const redirectUri = `${base}/api/auth/github/callback`;
 
-    const state = newToken();
+    // Attempt to identify current user if linking
+    const me = await getUser();
+
+    // Cryptographically signed self-contained state payload (AES-256-GCM)
+    // Ensures immunity against cookie drops across browsers, mobile webviews, or strict privacy modes
+    const statePayload = {
+      nonce: newToken(),
+      mode,
+      userId: me?.id ?? null,
+      redirectUri,
+      authRedirect: redirectParam && redirectParam.startsWith("/") && !redirectParam.startsWith("//") ? redirectParam : null,
+      createdAt: Date.now(),
+    };
+    const state = encrypt(JSON.stringify(statePayload));
+
     const url = new URL("https://github.com/login/oauth/authorize");
     url.searchParams.set("client_id", process.env.GITHUB_CLIENT_ID);
     url.searchParams.set("scope", "read:user user:email");
     url.searchParams.set("state", state);
     url.searchParams.set("redirect_uri", redirectUri);
-    url.searchParams.set("mode", mode);
 
     const res = NextResponse.redirect(url);
-    res.cookies.set("gh_state", state, { httpOnly: true, sameSite: "lax", maxAge: 600, path: "/" });
-    res.cookies.set("gh_mode", mode, { httpOnly: true, sameSite: "lax", maxAge: 600, path: "/" });
-    res.cookies.set("gh_redirect_uri", redirectUri, { httpOnly: true, sameSite: "lax", maxAge: 600, path: "/" });
-    if (redirectParam && redirectParam.startsWith("/") && !redirectParam.startsWith("//")) {
-      res.cookies.set("auth_redirect", redirectParam, { httpOnly: true, sameSite: "lax", maxAge: 600, path: "/" });
+    const cookieOpts = {
+      httpOnly: true,
+      sameSite: "lax" as const,
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 900,
+      path: "/",
+    };
+
+    res.cookies.set("gh_state", state, cookieOpts);
+    res.cookies.set("gh_mode", mode, cookieOpts);
+    res.cookies.set("gh_redirect_uri", redirectUri, cookieOpts);
+    if (statePayload.authRedirect) {
+      res.cookies.set("auth_redirect", statePayload.authRedirect, cookieOpts);
     }
+
     return res;
   } catch (err: unknown) {
     console.error("GitHub OAuth start error:", err);

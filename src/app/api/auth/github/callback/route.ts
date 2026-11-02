@@ -3,14 +3,42 @@ import { db } from "@/lib/db";
 import { createSession, getUser, homeFor } from "@/lib/auth";
 import { audit } from "@/lib/audit";
 import { resolveOAuthUser } from "@/lib/domain/auth";
-import { encrypt } from "@/lib/crypto";
+import { decrypt, encrypt } from "@/lib/crypto";
+import { appUrl } from "@/lib/config";
+
+interface StatePayload {
+  nonce?: string;
+  mode?: "login" | "signup" | "link";
+  userId?: string | null;
+  redirectUri?: string | null;
+  authRedirect?: string | null;
+  createdAt?: number;
+}
 
 export async function GET(req: NextRequest) {
   const code = req.nextUrl.searchParams.get("code");
   const state = req.nextUrl.searchParams.get("state");
-  const rawMode = req.cookies.get("gh_mode")?.value;
-  const mode = rawMode === "link" ? "link" : rawMode === "signup" ? "signup" : "login";
-  const expectedState = req.cookies.get("gh_state")?.value;
+  const rawCookieMode = req.cookies.get("gh_mode")?.value;
+  const expectedStateCookie = req.cookies.get("gh_state")?.value;
+
+  // 1. Decrypt state payload if encrypted (resilient to cookie drops across webviews/mobile browsers)
+  let statePayload: StatePayload | null = null;
+  if (state) {
+    try {
+      const decrypted = decrypt(state);
+      statePayload = JSON.parse(decrypted) as StatePayload;
+    } catch {
+      // State may be plain random token from older sessions
+    }
+  }
+
+  // Determine mode: prioritize verified payload, fallback to cookie, fallback to "login"
+  const mode: "login" | "signup" | "link" =
+    statePayload?.mode === "link" || rawCookieMode === "link"
+      ? "link"
+      : statePayload?.mode === "signup" || rawCookieMode === "signup"
+      ? "signup"
+      : "login";
 
   const fail = (reason: string) => {
     const targetPath = mode === "link" ? "/connect-github" : "/login";
@@ -25,20 +53,47 @@ export async function GET(req: NextRequest) {
   };
 
   try {
-    if (!code || !state || state !== expectedState) return fail("github_state_invalid");
+    if (!code || !state) {
+      return fail("github_state_invalid");
+    }
+
+    // Validate state integrity: either verified via AES-256-GCM payload or matching cookie
+    const isPayloadValid =
+      statePayload?.createdAt && Date.now() - statePayload.createdAt < 15 * 60 * 1000;
+    const isCookieMatch = expectedStateCookie && state === expectedStateCookie;
+
+    if (!isPayloadValid && !isCookieMatch) {
+      return fail("github_state_invalid");
+    }
+
     if (!process.env.GITHUB_CLIENT_ID || !process.env.GITHUB_CLIENT_SECRET) {
       return fail("github_not_configured");
     }
 
+    // Determine redirectUri used during start (required to match by GitHub OAuth RFC 6749)
+    const base = req.nextUrl.origin && !req.nextUrl.origin.includes("0.0.0.0")
+      ? req.nextUrl.origin
+      : appUrl();
+    const redirectUri =
+      statePayload?.redirectUri ||
+      req.cookies.get("gh_redirect_uri")?.value ||
+      `${base}/api/auth/github/callback`;
+
+    // 2. Exchange authorization code for access token (with redirect_uri included)
     const tokenRes = await fetch("https://github.com/login/oauth/access_token", {
       method: "POST",
-      headers: { Accept: "application/json", "Content-Type": "application/json" },
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify({
         client_id: process.env.GITHUB_CLIENT_ID,
         client_secret: process.env.GITHUB_CLIENT_SECRET,
         code,
+        redirect_uri: redirectUri,
       }),
     });
+
     const tokenJson = await tokenRes.json();
     const accessToken = tokenJson.access_token as string | undefined;
     if (!accessToken) {
@@ -46,20 +101,40 @@ export async function GET(req: NextRequest) {
       return fail("github_token_failed");
     }
 
+    // 3. Fetch GitHub User Profile
     const ghHeaders = {
       Authorization: `Bearer ${accessToken}`,
       Accept: "application/vnd.github+json",
       "User-Agent": "brainwhite",
     };
-    const gh = await (await fetch("https://api.github.com/user", { headers: ghHeaders })).json();
+    const ghRes = await fetch("https://api.github.com/user", { headers: ghHeaders });
+    if (!ghRes.ok) {
+      console.error("GitHub API /user fetch failed:", await ghRes.text());
+      return fail("github_token_failed");
+    }
+    const gh = await ghRes.json();
 
-    // MODE = LINK (candidate linking their GitHub account)
+    // 4. MODE = LINK (candidate or user connecting their GitHub account)
     if (mode === "link") {
-      const me = await getUser();
+      let me = await getUser();
+
+      // If session was dropped during cross-site navigation, restore it using verified state userId
+      if (!me && statePayload?.userId) {
+        const found = await db.user.findUnique({
+          where: { id: statePayload.userId },
+          include: { org: true },
+        });
+        if (found && found.status === "ACTIVE") {
+          me = found;
+          await createSession(me.id);
+        }
+      }
+
       if (!me) {
         return fail("unauthorized");
       }
 
+      // Update user with GitHub identity and encrypted token
       await db.user.update({
         where: { id: me.id },
         data: {
@@ -69,7 +144,7 @@ export async function GET(req: NextRequest) {
         },
       });
 
-      // Keep OAuthAccount in sync for 1-click login
+      // Keep OAuthAccount in sync for future 1-click login
       await db.oAuthAccount.upsert({
         where: {
           provider_providerUserId: {
@@ -99,16 +174,20 @@ export async function GET(req: NextRequest) {
       return res;
     }
 
-    // MODE = LOGIN / SIGNUP
+    // 5. MODE = LOGIN / SIGNUP
     let email = typeof gh.email === "string" && gh.email ? gh.email : null;
 
-    // Private emails are not on /user — ask the emails endpoint for a verified primary.
+    // Fetch verified primary email if not visible on profile
     if (!email) {
-      const emails = (await (await fetch("https://api.github.com/user/emails", { headers: ghHeaders })).json()) as
-        | { email: string; primary: boolean; verified: boolean }[]
-        | undefined;
-      const primary = Array.isArray(emails) ? emails.find((e) => e.primary && e.verified) : undefined;
-      email = primary?.email ?? null;
+      try {
+        const emails = (await (
+          await fetch("https://api.github.com/user/emails", { headers: ghHeaders })
+        ).json()) as { email: string; primary: boolean; verified: boolean }[] | undefined;
+        const primary = Array.isArray(emails) ? emails.find((e) => e.primary && e.verified) : undefined;
+        email = primary?.email ?? null;
+      } catch (e) {
+        console.warn("Could not fetch user emails from GitHub:", e);
+      }
     }
     const emailVerified = Boolean(email);
 
@@ -125,6 +204,7 @@ export async function GET(req: NextRequest) {
       },
       mode
     );
+
     if (!resolved.ok) {
       const errCode = resolved.code === "oauth_no_email" ? "github_no_email" : "github_no_account";
       return fail(errCode);
@@ -137,10 +217,14 @@ export async function GET(req: NextRequest) {
       resolved.data.linked ? "auth.login_github" : "auth.signup_github"
     );
     await createSession(user.id);
-    const authRedirect = req.cookies.get("auth_redirect")?.value;
-    const target = authRedirect && authRedirect.startsWith("/") && !authRedirect.startsWith("//")
-      ? authRedirect
-      : homeFor(user.role);
+
+    const authRedirect =
+      statePayload?.authRedirect || req.cookies.get("auth_redirect")?.value;
+    const target =
+      authRedirect && authRedirect.startsWith("/") && !authRedirect.startsWith("//")
+        ? authRedirect
+        : homeFor(user.role);
+
     const res = NextResponse.redirect(new URL(target, req.url));
     res.cookies.delete("gh_state");
     res.cookies.delete("gh_mode");
