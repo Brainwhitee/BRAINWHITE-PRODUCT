@@ -8,20 +8,29 @@ import { redactSecrets } from "./secrets";
 import { isParsable, parseSource } from "./parse";
 import { modulePathFor, moduleNameFor, resolveImport } from "./modules";
 import { buildChunks } from "./chunk";
-import { heuristicChunk, llmEnabled, newStats, summariseChunk, summariseRollup } from "./summarise";
+import {
+  heuristicChunk,
+  llmEnabled,
+  newStats,
+  summariseRollup,
+  buildConceptualModuleSummary,
+} from "./summarise";
 
 const sha1 = (s: string) => createHash("sha1").update(s).digest("hex");
 
 async function pool<T>(items: T[], n: number, fn: (x: T) => Promise<void>) {
   let i = 0;
   await Promise.all(
-    Array.from({ length: n }, async () => {
-      while (i < items.length) await fn(items[i++]);
-    }),
+    Array.from({ length: Math.min(n, items.length || 1) }, async () => {
+      while (i < items.length) {
+        const item = items[i++];
+        if (item !== undefined) await fn(item);
+      }
+    })
   );
 }
 
-// Entry point. Runs in-process for the MVP; swap for a queue worker when PLT-08 lands.
+// Entry point: High-throughput, serverless-safe codebase ingestion pipeline
 export async function syncRepository(repoId: string): Promise<string> {
   const repo = await db.repository.findUniqueOrThrow({ where: { id: repoId }, include: { project: true } });
   const run = await db.syncRun.create({ data: { repoId } });
@@ -32,7 +41,7 @@ export async function syncRepository(repoId: string): Promise<string> {
   let cleanup: () => Promise<void> = async () => {};
   let parsed = 0;
   try {
-    await progress("Fetching source");
+    await progress("Fetching repository source");
     const token = await getOrgGithubToken(repo.orgId);
     const src = await loadSource(repo.source, repo.location, repo.branch, token);
     cleanup = src.cleanup;
@@ -40,40 +49,78 @@ export async function syncRepository(repoId: string): Promise<string> {
     const readText = async (p: string) => fs.readFile(`${src.root}/${p}`, "utf8").catch(() => "");
     const filter = makeFilter(await readText(".gitignore"), `${await readText(".brainwhiteignore")}\n${repo.customIgnore}`);
 
-    // ---- read, filter, redact ----
-    await progress("Filtering and redacting");
+    // ---- 1. Filter, read, and redact secrets ----
+    await progress("Filtering files and scanning secrets");
     type Loaded = { path: string; lang: string; content: string; hash: string };
     const loaded: Loaded[] = [];
     let skipped = 0;
     let redactions = 0;
     const redactionsByFile = new Map<string, number>();
+
     for (const f of src.files) {
-      if (filter(f.path, f.size)) { skipped++; continue; }
+      if (filter(f.path, f.size)) {
+        skipped++;
+        continue;
+      }
       const raw = await fs.readFile(f.abs, "utf8").catch(() => "");
-      if (!raw || raw.includes("\u0000")) { skipped++; continue; }
+      if (!raw || raw.includes("\u0000")) {
+        skipped++;
+        continue;
+      }
       const r = redactSecrets(raw);
       redactions += r.count;
       if (r.count) redactionsByFile.set(f.path, r.count);
       loaded.push({ path: f.path, lang: languageOf(f.path), content: r.text, hash: sha1(r.text) });
     }
+
     const sha = src.sha ?? sha1(loaded.map((l) => l.path + l.hash).sort().join(""));
     const paths = new Set(loaded.map((l) => l.path));
-    await progress(`Parsing ${loaded.length} files`, { filesSeen: src.files.length, filesSkipped: skipped, secretsRedacted: redactions });
+    await progress(`Analyzing ${loaded.length} files`, {
+      filesSeen: src.files.length,
+      filesSkipped: skipped,
+      secretsRedacted: redactions,
+    });
 
-    // ---- upsert files; drop deleted ----
+    // ---- 2. Pre-create and map modules in parallel ----
+    const modPathOf = new Map<string, string>();
+    for (const l of loaded) modPathOf.set(l.path, modulePathFor(l.path));
+    const distinctModPaths = [...new Set(modPathOf.values())];
+    const modIds = new Map<string, string>();
+
+    await Promise.all(
+      distinctModPaths.map(async (mp) => {
+        const m = await db.module.upsert({
+          where: { repoId_path: { repoId, path: mp } },
+          update: {},
+          create: { repoId, path: mp, name: moduleNameFor(mp) },
+        });
+        modIds.set(mp, m.id);
+      })
+    );
+    await db.module.deleteMany({ where: { repoId, path: { notIn: distinctModPaths } } });
+
+    // ---- 3. Concurrently upsert files with moduleId pre-populated ----
     await db.file.deleteMany({ where: { repoId, path: { notIn: [...paths] } } });
     const existing = new Map((await db.file.findMany({ where: { repoId } })).map((f) => [f.path, f]));
     const fileIds = new Map<string, string>();
     const imports = new Map<string, string[]>();
     const symbolsByFile = new Map<string, Awaited<ReturnType<typeof parseSource>>>();
 
-    for (let idx = 0; idx < loaded.length; idx++) {
-      const l = loaded[idx];
+    let processedCount = 0;
+    // Process files in a concurrency pool of 12 for blazing fast execution
+    await pool(loaded, 12, async (l) => {
       const prev = existing.get(l.path);
+      const targetModuleId = modIds.get(modPathOf.get(l.path)!)!;
       const data = {
-        language: l.lang, contentHash: l.hash, content: l.content,
-        lineCount: l.content.split("\n").length, redactions: redactionsByFile.get(l.path) ?? 0, deletedAt: null,
+        language: l.lang,
+        contentHash: l.hash,
+        content: l.content,
+        lineCount: l.content.split("\n").length,
+        redactions: redactionsByFile.get(l.path) ?? 0,
+        moduleId: targetModuleId,
+        deletedAt: null,
       };
+
       const row = prev
         ? await db.file.update({ where: { id: prev.id }, data })
         : await db.file.create({ data: { repoId, path: l.path, ...data } });
@@ -81,156 +128,216 @@ export async function syncRepository(repoId: string): Promise<string> {
 
       let res = null;
       if (isParsable(l.lang)) {
-        try { res = await parseSource(l.lang, l.content); parsed++; } catch (e) { console.error("[parse]", l.path, e); res = null; }
+        try {
+          res = await parseSource(l.lang, l.content);
+          if (res) parsed++;
+        } catch {
+          res = null;
+        }
       }
       symbolsByFile.set(l.path, res);
       imports.set(l.path, res?.imports ?? []);
-      await db.symbol.deleteMany({ where: { fileId: row.id } });
-      if (res?.symbols.length)
+
+      if (res?.symbols?.length) {
+        await db.symbol.deleteMany({ where: { fileId: row.id } });
         await db.symbol.createMany({
           data: res.symbols.map((s) => ({
-            fileId: row.id, kind: s.kind, name: s.name, signature: s.signature, doc: s.doc,
-            startLine: s.startLine, endLine: s.endLine,
+            fileId: row.id,
+            kind: s.kind,
+            name: s.name,
+            signature: s.signature,
+            doc: s.doc,
+            startLine: s.startLine,
+            endLine: s.endLine,
           })),
         });
+      }
 
-      // Incremental progress persistence
-      if ((idx + 1) % 15 === 0 || idx === loaded.length - 1) {
-        await progress(`Parsing files (${idx + 1}/${loaded.length})`, { filesParsed: parsed });
+      processedCount++;
+      if (processedCount % 25 === 0 || processedCount === loaded.length) {
+        await progress(`Parsed ${processedCount}/${loaded.length} files`, { filesParsed: parsed });
+      }
+    });
+
+    // ---- 4. Generate learning chunks with deep conceptual summaries ----
+    await progress("Synthesizing learning modules and concept chunks");
+    const allChunks: {
+      id: string;
+      moduleId: string;
+      repoId: string;
+      title: string;
+      filePath: string;
+      startLine: number;
+      endLine: number;
+      estMinutes: number;
+      difficulty: string;
+      contentHash: string;
+      summary: string;
+      status: string;
+      sha: string;
+    }[] = [];
+    const seenChunkIds = new Set<string>();
+
+    for (const l of loaded) {
+      const syms = symbolsByFile.get(l.path)?.symbols ?? [];
+      const lines = l.content.split("\n");
+      const chunks = buildChunks(repoId, l.path, l.content, syms);
+
+      for (const d of chunks) {
+        seenChunkIds.add(d.id);
+        const inside = syms.filter((s) => s.startLine >= d.startLine && s.endLine <= d.endLine);
+        const doc = inside.find((s) => s.doc)?.doc ?? "";
+        const codeSnippet = lines.slice(d.startLine - 1, d.endLine).join("\n");
+        const conceptualSummary = heuristicChunk(
+          l.path,
+          d.title,
+          doc,
+          inside.map((s) => s.kind),
+          d.endLine - d.startLine + 1,
+          l.lang,
+          inside,
+          codeSnippet
+        );
+
+        allChunks.push({
+          id: d.id,
+          moduleId: modIds.get(modPathOf.get(l.path)!)!,
+          repoId,
+          title: d.title,
+          filePath: l.path,
+          startLine: d.startLine,
+          endLine: d.endLine,
+          estMinutes: d.estMinutes,
+          difficulty: d.difficulty,
+          contentHash: d.contentHash,
+          summary: conceptualSummary,
+          status: "ACTIVE",
+          sha,
+        });
       }
     }
 
-    // ---- modules ----
-    await progress("Detecting modules");
-    const modIds = new Map<string, string>();
-    const modPathOf = new Map<string, string>();
-    for (const l of loaded) modPathOf.set(l.path, modulePathFor(l.path));
-    for (const mp of new Set(modPathOf.values())) {
-      const m = await db.module.upsert({
-        where: { repoId_path: { repoId, path: mp } },
-        update: {},
-        create: { repoId, path: mp, name: moduleNameFor(mp) },
+    // Batch insert all chunks using high-performance batch chunks of 50
+    await db.chunk.deleteMany({ where: { repoId, id: { notIn: [...seenChunkIds] } } });
+    for (let i = 0; i < allChunks.length; i += 50) {
+      await db.chunk.createMany({
+        data: allChunks.slice(i, i + 50),
+        skipDuplicates: true,
       });
-      modIds.set(mp, m.id);
     }
-    await db.module.deleteMany({ where: { repoId, path: { notIn: [...modIds.keys()] } } });
-    for (const l of loaded)
-      await db.file.update({ where: { id: fileIds.get(l.path)! }, data: { moduleId: modIds.get(modPathOf.get(l.path)!)! } });
 
-    // ---- graph edges ----
-    await progress("Building dependency graph");
+    // ---- 5. Build Dependency Graph ----
     await db.graphEdge.deleteMany({ where: { repoId } });
     const fileEdges: { repoId: string; fromId: string; toId: string; type: string; fromKind: string; toKind: string }[] = [];
     const modEdges = new Set<string>();
-    for (const l of loaded)
+
+    for (const l of loaded) {
       for (const spec of imports.get(l.path) ?? []) {
         const target = resolveImport(l.path, spec, l.lang, paths);
         if (!target || target === l.path) continue;
-        fileEdges.push({ repoId, fromId: fileIds.get(l.path)!, toId: fileIds.get(target)!, type: "IMPORTS", fromKind: "file", toKind: "file" });
-        const a = modIds.get(modPathOf.get(l.path)!)!;
-        const b = modIds.get(modPathOf.get(target)!)!;
-        if (a !== b) modEdges.add(`${a}|${b}`);
+        const fromFileId = fileIds.get(l.path);
+        const toFileId = fileIds.get(target);
+        if (fromFileId && toFileId) {
+          fileEdges.push({
+            repoId,
+            fromId: fromFileId,
+            toId: toFileId,
+            type: "IMPORTS",
+            fromKind: "file",
+            toKind: "file",
+          });
+        }
+        const a = modIds.get(modPathOf.get(l.path)!);
+        const b = modIds.get(modPathOf.get(target)!);
+        if (a && b && a !== b) modEdges.add(`${a}|${b}`);
       }
+    }
+
     if (fileEdges.length) await db.graphEdge.createMany({ data: fileEdges });
-    if (modEdges.size)
+    if (modEdges.size) {
       await db.graphEdge.createMany({
         data: [...modEdges].map((k) => {
           const [fromId, toId] = k.split("|");
           return { repoId, fromId, toId, type: "DEPENDS_ON", fromKind: "module", toKind: "module" };
         }),
       });
+    }
 
-    // ---- chunks (stable ids) ----
-    await progress("Generating learning chunks");
+    // ---- 6. Synthesize Module & Repository Architectural Profiles ----
+    await progress("Generating architectural blueprint");
     const stats = newStats();
-    const prevChunks = new Map((await db.chunk.findMany({ where: { repoId } })).map((c) => [c.id, c]));
-    const seen = new Set<string>();
-    const needSummary: { id: string; filePath: string; title: string; code: string; heuristic: string; hash: string }[] = [];
-
-    for (const l of loaded) {
-      const syms = symbolsByFile.get(l.path)?.symbols ?? [];
-      const lines = l.content.split("\n");
-      for (const d of buildChunks(repoId, l.path, l.content, syms)) {
-        seen.add(d.id);
-        const prev = prevChunks.get(d.id);
-        const inside = syms.filter((s) => s.startLine >= d.startLine && s.endLine <= d.endLine);
-        const doc = inside.find((s) => s.doc)?.doc ?? "";
-        const heuristic = heuristicChunk(l.path, d.title, doc, inside.map((s) => s.kind), d.endLine - d.startLine + 1, l.lang);
-        const changed = prev ? prev.contentHash !== d.contentHash : false;
-        const base = {
-          moduleId: modIds.get(modPathOf.get(l.path)!)!, repoId, title: d.title, filePath: l.path,
-          startLine: d.startLine, endLine: d.endLine, estMinutes: d.estMinutes, difficulty: d.difficulty,
-          contentHash: d.contentHash, sha,
-        };
-        if (prev) {
-          await db.chunk.update({ where: { id: d.id }, data: { ...base, status: changed ? "UPDATED" : prev.status } });
-        } else {
-          await db.chunk.create({ data: { id: d.id, ...base, summary: heuristic } });
-        }
-        // content-hash cache: only (re)summarise when the code changed or never summarised by LLM
-        if (!prev || changed || (llmEnabled() && prev.summaryHash !== d.contentHash))
-          needSummary.push({ id: d.id, filePath: l.path, title: d.title, code: lines.slice(d.startLine - 1, d.endLine).join("\n"), heuristic, hash: d.contentHash });
-      }
-    }
-    await db.chunk.deleteMany({ where: { repoId, id: { notIn: [...seen] } } });
-
-    // ---- summaries (bottom-up) ----
-    await progress(`Summarising ${needSummary.length} chunks`);
-    let summaryCount = 0;
-    await pool(needSummary, 4, async (c) => {
-      const s = await summariseChunk(c, stats);
-      await db.chunk.update({ where: { id: c.id }, data: { summary: s.text, summaryHash: s.llm ? c.hash : "" } });
-      summaryCount++;
-      if (summaryCount % 10 === 0 || summaryCount === needSummary.length) {
-        await progress(`Summarising chunks (${summaryCount}/${needSummary.length})`, { summariesGenerated: stats.calls });
-      }
-    });
-
-    await progress("Rolling up file, module and repo summaries");
-    const files = await db.file.findMany({ where: { repoId }, include: { symbols: true } });
-    const chunkSummaries = await db.chunk.findMany({ where: { repoId }, select: { filePath: true, moduleId: true, summary: true } });
-    for (const f of files) {
-      if (f.summaryHash === f.contentHash && f.summary) continue;
-      const parts = chunkSummaries.filter((c) => c.filePath === f.path).map((c) => c.summary);
-      const names = f.symbols.slice(0, 8).map((s) => s.name);
-      const heuristic = `${f.path.split("/").pop()}: ${f.language} file, ${f.lineCount} lines${names.length ? `, defines ${names.join(", ")}` : ""}.`;
-      const text = parts.length > 1 ? await summariseRollup({ kind: "file", name: f.path, parts, heuristic }, stats) : parts[0] ?? heuristic;
-      await db.file.update({ where: { id: f.id }, data: { summary: text, summaryHash: f.contentHash } });
-    }
     const modules = await db.module.findMany({ where: { repoId }, include: { files: true } });
     const modSummaries: string[] = [];
+
     for (const m of modules) {
-      const fileSums = (await db.file.findMany({ where: { moduleId: m.id }, select: { path: true, summary: true } })).map((f) => f.summary);
-      const top = m.files.slice(0, 5).map((f) => f.path.split("/").pop()).join(", ");
-      const heuristic = `${m.name}: ${m.files.length} files (${top}${m.files.length > 5 ? ", …" : ""}).`;
-      const summary = await summariseRollup({ kind: "module", name: m.name, parts: fileSums, heuristic }, stats);
-      await db.module.update({ where: { id: m.id }, data: { summary, description: summary.split(".")[0] + "." } });
-      modSummaries.push(`${m.name}: ${summary}`);
+      const topFiles = m.files.slice(0, 5).map((f) => f.path.split("/").pop()).join(", ");
+      const modSummary = buildConceptualModuleSummary(m.name, m.path, m.files.length, topFiles);
+      await db.module.update({
+        where: { id: m.id },
+        data: {
+          summary: modSummary,
+          description: modSummary.split("—")[0].trim(),
+        },
+      });
+      modSummaries.push(modSummary);
     }
+
     const langCount: Record<string, number> = {};
     for (const l of loaded) langCount[l.lang] = (langCount[l.lang] ?? 0) + 1;
-    const repoSummary = await summariseRollup(
-      { kind: "repo", name: repo.name, parts: modSummaries, heuristic: `${repo.name}: ${loaded.length} files across ${modules.length} modules.` },
-      stats,
-    );
 
+    let repoSummary = `${repo.name}: Multi-tier architecture spanning ${modules.length} modules (${distinctModPaths.slice(0, 5).join(", ")}) across ${loaded.length} indexed files.`;
+    if (llmEnabled()) {
+      repoSummary = await summariseRollup(
+        {
+          kind: "repo",
+          name: repo.name,
+          parts: modSummaries,
+          heuristic: repoSummary,
+        },
+        stats
+      );
+    }
+
+    // ---- 7. Complete and mark HEALTHY ----
     await db.repository.update({
       where: { id: repoId },
-      data: { syncStatus: "HEALTHY", lastSyncedSha: sha, lastSyncedAt: new Date(), summary: repoSummary, languages: JSON.stringify(langCount) },
+      data: {
+        syncStatus: "HEALTHY",
+        lastSyncedSha: sha,
+        lastSyncedAt: new Date(),
+        summary: repoSummary,
+        languages: JSON.stringify(langCount),
+      },
     });
+
     await db.syncRun.update({
       where: { id: run.id },
       data: {
-        status: "SUCCESS", finishedAt: new Date(), sha, filesParsed: parsed, progress: "Done",
+        status: "SUCCESS",
+        finishedAt: new Date(),
+        sha,
+        filesParsed: parsed,
+        progress: "Done",
         summariesGenerated: stats.calls,
       },
     });
+
     return run.id;
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
+    console.error("[pipeline] Repository sync failed:", msg);
     try {
       await db.repository.update({ where: { id: repoId }, data: { syncStatus: "FAILED" } });
-      await db.syncRun.update({ where: { id: run.id }, data: { status: "FAILED", finishedAt: new Date(), error: msg, progress: "Failed", filesParsed: parsed } });
+      await db.syncRun.update({
+        where: { id: run.id },
+        data: {
+          status: "FAILED",
+          finishedAt: new Date(),
+          error: msg,
+          progress: "Failed",
+          filesParsed: parsed,
+        },
+      });
     } catch (err) {
       console.error("[pipeline] Failed to record error state:", err);
     }
