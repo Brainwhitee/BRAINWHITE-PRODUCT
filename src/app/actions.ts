@@ -346,8 +346,36 @@ export async function addRepository(_: FormState, fd: FormData): Promise<FormSta
 
 export async function syncNow(fd: FormData) {
   const me = await requirePermission("codebase:manage");
-  const repo = await db.repository.findFirst({ where: { id: String(fd.get("id")), orgId: me.orgId } });
-  if (!repo || repo.syncStatus === "RUNNING") return;
+  const id = String(fd.get("id"));
+  const repo = await db.repository.findFirst({
+    where: { id, orgId: me.orgId },
+    include: { syncRuns: { orderBy: { startedAt: "desc" }, take: 1 } },
+  });
+  if (!repo) return;
+
+  const lastRun = repo.syncRuns[0];
+  const isStalled = Boolean(
+    lastRun &&
+      repo.syncStatus === "RUNNING" &&
+      Date.now() - new Date(lastRun.startedAt).getTime() > 2 * 60 * 1000
+  );
+
+  // If already running and NOT stalled, prevent double-syncing
+  if (repo.syncStatus === "RUNNING" && !isStalled) return;
+
+  // If stalled, mark previous run as superseded
+  if (isStalled && lastRun) {
+    await db.syncRun.update({
+      where: { id: lastRun.id },
+      data: {
+        status: "FAILED",
+        finishedAt: new Date(),
+        error: "Sync timed out / stalled mid-execution and was superseded by manual restart.",
+        progress: "Superseded",
+      },
+    });
+  }
+
   await audit(me.orgId, me.id, "repo.sync", repo.location);
   void syncRepository(repo.id);
   revalidatePath(`/projects/repos/${repo.id}`);

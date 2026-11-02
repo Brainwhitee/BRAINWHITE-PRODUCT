@@ -60,8 +60,13 @@ export default async function RepoPage({ params }: { params: Promise<{ id: strin
 
       {run && (
         <section className="mb-6 rounded-lg border bg-white p-4 text-sm">
-          <div className="mb-1 font-medium">
-            Status: {repo.syncStatus}{running && ` — ${run.progress}…`}
+          <div className="mb-1 font-medium flex items-center gap-2 flex-wrap">
+            <span>Status: {repo.syncStatus}{running && ` — ${run.progress}…`}</span>
+            {isStalled && (
+              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-amber-100 text-amber-800">
+                Stalled: click Restart Sync above to resume
+              </span>
+            )}
           </div>
           {run.error && <p className="text-red-600">{run.error}</p>}
           <p className="text-slate-600">

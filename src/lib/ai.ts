@@ -13,6 +13,7 @@ export type AiRequestOptions = {
   messages: ChatMessage[];
   maxTokens?: number;
   temperature?: number;
+  timeoutMs?: number;
 };
 
 export type ProviderName = "gemini" | "groq" | "grok" | "anthropic";
@@ -68,12 +69,13 @@ async function callOpenAiCompatible(
   model: string,
   messages: ChatMessage[],
   maxTokens: number,
-  temperature: number
+  temperature: number,
+  timeoutMs: number = 25000
 ): Promise<string | null> {
   try {
     const res = await fetch(endpoint, {
       method: "POST",
-      signal: AbortSignal.timeout(5000),
+      signal: AbortSignal.timeout(timeoutMs),
       headers: {
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
@@ -105,7 +107,8 @@ async function callAnthropic(
   apiKey: string,
   model: string,
   messages: ChatMessage[],
-  maxTokens: number
+  maxTokens: number,
+  timeoutMs: number = 25000
 ): Promise<string | null> {
   try {
     const system = messages.find((m) => m.role === "system")?.content;
@@ -115,7 +118,7 @@ async function callAnthropic(
 
     const res = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
-      signal: AbortSignal.timeout(5000),
+      signal: AbortSignal.timeout(timeoutMs),
       headers: {
         "x-api-key": apiKey,
         "anthropic-version": "2023-06-01",
@@ -147,6 +150,7 @@ export async function callAi(options: AiRequestOptions): Promise<{ text: string 
 
   const maxTokens = options.maxTokens ?? 700;
   const temperature = options.temperature ?? 0.2;
+  const timeoutMs = options.timeoutMs ?? (options.task === "report" || options.task === "summary" ? 30000 : 15000);
 
   for (const provider of priority) {
     let result: string | null = null;
@@ -167,7 +171,8 @@ export async function callAi(options: AiRequestOptions): Promise<{ text: string 
           m,
           options.messages,
           maxTokens,
-          temperature
+          temperature,
+          timeoutMs
         );
         if (result) break;
       }
@@ -185,7 +190,8 @@ export async function callAi(options: AiRequestOptions): Promise<{ text: string 
           m,
           options.messages,
           maxTokens,
-          temperature
+          temperature,
+          timeoutMs
         );
         if (result) break;
       }
@@ -199,7 +205,8 @@ export async function callAi(options: AiRequestOptions): Promise<{ text: string 
           model,
           options.messages,
           maxTokens,
-          temperature
+          temperature,
+          timeoutMs
         );
       }
     } else if (provider === "anthropic" && process.env.ANTHROPIC_API_KEY) {
@@ -208,7 +215,7 @@ export async function callAi(options: AiRequestOptions): Promise<{ text: string 
           ? process.env.REPORT_MODEL || "claude-sonnet-5-5"
           : process.env.SUMMARY_MODEL || "claude-haiku-5-5";
 
-      result = await callAnthropic(process.env.ANTHROPIC_API_KEY, model, options.messages, maxTokens);
+      result = await callAnthropic(process.env.ANTHROPIC_API_KEY, model, options.messages, maxTokens, timeoutMs);
     }
 
     if (result) {

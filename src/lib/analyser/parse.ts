@@ -26,12 +26,20 @@ const langs = new Map<string, LanguageT>();
 async function getLanguage(lang: string): Promise<LanguageT | null> {
   const w = WASM[lang];
   if (!w) return null;
-  ready ??= TS().Parser.init({
-    locateFile: (f: string) => nm("web-tree-sitter", f),
-  });
-  await ready;
-  if (!langs.has(lang)) langs.set(lang, await TS().Language.load(new Uint8Array(await fs.readFile(nm("tree-sitter-wasms", "out", `tree-sitter-${w}.wasm`)))));
-  return langs.get(lang)!;
+  try {
+    ready ??= TS().Parser.init({
+      locateFile: (f: string) => nm("web-tree-sitter", f),
+    });
+    await ready;
+    if (!langs.has(lang)) {
+      const wasmPath = nm("tree-sitter-wasms", "out", `tree-sitter-${w}.wasm`);
+      langs.set(lang, await TS().Language.load(new Uint8Array(await fs.readFile(wasmPath))));
+    }
+    return langs.get(lang) ?? null;
+  } catch (err) {
+    console.warn(`[TreeSitter] Language '${lang}' load failed:`, err);
+    return null;
+  }
 }
 
 export const isParsable = (lang: string) => lang in WASM;

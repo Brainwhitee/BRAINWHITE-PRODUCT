@@ -30,6 +30,7 @@ export async function syncRepository(repoId: string): Promise<string> {
     db.syncRun.update({ where: { id: run.id }, data: { progress, ...extra } });
 
   let cleanup: () => Promise<void> = async () => {};
+  let parsed = 0;
   try {
     await progress("Fetching source");
     const token = await getOrgGithubToken(repo.orgId);
@@ -65,9 +66,9 @@ export async function syncRepository(repoId: string): Promise<string> {
     const fileIds = new Map<string, string>();
     const imports = new Map<string, string[]>();
     const symbolsByFile = new Map<string, Awaited<ReturnType<typeof parseSource>>>();
-    let parsed = 0;
 
-    for (const l of loaded) {
+    for (let idx = 0; idx < loaded.length; idx++) {
+      const l = loaded[idx];
       const prev = existing.get(l.path);
       const data = {
         language: l.lang, contentHash: l.hash, content: l.content,
@@ -92,6 +93,11 @@ export async function syncRepository(repoId: string): Promise<string> {
             startLine: s.startLine, endLine: s.endLine,
           })),
         });
+
+      // Incremental progress persistence
+      if ((idx + 1) % 15 === 0 || idx === loaded.length - 1) {
+        await progress(`Parsing files (${idx + 1}/${loaded.length})`, { filesParsed: parsed });
+      }
     }
 
     // ---- modules ----
@@ -170,9 +176,14 @@ export async function syncRepository(repoId: string): Promise<string> {
 
     // ---- summaries (bottom-up) ----
     await progress(`Summarising ${needSummary.length} chunks`);
+    let summaryCount = 0;
     await pool(needSummary, 4, async (c) => {
       const s = await summariseChunk(c, stats);
       await db.chunk.update({ where: { id: c.id }, data: { summary: s.text, summaryHash: s.llm ? c.hash : "" } });
+      summaryCount++;
+      if (summaryCount % 10 === 0 || summaryCount === needSummary.length) {
+        await progress(`Summarising chunks (${summaryCount}/${needSummary.length})`, { summariesGenerated: stats.calls });
+      }
     });
 
     await progress("Rolling up file, module and repo summaries");
@@ -219,7 +230,7 @@ export async function syncRepository(repoId: string): Promise<string> {
     const msg = e instanceof Error ? e.message : String(e);
     try {
       await db.repository.update({ where: { id: repoId }, data: { syncStatus: "FAILED" } });
-      await db.syncRun.update({ where: { id: run.id }, data: { status: "FAILED", finishedAt: new Date(), error: msg, progress: "Failed" } });
+      await db.syncRun.update({ where: { id: run.id }, data: { status: "FAILED", finishedAt: new Date(), error: msg, progress: "Failed", filesParsed: parsed } });
     } catch (err) {
       console.error("[pipeline] Failed to record error state:", err);
     }
