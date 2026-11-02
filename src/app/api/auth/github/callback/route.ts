@@ -40,10 +40,13 @@ export async function GET(req: NextRequest) {
       ? "signup"
       : "login";
 
-  const fail = (reason: string) => {
+  const fail = (reason: string, detail?: string) => {
     const targetPath = mode === "link" ? "/connect-github" : "/login";
     const url = new URL(targetPath, req.url);
     url.searchParams.set("error", reason);
+    if (detail) {
+      url.searchParams.set("error_description", detail);
+    }
     const res = NextResponse.redirect(url);
     res.cookies.delete("gh_state");
     res.cookies.delete("gh_mode");
@@ -66,39 +69,65 @@ export async function GET(req: NextRequest) {
       return fail("github_state_invalid");
     }
 
-    if (!process.env.GITHUB_CLIENT_ID || !process.env.GITHUB_CLIENT_SECRET) {
-      return fail("github_not_configured");
+    const clientId = process.env.GITHUB_CLIENT_ID?.trim();
+    const clientSecret = process.env.GITHUB_CLIENT_SECRET?.trim();
+
+    if (!clientId || !clientSecret) {
+      return fail("github_not_configured", "GitHub OAuth credentials are not set on this server.");
     }
 
-    // Determine redirectUri used during start (required to match by GitHub OAuth RFC 6749)
-    const base = req.nextUrl.origin && !req.nextUrl.origin.includes("0.0.0.0")
-      ? req.nextUrl.origin
-      : appUrl();
+    // Determine redirectUri used during start
+    const host = req.headers.get("x-forwarded-host") || req.nextUrl.host;
+    const proto = req.headers.get("x-forwarded-proto") || (host.includes("localhost") ? "http" : "https");
+    const base = host && !host.includes("0.0.0.0") ? `${proto}://${host}` : appUrl();
     const redirectUri =
       statePayload?.redirectUri ||
       req.cookies.get("gh_redirect_uri")?.value ||
       `${base}/api/auth/github/callback`;
 
-    // 2. Exchange authorization code for access token (with redirect_uri included)
-    const tokenRes = await fetch("https://github.com/login/oauth/access_token", {
+    // 2. Exchange authorization code for access token
+    let tokenRes = await fetch("https://github.com/login/oauth/access_token", {
       method: "POST",
       headers: {
         Accept: "application/json",
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        client_id: process.env.GITHUB_CLIENT_ID,
-        client_secret: process.env.GITHUB_CLIENT_SECRET,
+        client_id: clientId,
+        client_secret: clientSecret,
         code,
         redirect_uri: redirectUri,
       }),
     });
 
-    const tokenJson = await tokenRes.json();
+    let tokenJson = await tokenRes.json();
+
+    // Resilient fallback: If GitHub returns redirect_uri_mismatch, retry without redirect_uri
+    if (!tokenJson.access_token && (tokenJson.error === "redirect_uri_mismatch" || tokenJson.error === "bad_verification_code")) {
+      console.warn("[github] Token exchange failed with", tokenJson.error, "retrying without redirect_uri...");
+      const retryRes = await fetch("https://github.com/login/oauth/access_token", {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          client_id: clientId,
+          client_secret: clientSecret,
+          code,
+        }),
+      });
+      const retryJson = await retryRes.json();
+      if (retryJson.access_token) {
+        tokenJson = retryJson;
+      }
+    }
+
     const accessToken = tokenJson.access_token as string | undefined;
     if (!accessToken) {
       console.error("GitHub token exchange error:", tokenJson);
-      return fail("github_token_failed");
+      const detail = tokenJson.error_description || tokenJson.error;
+      return fail("github_token_failed", detail);
     }
 
     // 3. Fetch GitHub User Profile
@@ -110,7 +139,7 @@ export async function GET(req: NextRequest) {
     const ghRes = await fetch("https://api.github.com/user", { headers: ghHeaders });
     if (!ghRes.ok) {
       console.error("GitHub API /user fetch failed:", await ghRes.text());
-      return fail("github_token_failed");
+      return fail("github_token_failed", "Failed to retrieve user profile from GitHub.");
     }
     const gh = await ghRes.json();
 
@@ -160,12 +189,11 @@ export async function GET(req: NextRequest) {
           provider: "GITHUB",
           providerUserId: String(gh.id),
           userId: me.id,
-          email: typeof gh.email === "string" && gh.email ? gh.email.toLowerCase() : me.email,
+          email: typeof gh.email === "string" && gh.email ? gh.email.toLowerCase() : undefined,
         },
       });
 
       await audit(me.orgId, me.id, "github.linked", gh.login);
-
       const res = NextResponse.redirect(new URL("/learn", req.url));
       res.cookies.delete("gh_state");
       res.cookies.delete("gh_mode");
@@ -198,8 +226,8 @@ export async function GET(req: NextRequest) {
         providerUserId: String(gh.id),
         email,
         emailVerified,
-        name: String(gh.name ?? "").trim() || String(gh.login ?? "GitHub User"),
-        username: String(gh.login ?? "") || null,
+        name: gh.name || gh.login,
+        username: gh.login,
         accessToken,
       },
       mode
@@ -207,7 +235,7 @@ export async function GET(req: NextRequest) {
 
     if (!resolved.ok) {
       const errCode = resolved.code === "oauth_no_email" ? "github_no_email" : "github_no_account";
-      return fail(errCode);
+      return fail(errCode, resolved.error);
     }
 
     const user = await db.user.findUniqueOrThrow({ where: { id: resolved.data.userId } });
@@ -232,7 +260,8 @@ export async function GET(req: NextRequest) {
     res.cookies.delete("auth_redirect");
     return res;
   } catch (err: unknown) {
-    console.error("GitHub OAuth callback exception:", err);
-    return fail("github_token_failed");
+    console.error("GitHub OAuth callback unhandled error:", err);
+    const msg = err instanceof Error ? err.message : String(err);
+    return fail("github_token_failed", msg);
   }
 }

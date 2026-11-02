@@ -47,7 +47,9 @@ export default function AuthSectionOne({ mode = "login", initialError }: AuthSec
   useEffect(() => {
     const urlError = searchParams.get("error");
     if (urlError && !initialError) {
-      setError(mapError(urlError));
+      const baseMsg = mapError(urlError);
+      const urlDesc = searchParams.get("error_description");
+      setError(urlDesc ? `${baseMsg}: ${urlDesc}` : baseMsg);
     }
   }, [searchParams, initialError]);
 

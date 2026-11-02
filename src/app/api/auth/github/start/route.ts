@@ -15,9 +15,10 @@ export async function GET(req: NextRequest) {
       return NextResponse.redirect(url);
     }
 
-    const base = req.nextUrl.origin && !req.nextUrl.origin.includes("0.0.0.0")
-      ? req.nextUrl.origin
-      : appUrl();
+    // Accurate protocol and host resolution behind Vercel / Cloudflare edge proxies
+    const host = req.headers.get("x-forwarded-host") || req.nextUrl.host;
+    const proto = req.headers.get("x-forwarded-proto") || (host.includes("localhost") ? "http" : "https");
+    const base = host && !host.includes("0.0.0.0") ? `${proto}://${host}` : appUrl();
     const redirectUri = `${base}/api/auth/github/callback`;
 
     // Attempt to identify current user if linking
@@ -36,7 +37,7 @@ export async function GET(req: NextRequest) {
     const state = encrypt(JSON.stringify(statePayload));
 
     const url = new URL("https://github.com/login/oauth/authorize");
-    url.searchParams.set("client_id", process.env.GITHUB_CLIENT_ID);
+    url.searchParams.set("client_id", process.env.GITHUB_CLIENT_ID.trim());
     url.searchParams.set("scope", "read:user user:email");
     url.searchParams.set("state", state);
     url.searchParams.set("redirect_uri", redirectUri);
