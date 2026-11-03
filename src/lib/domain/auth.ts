@@ -306,6 +306,64 @@ export async function resolveOAuthUser(
     }
   }
 
+  // 2.5 Link by GitHub username or githubUserId if user already linked GitHub on their profile
+  if (profile.provider === "GITHUB" && (profile.username || profile.providerUserId)) {
+    const byGithub = await client.user.findFirst({
+      where: {
+        OR: [
+          ...(profile.providerUserId ? [{ githubUserId: profile.providerUserId }] : []),
+          ...(profile.username ? [{ githubUsername: { equals: profile.username, mode: "insensitive" as const } }] : []),
+        ],
+      },
+    });
+
+    if (byGithub) {
+      if (byGithub.status !== "ACTIVE")
+        return { ok: false, error: "This account has been deactivated" };
+
+      const accountEmail = (profile.email || byGithub.email).toLowerCase();
+      await client.oAuthAccount.upsert({
+        where: {
+          provider_providerUserId: {
+            provider: "GITHUB",
+            providerUserId: profile.providerUserId,
+          },
+        },
+        update: {
+          userId: byGithub.id,
+          email: accountEmail,
+        },
+        create: {
+          provider: "GITHUB",
+          providerUserId: profile.providerUserId,
+          userId: byGithub.id,
+          email: accountEmail,
+        },
+      });
+
+      const updateData: { emailVerifiedAt?: Date; githubUsername?: string | null; githubUserId?: string | null } = {};
+      if (!byGithub.emailVerifiedAt) {
+        updateData.emailVerifiedAt = new Date();
+      }
+      if (!byGithub.githubUsername || !byGithub.githubUserId) {
+        updateData.githubUsername = profile.username;
+        updateData.githubUserId = profile.providerUserId;
+      }
+      if (Object.keys(updateData).length > 0) {
+        await client.user.update({
+          where: { id: byGithub.id },
+          data: updateData,
+        });
+      }
+      return { ok: true, data: { userId: byGithub.id, linked: true } };
+    }
+  }
+
+  // Fallback for GitHub users whose email is private: assign a valid GitHub no-reply email
+  if (!profile.email && profile.provider === "GITHUB" && profile.username) {
+    profile.email = `${profile.username.toLowerCase()}@users.noreply.github.com`;
+  }
+
   // 3. User does not exist yet: Auto-provision Workspace + OWNER account (frictionless 1-click OAuth)
   if (!profile.email)
     return {

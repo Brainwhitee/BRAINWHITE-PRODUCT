@@ -27,13 +27,16 @@ const errorMessages: Record<string, string> = {
 export default async function ConnectGithub({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; error_description?: string }>;
 }) {
   const me = await requireUser();
   if (me.githubUserId) redirect("/learn");
-  const { error } = await searchParams;
+  const { error, error_description } = await searchParams;
   const oauth = Boolean(process.env.GITHUB_CLIENT_ID);
-  const friendlyError = error ? (errorMessages[error] || `Connection attempt failed (${error}).`) : null;
+  let friendlyError = error ? (errorMessages[error] || `Connection attempt failed (${error}).`) : null;
+  if (friendlyError && error_description) {
+    friendlyError = `${friendlyError} Details: ${error_description}`;
+  }
 
   return (
     <main className="min-h-screen bg-white text-neutral-900 selection:bg-neutral-900 selection:text-white flex flex-col justify-between">

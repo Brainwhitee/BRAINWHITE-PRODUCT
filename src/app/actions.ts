@@ -239,78 +239,101 @@ export async function changeRole(fd: FormData) {
 
 // Resilient manual link handler with live GitHub profile verification
 export async function linkGithubManual(_: FormState, fd: FormData): Promise<FormState> {
-  const me = await requireUser();
-  let username = String(fd.get("username") ?? "").trim();
-  if (username.startsWith("@")) username = username.slice(1);
-  if (username.includes("github.com/")) {
-    const parts = username.split("github.com/");
-    username = parts[parts.length - 1].split("/")[0].split("?")[0];
-  }
-
-  if (!/^[a-zA-Z0-9](?:[a-zA-Z0-9]|-(?=[a-zA-Z0-9])){0,38}$/.test(username)) {
-    return { error: "Please enter a valid GitHub username (alphanumeric, max 39 characters)" };
-  }
-
-  let githubUserId = `manual:${username.toLowerCase()}`;
-  let verifiedLogin = username;
-
-  // Verify handle against GitHub public API to prevent typos
   try {
-    const ghRes = await fetch(`https://api.github.com/users/${encodeURIComponent(username)}`, {
-      headers: {
-        Accept: "application/vnd.github+json",
-        "User-Agent": "brainwhite",
-        ...(process.env.GITHUB_TOKEN ? { Authorization: `Bearer ${process.env.GITHUB_TOKEN}` } : {}),
+    const me = await requireUser();
+    if (!me) return { error: "Session expired. Please log in again." };
+
+    let username = String(fd.get("username") ?? "").trim();
+    if (username.startsWith("@")) username = username.slice(1);
+    if (username.includes("github.com/")) {
+      const parts = username.split("github.com/");
+      username = parts[parts.length - 1].split("/")[0].split("?")[0];
+    }
+
+    if (!/^[a-zA-Z0-9](?:[a-zA-Z0-9]|-(?=[a-zA-Z0-9])){0,38}$/.test(username)) {
+      return { error: "Please enter a valid GitHub username (alphanumeric, max 39 characters)" };
+    }
+
+    let githubUserId = `manual:${username.toLowerCase()}`;
+    let verifiedLogin = username;
+
+    // Verify handle against GitHub public API to prevent typos
+    try {
+      const ghRes = await fetch(`https://api.github.com/users/${encodeURIComponent(username)}`, {
+        headers: {
+          Accept: "application/vnd.github+json",
+          "User-Agent": "brainwhite",
+          ...(process.env.GITHUB_TOKEN ? { Authorization: `Bearer ${process.env.GITHUB_TOKEN}` } : {}),
+        },
+        next: { revalidate: 0 },
+      });
+
+      if (ghRes.ok) {
+        const ghData = await ghRes.json();
+        if (ghData.id) {
+          githubUserId = String(ghData.id);
+          verifiedLogin = ghData.login || username;
+        }
+      } else if (ghRes.status === 404) {
+        return { error: `GitHub user "@${username}" not found. Please double-check your username.` };
+      }
+    } catch (err) {
+      console.warn("[github] Public API check warning:", err);
+    }
+
+    await db.user.update({
+      where: { id: me.id },
+      data: {
+        githubUsername: verifiedLogin,
+        githubUserId,
+        githubTokenEnc: encrypt("manual-link"),
       },
-      next: { revalidate: 0 },
     });
 
-    if (ghRes.ok) {
-      const ghData = await ghRes.json();
-      if (ghData.id) {
-        githubUserId = String(ghData.id);
-        verifiedLogin = ghData.login || username;
-      }
-    } else if (ghRes.status === 404) {
-      return { error: `GitHub user "@${username}" not found. Please double-check your username.` };
-    }
-  } catch (err) {
-    console.warn("[github] Public API check warning:", err);
-  }
+    const fallbackEmail =
+      me.email && me.email.includes("@")
+        ? me.email.toLowerCase()
+        : `${verifiedLogin.toLowerCase()}@users.noreply.github.com`;
 
-  await db.user.update({
-    where: { id: me.id },
-    data: {
-      githubUsername: verifiedLogin,
-      githubUserId,
-      githubTokenEnc: encrypt("manual-link"),
-    },
-  });
-
-  if (!githubUserId.startsWith("manual:")) {
-    await db.oAuthAccount.upsert({
-      where: {
-        provider_providerUserId: {
+    if (!githubUserId.startsWith("manual:")) {
+      await db.oAuthAccount.upsert({
+        where: {
+          provider_providerUserId: {
+            provider: "GITHUB",
+            providerUserId: githubUserId,
+          },
+        },
+        update: {
+          userId: me.id,
+          email: fallbackEmail,
+        },
+        create: {
           provider: "GITHUB",
           providerUserId: githubUserId,
+          userId: me.id,
+          email: fallbackEmail,
         },
-      },
-      update: {
-        userId: me.id,
-      },
-      create: {
-        provider: "GITHUB",
-        providerUserId: githubUserId,
-        userId: me.id,
-        email: me.email,
-      },
-    });
-  }
+      });
+    }
 
-  await audit(me.orgId, me.id, "github.linked_manual", verifiedLogin);
-  revalidatePath("/connect-github");
-  revalidatePath("/learn");
-  redirect("/learn");
+    try {
+      await audit(me.orgId, me.id, "github.linked_manual", verifiedLogin);
+    } catch (e) {
+      console.warn("[linkGithubManual] audit warning:", e);
+    }
+
+    revalidatePath("/connect-github");
+    revalidatePath("/learn");
+    redirect("/learn");
+  } catch (err: unknown) {
+    if ((err as any)?.digest?.startsWith("NEXT_REDIRECT")) {
+      throw err;
+    }
+    console.error("[linkGithubManual] unhandled error:", err);
+    return {
+      error: err instanceof Error ? err.message : "Failed to link GitHub username. Please try again.",
+    };
+  }
 }
 
 export const linkGithubDev = linkGithubManual;

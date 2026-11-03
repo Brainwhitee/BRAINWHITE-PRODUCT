@@ -174,6 +174,11 @@ export async function GET(req: NextRequest) {
       });
 
       // Keep OAuthAccount in sync for future 1-click login
+      const linkEmail =
+        (typeof gh.email === "string" && gh.email ? gh.email.toLowerCase() : null) ||
+        (me.email && me.email.includes("@") ? me.email.toLowerCase() : null) ||
+        `${gh.login.toLowerCase()}@users.noreply.github.com`;
+
       await db.oAuthAccount.upsert({
         where: {
           provider_providerUserId: {
@@ -183,13 +188,13 @@ export async function GET(req: NextRequest) {
         },
         update: {
           userId: me.id,
-          email: typeof gh.email === "string" && gh.email ? gh.email.toLowerCase() : undefined,
+          email: linkEmail,
         },
         create: {
           provider: "GITHUB",
           providerUserId: String(gh.id),
           userId: me.id,
-          email: typeof gh.email === "string" && gh.email ? gh.email.toLowerCase() : undefined,
+          email: linkEmail,
         },
       });
 

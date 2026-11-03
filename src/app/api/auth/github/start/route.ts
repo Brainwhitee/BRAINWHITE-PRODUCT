@@ -10,7 +10,8 @@ export async function GET(req: NextRequest) {
     const redirectParam = searchParams.get("redirect");
 
     if (!process.env.GITHUB_CLIENT_ID) {
-      const url = new URL("/login", req.url);
+      const target = mode === "link" ? "/connect-github" : "/login";
+      const url = new URL(target, req.url);
       url.searchParams.set("error", "github_not_configured");
       return NextResponse.redirect(url);
     }
@@ -61,8 +62,14 @@ export async function GET(req: NextRequest) {
     return res;
   } catch (err: unknown) {
     console.error("GitHub OAuth start error:", err);
-    const url = new URL("/login", req.url);
+    const { searchParams } = new URL(req.url);
+    const mode = searchParams.get("mode") ?? "login";
+    const target = mode === "link" ? "/connect-github" : "/login";
+    const url = new URL(target, req.url);
     url.searchParams.set("error", "github_token_failed");
+    if (err instanceof Error) {
+      url.searchParams.set("error_description", err.message);
+    }
     return NextResponse.redirect(url);
   }
 }
