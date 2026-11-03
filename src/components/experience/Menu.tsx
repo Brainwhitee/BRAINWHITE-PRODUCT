@@ -5,10 +5,23 @@ import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { LogOut } from "lucide-react";
 
 export function Menu({ isDashboard: isDashboardProp }: { isDashboard?: boolean } = {}) {
   const [isOpen, setIsOpen] = useState(false);
-  const pathname = usePathname();
+  const [currentUser, setCurrentUser] = useState<{ role?: string; name?: string } | null>(null);
+  const pathname = usePathname() || "";
+
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.authenticated && data?.user) {
+          setCurrentUser(data.user);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const isDashboard =
     isDashboardProp ??
@@ -27,6 +40,11 @@ export function Menu({ isDashboard: isDashboardProp }: { isDashboard?: boolean }
           "/connect-github",
         ].some((prefix) => pathname.startsWith(prefix))
       : false);
+
+  const isCandidate =
+    currentUser?.role === "CANDIDATE" ||
+    pathname.startsWith("/learn") ||
+    pathname.startsWith("/connect-github");
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -58,16 +76,25 @@ export function Menu({ isDashboard: isDashboardProp }: { isDashboard?: boolean }
   }, [isOpen]);
 
   const links = isDashboard
-    ? [
-        { label: "DASHBOARD", href: "/dashboard" },
-        { label: "LEARNING PATHS", href: "/paths" },
-        { label: "TASKS & REVIEWS", href: "/tasks" },
-        { label: "CODEBASE GRAPH", href: "/projects" },
-        { label: "TEAM DIRECTORY", href: "/team" },
-        { label: "AUDIT LOG", href: "/audit" },
-        { label: "SLIDE DECKS", href: "/slides" },
-        { label: "LANDING PAGE", href: "/" },
-      ]
+    ? isCandidate
+      ? [
+          { label: "MY LEARNING", href: "/learn" },
+          { label: "MY TASKS", href: "/tasks" },
+          { label: "CODEBASE GRAPH", href: "/projects" },
+          { label: "CONNECT GITHUB", href: "/connect-github" },
+          { label: "SLIDE DECKS", href: "/slides" },
+          { label: "LANDING PAGE", href: "/" },
+        ]
+      : [
+          { label: "DASHBOARD", href: "/dashboard" },
+          { label: "LEARNING PATHS", href: "/paths" },
+          { label: "TASKS & REVIEWS", href: "/tasks" },
+          { label: "CODEBASE GRAPH", href: "/projects" },
+          { label: "TEAM DIRECTORY", href: "/team" },
+          { label: "AUDIT LOG", href: "/audit" },
+          { label: "SLIDE DECKS", href: "/slides" },
+          { label: "LANDING PAGE", href: "/" },
+        ]
     : [
         { label: "PRODUCT", href: "/product" },
         { label: "ARCHITECTURE", href: "/architecture" },
@@ -154,16 +181,26 @@ export function Menu({ isDashboard: isDashboardProp }: { isDashboard?: boolean }
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.55, duration: 0.5 }}
-                  className="mt-4 sm:mt-6"
+                  className="mt-4 sm:mt-6 flex flex-wrap items-center gap-3 sm:gap-4"
                 >
                   {isDashboard ? (
-                    <Link
-                      href="/"
-                      onClick={() => setIsOpen(false)}
-                      className="inline-flex items-center gap-3 bg-white text-black font-semibold text-sm sm:text-base px-8 py-3.5 rounded-full hover:scale-105 transition-transform shadow-[0_0_30px_rgba(255,255,255,0.2)]"
-                    >
-                      <span>← Back to Home Page</span>
-                    </Link>
+                    <>
+                      <Link
+                        href="/"
+                        onClick={() => setIsOpen(false)}
+                        className="inline-flex items-center gap-2 bg-white text-black font-semibold text-xs sm:text-sm px-6 py-3 rounded-full hover:scale-105 transition-transform shadow-[0_0_30px_rgba(255,255,255,0.15)]"
+                      >
+                        <span>← Back to Home Page</span>
+                      </Link>
+                      <a
+                        href="/api/auth/logout"
+                        onClick={() => setIsOpen(false)}
+                        className="inline-flex items-center gap-2 bg-red-600/20 hover:bg-red-600 text-red-200 hover:text-white border border-red-500/40 font-semibold text-xs sm:text-sm px-6 py-3 rounded-full hover:scale-105 transition-all shadow-sm"
+                      >
+                        <LogOut className="w-3.5 h-3.5" />
+                        <span>Sign Out</span>
+                      </a>
+                    </>
                   ) : (
                     <Link
                       href="/book-demo"
@@ -184,19 +221,44 @@ export function Menu({ isDashboard: isDashboardProp }: { isDashboard?: boolean }
                 transition={{ delay: 0.6, duration: 0.5 }}
                 className="flex flex-col sm:flex-row items-center justify-between text-xs text-white/40 border-t border-white/10 pt-4 gap-2 font-mono"
               >
-                <div>{isDashboard ? "BRAINWHITE PLATFORM DASHBOARD" : "BRAINWHITE PLATFORM © 2026"}</div>
-                <div className="flex gap-4">
+                <div>
+                  {isDashboard
+                    ? isCandidate
+                      ? "BRAINWHITE · CANDIDATE WORKSPACE"
+                      : "BRAINWHITE · STAFF WORKSPACE"
+                    : "BRAINWHITE PLATFORM © 2026"}
+                </div>
+                <div className="flex items-center gap-4">
                   {isDashboard ? (
                     <>
-                      <Link href="/dashboard" onClick={() => setIsOpen(false)} className="hover:text-white transition-colors">
-                        OVERVIEW
-                      </Link>
-                      <Link href="/paths" onClick={() => setIsOpen(false)} className="hover:text-white transition-colors">
-                        PATHS
-                      </Link>
-                      <Link href="/tasks" onClick={() => setIsOpen(false)} className="hover:text-white transition-colors">
-                        TASKS
-                      </Link>
+                      {isCandidate ? (
+                        <>
+                          <Link href="/learn" onClick={() => setIsOpen(false)} className="hover:text-white transition-colors">
+                            LEARNING
+                          </Link>
+                          <Link href="/tasks" onClick={() => setIsOpen(false)} className="hover:text-white transition-colors">
+                            TASKS
+                          </Link>
+                          <Link href="/projects" onClick={() => setIsOpen(false)} className="hover:text-white transition-colors">
+                            CODEBASE
+                          </Link>
+                        </>
+                      ) : (
+                        <>
+                          <Link href="/dashboard" onClick={() => setIsOpen(false)} className="hover:text-white transition-colors">
+                            OVERVIEW
+                          </Link>
+                          <Link href="/paths" onClick={() => setIsOpen(false)} className="hover:text-white transition-colors">
+                            PATHS
+                          </Link>
+                          <Link href="/tasks" onClick={() => setIsOpen(false)} className="hover:text-white transition-colors">
+                            TASKS
+                          </Link>
+                        </>
+                      )}
+                      <a href="/api/auth/logout" onClick={() => setIsOpen(false)} className="text-red-400 hover:text-red-300 font-bold transition-colors">
+                        SIGN OUT
+                      </a>
                     </>
                   ) : (
                     <>

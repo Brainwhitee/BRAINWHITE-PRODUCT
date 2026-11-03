@@ -42,6 +42,19 @@ export default function AuthSectionOne({ mode = "login", initialError }: AuthSec
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(initialError ?? null);
   const [showPassword, setShowPassword] = useState(false);
+  const [existingUser, setExistingUser] = useState<{ name: string; email: string; role: string } | null>(null);
+
+  // Check if session is already active
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.authenticated && data?.user) {
+          setExistingUser(data.user);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   // Read ?error= from URL on mount
   useEffect(() => {
@@ -97,8 +110,7 @@ export default function AuthSectionOne({ mode = "login", initialError }: AuthSec
         }
         if (!res.ok || data.error) throw new Error(data.error || "Login failed");
         const destination = getRedirectDestination(data.home || "/dashboard");
-        router.push(destination);
-        router.refresh();
+        window.location.href = destination;
       } else {
         if (!termsAccepted) {
           throw new Error("You must accept the Terms and Privacy Policy to continue.");
@@ -187,6 +199,31 @@ export default function AuthSectionOne({ mode = "login", initialError }: AuthSec
                   : "Sign in to your Brainwhite workspace"}
               </p>
             </div>
+
+            {existingUser && !isSignup && (
+              <div className="mt-6 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+                <div>
+                  <p className="font-bold text-amber-500 text-sm">Already signed in</p>
+                  <p className="text-black/70 dark:text-white/70 text-xs mt-0.5">
+                    Logged in as <strong className="text-black dark:text-white font-semibold">{existingUser.name}</strong> ({existingUser.email})
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <a
+                    href={existingUser.role === "CANDIDATE" ? "/learn" : "/dashboard"}
+                    className="px-3.5 py-1.5 rounded-xl bg-black text-white dark:bg-white dark:text-black font-semibold text-xs transition-transform hover:scale-105 shadow-xs"
+                  >
+                    Go to workspace &rarr;
+                  </a>
+                  <a
+                    href="/api/auth/logout"
+                    className="px-3.5 py-1.5 rounded-xl bg-red-600/10 text-red-600 dark:text-red-400 border border-red-500/30 font-semibold text-xs hover:bg-red-600 hover:text-white transition-colors"
+                  >
+                    Sign out
+                  </a>
+                </div>
+              </div>
+            )}
 
             <div className="mt-12 grid gap-5 sm:grid-cols-2">
               <SocialButton
