@@ -1,7 +1,15 @@
 import { Resend } from "resend";
 import { db, type DbClient } from "./db";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Lazy-initialise so an empty/absent RESEND_API_KEY never throws at module load time.
+let _resend: Resend | null = null;
+const getResend = (): Resend | null => {
+  const key = process.env.RESEND_API_KEY;
+  if (!key) return null;
+  if (!_resend) _resend = new Resend(key);
+  return _resend;
+};
+
 const getFromEmail = () => process.env.FROM_EMAIL || "BrainWhite <onboarding@brainwhite.com>";
 
 export const isEmailConfigured = () => Boolean(process.env.RESEND_API_KEY);
@@ -52,8 +60,9 @@ export async function sendEmail(
   const html = wrapInEmailTemplate(contentHtml, subject);
   const client = opts?.client ?? db;
   const from = getFromEmail();
+  const resend = getResend();
 
-  if (process.env.RESEND_API_KEY) {
+  if (resend) {
     try {
       await resend.emails.send({
         from,
