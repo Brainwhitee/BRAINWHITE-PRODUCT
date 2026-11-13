@@ -13,6 +13,7 @@ import {
   ShieldCheck,
   Presentation,
   GitBranch,
+  Network,
   Home,
   Menu as MenuIcon,
   X,
@@ -32,6 +33,7 @@ export interface NavItemConfig {
     | "Presentation"
     | "BookOpen"
     | "GitBranch"
+    | "Network"
     | "Home";
 }
 
@@ -45,6 +47,7 @@ const ICON_MAP = {
   Presentation,
   BookOpen,
   GitBranch,
+  Network,
   Home,
 };
 

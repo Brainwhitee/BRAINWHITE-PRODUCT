@@ -5,6 +5,7 @@ import { SupportChatWidget } from "@/components/chat/SupportChatWidget";
 import { SmoothScroll } from "@/components/ui/smooth-scroll";
 import "lenis/dist/lenis.css";
 import "./globals.css";
+import "./app-shell.css";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",

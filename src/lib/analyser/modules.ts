@@ -10,10 +10,14 @@ export function modulePathFor(filePath: string): string {
   return dirs.slice(0, depth).join("/");
 }
 
+const titleCase = (s: string) => s.replace(/[-_]+/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+
+// Graph clusters inside a big folder are named "<folder>~<anchor file>" (see cluster.ts): "Ui · Button"
 export function moduleNameFor(modPath: string): string {
   if (modPath === ".") return "Root";
-  const last = modPath.split("/").pop()!;
-  return last.replace(/[-_]+/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  const [base, anchor] = modPath.split("~");
+  const name = titleCase(base.split("/").pop()!);
+  return anchor ? `${name} · ${anchor === "misc" ? "Other" : titleCase(anchor)}` : name;
 }
 
 // Resolve a relative import specifier to a repo file path

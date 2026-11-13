@@ -6,7 +6,11 @@ import { loadSource } from "./source";
 import { languageOf, makeFilter } from "./filter";
 import { redactSecrets } from "./secrets";
 import { isParsable, parseSource } from "./parse";
-import { modulePathFor, moduleNameFor, resolveImport } from "./modules";
+import { moduleNameFor } from "./modules";
+import { assignModules, type FileGraph } from "./cluster";
+import { createResolver, emptyImportStats } from "./resolve-ts";
+import { buildSymbolEdges, withSymbolIds, CALL_EDGE_LANGS, type FileFacts, type SymbolWithId } from "./edges";
+import { SYNC_TAKEOVER_MS } from "./constants";
 import { buildChunks } from "./chunk";
 import {
   heuristicChunk,
@@ -29,6 +33,22 @@ async function pool<T>(items: T[], n: number, fn: (x: T) => Promise<void>) {
       }
     })
   );
+}
+
+// Claim a repository for the INCREMENTAL sync (incremental.ts): refuses while another sync is running, unless that run is older than
+// SYNC_TAKEOVER_MS (a stalled run). The full sync below deliberately takes no lock, so "Restart Sync" always works.
+export async function claimRepo(repoId: string): Promise<boolean> {
+  const claimed = await db.repository.updateMany({
+    where: {
+      id: repoId,
+      OR: [
+        { syncStatus: { not: "RUNNING" } },
+        { syncRuns: { none: { status: "RUNNING", startedAt: { gte: new Date(Date.now() - SYNC_TAKEOVER_MS) } } } },
+      ],
+    },
+    data: { syncStatus: "RUNNING" },
+  });
+  return claimed.count > 0;
 }
 
 // Entry point: High-throughput, serverless-safe codebase ingestion pipeline
@@ -100,16 +120,32 @@ export async function syncRepository(repoId: string): Promise<string> {
       imports.set(l.path, res?.imports ?? []);
     }
 
-    // ---- 3. Pre-create and map modules in parallel ----
-    const modPathOf = new Map<string, string>();
-    for (const l of loaded) modPathOf.set(l.path, modulePathFor(l.path));
+    // ---- 2b. Resolve imports (tsconfig paths/extends, workspaces, require, dynamic import(), Python roots, Java packages) ----
+    await progress("Resolving imports");
+    const loadedContent = new Map(loaded.map((l) => [l.path, l.content]));
+    const resolve = createResolver(paths, (p) => loadedContent.get(p));
+    const importStats = emptyImportStats(); // internal-resolved / unresolved / external, stored on the sync run
+    const fileGraph: FileGraph = new Map();
+    for (const l of loaded)
+      for (const spec of imports.get(l.path) ?? []) {
+        const r = resolve(l.path, spec, l.lang);
+        importStats[r.kind]++;
+        if (r.kind !== "internal" || r.target === l.path) continue;
+        if (!fileGraph.has(l.path)) fileGraph.set(l.path, new Set());
+        fileGraph.get(l.path)!.add(r.target);
+      }
+    // symbols get ids that stay the same across syncs, so call/reference edges can point at them
+    const symIdsByFile = new Map<string, SymbolWithId[]>(loaded.map((l) => [l.path, withSymbolIds(repoId, l.path, symbolsByFile.get(l.path)?.symbols ?? [])]));
+
+    // ---- 3. Modules: folders, split along the import graph when a folder is large ----
+    const modPathOf = assignModules([...paths], fileGraph);
     const distinctModPaths = [...new Set(modPathOf.values())];
     const modIds = new Map<string, string>();
 
     for (const mp of distinctModPaths) {
       const m = await db.module.upsert({
         where: { repoId_path: { repoId, path: mp } },
-        update: {},
+        update: { name: moduleNameFor(mp) },
         create: { repoId, path: mp, name: moduleNameFor(mp) },
       });
       modIds.set(mp, m.id);
@@ -141,11 +177,12 @@ export async function syncRepository(repoId: string): Promise<string> {
         : await db.file.create({ data: { repoId, path: l.path, ...data } });
       fileIds.set(l.path, row.id);
 
-      const res = symbolsByFile.get(l.path);
-      if (res?.symbols?.length) {
-        await db.symbol.deleteMany({ where: { fileId: row.id } });
+      await db.symbol.deleteMany({ where: { fileId: row.id } });
+      const withIds = symIdsByFile.get(l.path) ?? [];
+      if (withIds.length) {
         await db.symbol.createMany({
-          data: res.symbols.map((s) => ({
+          data: withIds.map((s) => ({
+            id: s.id,
             fileId: row.id,
             kind: s.kind,
             name: s.name,
@@ -221,38 +258,45 @@ export async function syncRepository(repoId: string): Promise<string> {
       }
     }
 
-    // Batch insert all chunks using safe chunks of 40
+    // Chunk ids are stable. New chunks are batch-inserted; a chunk that already exists is UPDATED when its code, lines, title or module
+    // changed (skipDuplicates alone would leave stale line numbers behind, and the chat cites those lines).
+    const prevChunks = new Map(
+      (await db.chunk.findMany({ where: { repoId }, select: { id: true, contentHash: true, status: true, moduleId: true, title: true, startLine: true, endLine: true } })).map((c) => [c.id, c]),
+    );
     await db.chunk.deleteMany({ where: { repoId, id: { notIn: [...seenChunkIds] } } });
-    for (let i = 0; i < allChunks.length; i += 40) {
-      await db.chunk.createMany({
-        data: allChunks.slice(i, i + 40),
-        skipDuplicates: true,
-      });
+    const fresh = allChunks.filter((c) => !prevChunks.has(c.id));
+    for (let i = 0; i < fresh.length; i += 40) {
+      await db.chunk.createMany({ data: fresh.slice(i, i + 40), skipDuplicates: true });
     }
+    const moved = allChunks.filter((c) => {
+      const p = prevChunks.get(c.id);
+      return !!p && (p.contentHash !== c.contentHash || p.moduleId !== c.moduleId || p.title !== c.title || p.startLine !== c.startLine || p.endLine !== c.endLine);
+    });
+    await pool(moved, 2, async (c) => {
+      const p = prevChunks.get(c.id)!;
+      await db.chunk.update({
+        where: { id: c.id },
+        data: {
+          moduleId: c.moduleId, title: c.title, startLine: c.startLine, endLine: c.endLine, estMinutes: c.estMinutes, difficulty: c.difficulty,
+          contentHash: c.contentHash, summary: c.summary, sha: c.sha, status: p.contentHash !== c.contentHash ? "UPDATED" : p.status,
+        },
+      });
+    });
 
     // ---- 6. Build Dependency Graph ----
     await db.graphEdge.deleteMany({ where: { repoId } });
     const fileEdges: { repoId: string; fromId: string; toId: string; type: string; fromKind: string; toKind: string }[] = [];
     const modEdges = new Set<string>();
 
-    for (const l of loaded) {
-      for (const spec of imports.get(l.path) ?? []) {
-        const target = resolveImport(l.path, spec, l.lang, paths);
-        if (!target || target === l.path) continue;
-        const fromFileId = fileIds.get(l.path);
-        const toFileId = fileIds.get(target);
+    for (const [from, tos] of fileGraph) {
+      for (const to of tos) {
+        const fromFileId = fileIds.get(from);
+        const toFileId = fileIds.get(to);
         if (fromFileId && toFileId) {
-          fileEdges.push({
-            repoId,
-            fromId: fromFileId,
-            toId: toFileId,
-            type: "IMPORTS",
-            fromKind: "file",
-            toKind: "file",
-          });
+          fileEdges.push({ repoId, fromId: fromFileId, toId: toFileId, type: "IMPORTS", fromKind: "file", toKind: "file" });
         }
-        const a = modIds.get(modPathOf.get(l.path)!);
-        const b = modIds.get(modPathOf.get(target)!);
+        const a = modIds.get(modPathOf.get(from)!);
+        const b = modIds.get(modPathOf.get(to)!);
         if (a && b && a !== b) modEdges.add(`${a}|${b}`);
       }
     }
@@ -266,6 +310,15 @@ export async function syncRepository(repoId: string): Promise<string> {
         }),
       });
     }
+
+    // ---- 6b. Symbol edges (calls / JSX / new / extends / implements), JS/TS only; EXACT or heuristic NAME_MATCH ----
+    await progress("Linking symbols (calls, references)");
+    const facts: FileFacts[] = loaded.map((l) => ({
+      path: l.path, lang: l.lang, fileId: fileIds.get(l.path)!,
+      symbols: symIdsByFile.get(l.path) ?? [], refs: symbolsByFile.get(l.path)?.refs,
+    }));
+    const symEdges = buildSymbolEdges(facts, resolve).map((e) => ({ repoId, ...e }));
+    for (let i = 0; i < symEdges.length; i += 2000) await db.graphEdge.createMany({ data: symEdges.slice(i, i + 2000) });
 
     // ---- 7. Synthesize Module & Repository Architectural Profiles with AI support ----
     await progress("Generating architectural blueprint");
@@ -341,6 +394,7 @@ export async function syncRepository(repoId: string): Promise<string> {
         lastSyncedAt: new Date(),
         summary: repoSummary,
         languages: JSON.stringify(langCount),
+        graphCoverage: JSON.stringify({ callEdges: CALL_EDGE_LANGS }), // which languages have call/reference edges
       },
     });
 
@@ -351,8 +405,10 @@ export async function syncRepository(repoId: string): Promise<string> {
         finishedAt: new Date(),
         sha,
         filesParsed: parsed,
-        progress: "Done",
+        progress: `Done. Imports: ${importStats.internal} internal resolved, ${importStats.unresolved} unresolved, ${importStats.external} external`,
         summariesGenerated: stats.calls,
+        importsResolved: importStats.internal,
+        importsUnresolved: importStats.unresolved,
       },
     });
 

@@ -1,0 +1,10 @@
+{
+  "edges": [
+    ["apps/web/src/page.tsx", "apps/web/src/env.ts"],
+    ["apps/web/src/page.tsx", "apps/web/src/styles.css"],
+    ["apps/web/src/page.tsx", "packages/core/src/deep.ts"],
+    ["apps/web/src/page.tsx", "packages/core/src/index.ts"]
+  ],
+  "unresolved": [],
+  "external": ["react"]
+}
