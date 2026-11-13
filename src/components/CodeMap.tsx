@@ -357,7 +357,7 @@ export function CodeMap({ repoId, assignmentId, height = 620, compact = false }:
             <button onClick={() => setMod(null)} className={chip(!mod)}>All modules</button>
             {data.modules.map((m, i) => (
               <button key={m.id} onClick={() => setMod((x) => (x === m.id ? null : m.id))} className={chip(mod === m.id)} title={`${m.files} files`}>
-                <span className="mr-1.5 inline-block h-2 w-2 rounded-full" style={{ background: modColor(i) }} />{m.name}
+                <span className="mr-1.5 inline-block h-2 w-2 rounded-full" style={{ background: modColor(i) }} />{m.parentName ? `${m.parentName} › ` : ""}{m.name}
               </button>
             ))}
           </div>

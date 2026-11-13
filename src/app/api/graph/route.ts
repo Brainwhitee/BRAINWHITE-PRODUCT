@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
     const aid = sp.get("assignmentId");
     if (aid) {
       const own = await db.assignment.findFirst({ where: { id: aid, userId: me.id, orgId: me.orgId }, select: { id: true } });
-      if (own) map.learning = await loadLearningOverlay(own.id, repo.id);
+      if (own) { const l = await loadLearningOverlay(own.id, repo.id); map.learning = l.status; map.learningOrder = l.order; }
     }
     return NextResponse.json(map);
   }

@@ -1,3 +1,5 @@
+import { parentLabels } from "@/lib/analyser/module-tree";
+import { moduleNameFor } from "@/lib/analyser/modules";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requirePermission } from "@/lib/auth";
@@ -23,6 +25,7 @@ export default async function RepoPage({ params }: { params: Promise<{ id: strin
   const run = repo.syncRuns[0];
   const edges = await db.graphEdge.findMany({ where: { repoId: id, type: "DEPENDS_ON" } });
   const modName = new Map(repo.modules.map((m) => [m.id, m.name]));
+  const parents = parentLabels(repo.modules.map((m) => m.path), moduleNameFor); // hierarchy derived from paths, nothing stored
   const langs = Object.entries(JSON.parse(repo.languages) as Record<string, number>).sort((a, b) => b[1] - a[1]);
   const running = repo.syncStatus === "RUNNING";
   const manage = can(me.role, "codebase:manage");
@@ -87,7 +90,7 @@ export default async function RepoPage({ params }: { params: Promise<{ id: strin
         {repo.modules.map((m) => (
           <details key={m.id} className="rounded-lg border bg-white p-3" open={repo.modules.length <= 3}>
             <summary className="cursor-pointer font-medium">
-              {m.name} <span className="text-xs font-normal text-slate-500">{m.path} · {m._count.files} files · {m.chunks.length} chunks</span>
+              {parents.get(m.path) ? `${parents.get(m.path)} › ` : ""}{m.name} <span className="text-xs font-normal text-slate-500">{m.path} · {m._count.files} files · {m.chunks.length} chunks</span>
             </summary>
             {m.summary && <p className="mt-2 text-sm text-slate-600">{m.summary}</p>}
             <ul className="mt-2 divide-y text-sm">

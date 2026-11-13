@@ -1,5 +1,8 @@
 import { db } from "./db";
 import type { MapData, MapEdge, MapNode } from "./graph";
+import { parentLabels } from "./analyser/module-tree";
+import { moduleNameFor } from "./analyser/modules";
+import { lessonOrder } from "./learning-order";
 
 const MAP_MAX_NODES = 800;
 const MAP_MAX_EDGES = 8000;
@@ -65,22 +68,23 @@ export async function loadMap(repoId: string): Promise<MapData> {
       summary: f.summary.slice(0, 300), inCount: inC.get(f.id) ?? 0, outCount: outC.get(f.id) ?? 0,
     }));
   const shownMods = new Set(nodes.map((n) => n.moduleId));
+  const parents = parentLabels(modules.map((m) => m.path), moduleNameFor); // hierarchy derived from paths: no stored column
   return {
     repoId, nodes, edges: edges.filter((e) => keep.has(e.from) && keep.has(e.to)),
-    modules: modules.filter((m) => shownMods.has(m.id)).map((m) => ({ id: m.id, name: m.name, files: m._count.files })),
+    modules: modules.filter((m) => shownMods.has(m.id)).map((m) => ({ id: m.id, name: m.name, files: m._count.files, parentName: parents.get(m.path) ?? null })),
     notes, truncated, totalFiles: files.length,
   };
 }
 
 // Which files of this repo the candidate's path teaches, and whether the item is completed. Caller must own the assignment.
-export async function loadLearningOverlay(assignmentId: string, repoId: string): Promise<Record<string, "done" | "todo">> {
+export async function loadLearningOverlay(assignmentId: string, repoId: string): Promise<{ status: Record<string, "done" | "todo">; order: Record<string, number> }> {
   const a = await db.assignment.findUnique({
     where: { id: assignmentId },
-    include: { path: { include: { sections: { include: { items: true } } } }, progress: true },
+    include: { path: { include: { sections: { orderBy: { order: "asc" }, include: { items: { orderBy: { order: "asc" } } } } } }, progress: true },
   });
-  if (!a) return {};
+  if (!a) return { status: {}, order: {} };
   const done = new Set(a.progress.filter((p) => p.type === "COMPLETED").map((p) => p.itemId));
-  const items = a.path.sections.flatMap((s) => s.items).filter((i) => i.type === "CHUNK" && i.refId);
+  const items = a.path.sections.flatMap((s) => s.items.map((i) => ({ ...i, sectionOrder: s.order }))).filter((i) => i.type === "CHUNK" && i.refId);
   const chunks = await db.chunk.findMany({ where: { repoId, id: { in: items.map((i) => i.refId!) } }, select: { id: true, filePath: true } });
   const pathOf = new Map(chunks.map((c) => [c.id, c.filePath]));
   const files = await db.file.findMany({ where: { repoId, path: { in: [...new Set(chunks.map((c) => c.filePath))] } }, select: { id: true, path: true } });
@@ -92,7 +96,8 @@ export async function loadLearningOverlay(assignmentId: string, repoId: string):
     if (!done.has(i.id)) out[id] = "todo";
     else if (!out[id]) out[id] = "done";
   }
-  return out;
+  const order = lessonOrder(items.map((i) => ({ sectionOrder: i.sectionOrder, order: i.order, fileId: idOf.get(pathOf.get(i.refId!) ?? "") ?? null })));
+  return { status: out, order };
 }
 
 // Repositories a candidate's assignment teaches (via its CHUNK items), for the learner dashboard.

@@ -66,12 +66,13 @@ export function layoutGraph(nodes: GNode[], edges: GEdge[]): { nodes: Positioned
 // ---- Interactive code map (whole repo at file level, every connection) ----
 export type MapNode = { id: string; path: string; label: string; moduleId: string; lineCount: number; summary: string; inCount: number; outCount: number };
 export type MapEdge = { from: string; to: string; type: string; count: number; heuristic: number };
-export type MapModule = { id: string; name: string; files: number };
+export type MapModule = { id: string; name: string; files: number; parentName?: string | null };
 export type MapData = {
   repoId: string; nodes: MapNode[]; edges: MapEdge[]; modules: MapModule[]; notes: string[];
   truncated: boolean; totalFiles: number;
   // candidate overlay: file id -> learning status for the viewer's assignment (absent for staff)
   learning?: Record<string, "done" | "todo">;
+  learningOrder?: Record<string, number>; // file id -> position in the viewer's path (1 = read first)
 };
 
 // Order modules / files for a lesson sequence: dependencies first (post-order DFS, cycles broken at the back edge).

@@ -5,6 +5,8 @@ import { db } from "@/lib/db";
 import { Shell } from "@/components/Shell";
 import { GraphExplorer } from "@/components/GraphExplorer";
 import { CodeMap } from "@/components/CodeMap";
+import { FlowMap } from "@/components/FlowMap";
+import { TreeMap } from "@/components/TreeMap";
 
 export default async function RepoGraphPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ view?: string }> }) {
   const me = await requirePermission("codebase:view");
@@ -12,7 +14,7 @@ export default async function RepoGraphPage({ params, searchParams }: { params: 
   const { view } = await searchParams;
   const repo = await db.repository.findFirst({ where: { id, orgId: me.orgId }, select: { id: true, name: true } });
   if (!repo) notFound();
-  const drill = view === "drill";
+  const mode = view === "drill" ? "drill" : view === "bubbles" ? "bubbles" : view === "flow" ? "flow" : "tree"; // tree = folders -> files -> functions (default)
   const tab = (active: boolean) => `rounded-full px-3 py-1 text-sm ${active ? "pill-on" : "border bg-white text-slate-600 hover:bg-slate-100"}`;
   return (
     <Shell user={me} wide>
@@ -20,11 +22,13 @@ export default async function RepoGraphPage({ params, searchParams }: { params: 
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-xl font-semibold">Architecture graph</h1>
         <div className="flex gap-2">
-          <Link href={`/projects/repos/${repo.id}/graph`} className={tab(!drill)}>Interactive map</Link>
-          <Link href={`/projects/repos/${repo.id}/graph?view=drill`} className={tab(drill)}>Drill-down</Link>
+          <Link href={`/projects/repos/${repo.id}/graph`} className={tab(mode === "tree")}>Tree</Link>
+          <Link href={`/projects/repos/${repo.id}/graph?view=flow`} className={tab(mode === "flow")}>Dependencies</Link>
+          <Link href={`/projects/repos/${repo.id}/graph?view=bubbles`} className={tab(mode === "bubbles")}>Clusters</Link>
+          <Link href={`/projects/repos/${repo.id}/graph?view=drill`} className={tab(mode === "drill")}>Drill-down</Link>
         </div>
       </div>
-      {drill ? <GraphExplorer repoId={repo.id} /> : <CodeMap repoId={repo.id} height={640} />}
+      {mode === "drill" ? <GraphExplorer repoId={repo.id} /> : mode === "bubbles" ? <CodeMap repoId={repo.id} height={640} /> : mode === "flow" ? <FlowMap repoId={repo.id} height={680} /> : <TreeMap repoId={repo.id} repoName={repo.name} height={680} />}
     </Shell>
   );
 }

@@ -4,7 +4,7 @@ import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { assignmentProgress } from "@/lib/domain/assign";
 import { Shell } from "@/components/Shell";
-import { CodeMap } from "@/components/CodeMap";
+import { TreeMap } from "@/components/TreeMap";
 import { ProgressBar } from "@/components/app-fx";
 import { reposForAssignment } from "@/lib/graph-map";
 
@@ -48,8 +48,8 @@ export default async function Learn() {
             {repos.map((r) => (
               <div key={r.id} className="mt-4 border-t pt-3">
                 <h3 className="mb-1 font-medium">Codebase map: {r.name}</h3>
-                <p className="mb-2 text-sm text-slate-600">Every dot is a file, every line a connection (imports, calls, references). Click a dot to see what it does and how it fits in. Rings show your progress: green = understood, blue = still to learn.</p>
-                <CodeMap repoId={r.id} assignmentId={a.id} height={520} compact />
+                <p className="mb-2 text-sm text-slate-600">The codebase as a tree: folders hold files, files hold functions. Click a node to open it. The numbers are the order your path reads the code; green means understood, blue means still to learn.</p>
+                <TreeMap repoId={r.id} repoName={r.name} assignmentId={a.id} height={520} compact />
               </div>
             ))}
             {upcoming.length > 0 && (
