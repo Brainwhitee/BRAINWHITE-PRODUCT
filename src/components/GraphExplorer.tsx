@@ -86,8 +86,8 @@ export function GraphExplorer({ repoId }: { repoId: string }) {
                   <g key={n.id} transform={`translate(${n.x} ${n.y})`} tabIndex={0} role="button" aria-label={`${n.kind} ${n.label}`}
                     className="cursor-pointer outline-none" onClick={() => select(n)} onDoubleClick={() => drill(n)}
                     onKeyDown={(ev) => { if (ev.key === "Enter") select(n); if (ev.key === " ") { ev.preventDefault(); drill(n); } }}>
-                    <rect width={NODE_W} height={NODE_H} rx={8} fill={n.outside ? "#f8fafc" : "#fff"} stroke={sel?.id === n.id ? "#4f46e5" : KIND_COLOR[n.kind]} strokeWidth={sel?.id === n.id ? 3 : 1.5} strokeDasharray={n.outside ? "4 3" : undefined} />
-                    <text x={10} y={19} fontSize={12} fontWeight={600} fill="#0f172a">{n.label.length > 26 ? n.label.slice(0, 25) + "…" : n.label}</text>
+                    <rect width={NODE_W} height={NODE_H} rx={8} style={{ fill: n.outside ? "var(--app-surface2, #f8fafc)" : "var(--map-bg, #fff)" }} stroke={sel?.id === n.id ? "#4f46e5" : KIND_COLOR[n.kind]} strokeWidth={sel?.id === n.id ? 3 : 1.5} strokeDasharray={n.outside ? "4 3" : undefined} />
+                    <text x={10} y={19} fontSize={12} fontWeight={600} style={{ fill: "var(--map-text, #0f172a)" }}>{n.label.length > 26 ? n.label.slice(0, 25) + "…" : n.label}</text>
                     <text x={10} y={35} fontSize={10} fill="#64748b">{(n.sub ?? "").length > 32 ? (n.sub ?? "").slice(0, 31) + "…" : n.sub}</text>
                     <title>{`${n.label}${n.sub ? ` — ${n.sub}` : ""}${n.drill ? "\nDouble-click (or Space) to open" : ""}`}</title>
                   </g>

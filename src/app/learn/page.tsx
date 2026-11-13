@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { assignmentProgress } from "@/lib/domain/assign";
 import { Shell } from "@/components/Shell";
 import { CodeMap } from "@/components/CodeMap";
+import { ProgressBar } from "@/components/app-fx";
 import { reposForAssignment } from "@/lib/graph-map";
 
 export default async function Learn() {
@@ -33,7 +34,7 @@ export default async function Learn() {
               <h2 className="font-medium">{a.path.title}</h2>
               <span className="text-sm text-slate-500">{a.status.toLowerCase()}</span>
             </div>
-            <div className="my-2 h-2 rounded bg-slate-100"><div className="h-2 rounded bg-indigo-600" style={{ width: `${p.pct}%` }} /></div>
+            <div className="my-2"><ProgressBar pct={p.pct} /></div>
             <p className="text-sm text-slate-600">{p.completed}/{p.total} mandatory items · {p.pct}%</p>
             <div className="mt-3 flex gap-4 text-sm">
               <Link className="text-indigo-700 underline" href={`/learn/${a.id}`}>Path outline</Link>
@@ -48,7 +49,7 @@ export default async function Learn() {
               <div key={r.id} className="mt-4 border-t pt-3">
                 <h3 className="mb-1 font-medium">Codebase map: {r.name}</h3>
                 <p className="mb-2 text-sm text-slate-600">Every dot is a file, every line a connection (imports, calls, references). Click a dot to see what it does and how it fits in. Rings show your progress: green = understood, blue = still to learn.</p>
-                <CodeMap repoId={r.id} assignmentId={a.id} height={520} />
+                <CodeMap repoId={r.id} assignmentId={a.id} height={520} compact />
               </div>
             ))}
             {upcoming.length > 0 && (

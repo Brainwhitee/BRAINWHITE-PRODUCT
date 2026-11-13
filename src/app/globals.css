@@ -226,5 +226,5 @@
 
 /* Tailwind v4 borders default to currentColor (black). Soften them inside the app; utilities like border-red-200 still win (base layer). */
 @layer base {
-  .app-shell *, .app-shell ::before, .app-shell ::after { border-color: #e3e6ec; }
+  .app-shell *, .app-shell ::before, .app-shell ::after { border-color: var(--app-border, #e3e6ec); }
 }

@@ -9,6 +9,7 @@ export type ForceOptions = {
   repulsion?: number; spring?: number; springLen?: number; groupPull?: number; gravity?: number; damping?: number;
 };
 
+const MAX_SPEED = 30;
 const D: Required<ForceOptions> = { repulsion: 1800, spring: 0.04, springLen: 70, groupPull: 0.03, gravity: 0.004, damping: 0.82 };
 
 // Cheap seeded PRNG so layouts are reproducible.
@@ -80,6 +81,8 @@ export function tick(nodes: FNode[], edges: FEdge[], alpha: number, opt: ForceOp
     p.vy += (c.y - p.y) * o.groupPull * alpha - p.y * o.gravity * alpha;
     if (p.fixed) { p.vx = 0; p.vy = 0; continue; }
     p.vx *= o.damping; p.vy *= o.damping;
+    const sp = Math.hypot(p.vx, p.vy); // speed limit: close pairs can produce huge repulsion and fling nodes away
+    if (sp > MAX_SPEED) { p.vx *= MAX_SPEED / sp; p.vy *= MAX_SPEED / sp; }
     p.x += p.vx; p.y += p.vy;
     energy += p.vx * p.vx + p.vy * p.vy;
   }

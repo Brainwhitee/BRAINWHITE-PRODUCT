@@ -57,3 +57,23 @@ test("mermaid export groups by module and labels non-import edges", () => {
   assert.ok(out.includes('n1["b x .ts"]'), "brackets are stripped so mermaid does not break");
   assert.ok(out.includes("n0 --> n1") && out.includes("n1 ==>|calls| n0"));
 });
+
+test("a hub-heavy graph with strong repulsion stays compact (no flung nodes)", () => {
+  const n = 220;
+  const items = Array.from({ length: n }, (_, i) => ({ id: "n" + i, group: "g" + (i % 24), r: i < 6 ? 18 : 5 + (i % 5) }));
+  // 6 hubs, each imported by ~35 files (like db.ts / utils.ts in a real repo)
+  const edges = Array.from({ length: n - 6 }, (_, i) => ({ from: "n" + (i + 6), to: "n" + (i % 6) }));
+  const nodes = initNodes(items);
+  settle(nodes, edges, 320, { repulsion: 1800 * (1 + n / 90), springLen: 120, groupPull: 0.018 });
+  const far = Math.max(...nodes.map((p) => Math.hypot(p.x, p.y)));
+  assert.ok(nodes.every((p) => Number.isFinite(p.x) && Number.isFinite(p.y)));
+  assert.ok(far < 1500, `nodes flew away: farthest at ${Math.round(far)}`);
+});
+
+test("a node never moves farther than the speed limit in one tick, even when two nodes nearly overlap", () => {
+  const nodes = initNodes([{ id: "a", group: "g", r: 8 }, { id: "b", group: "g", r: 8 }]);
+  nodes[0].x = 0; nodes[0].y = 0; nodes[1].x = 0.5; nodes[1].y = 0; // d = 0.5 -> repulsion ~ 7000 unclamped
+  const before = nodes.map((n) => ({ x: n.x, y: n.y }));
+  tick(nodes, [], 1);
+  for (let i = 0; i < 2; i++) assert.ok(Math.hypot(nodes[i].x - before[i].x, nodes[i].y - before[i].y) <= 30.001);
+});

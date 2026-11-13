@@ -1,0 +1,163 @@
+/* Signed-in app theme + motion. Everything is scoped to .app-shell, so the landing page and auth pages are untouched.
+   Dark is the default (cookie bw-theme=light switches to light). Pages use Tailwind slate/indigo utilities; the
+   dark theme re-colours those utilities here instead of editing every page. */
+
+.app-shell {
+  --app-bg: #f6f7f9;
+  --app-surface: #ffffff;
+  --app-surface2: #f1f4f8;
+  --app-border: #e3e6ec;
+  --app-text: #0b0f17;
+  --app-muted: #5b6678;
+  --app-glow: rgba(26, 92, 255, 0.1);
+  --map-text: #0f172a;
+  --map-bg: #ffffff;
+  position: relative;
+}
+
+.app-shell[data-theme="dark"] {
+  --app-bg: #090d14;
+  --app-surface: #111823;
+  --app-surface2: #18212f;
+  --app-border: #222c3d;
+  --app-text: #e8edf5;
+  --app-muted: #9aa8bb;
+  --app-glow: rgba(91, 140, 255, 0.16);
+  --map-text: #e8edf5;
+  --map-bg: #111823;
+  color-scheme: dark;
+  background: var(--app-bg);
+  color: var(--app-text);
+}
+
+/* ---------- dark: surfaces, text, borders ---------- */
+.app-shell[data-theme="dark"] .bg-white { background-color: var(--app-surface); }
+.app-shell[data-theme="dark"] .bg-white\/90 { background-color: rgba(9, 13, 20, 0.82); }
+.app-shell[data-theme="dark"] .bg-slate-50 { background-color: var(--app-bg); }
+.app-shell[data-theme="dark"] .bg-slate-100,
+.app-shell[data-theme="dark"] .hover\:bg-slate-100:hover { background-color: var(--app-surface2); }
+.app-shell[data-theme="dark"] .bg-slate-200 { background-color: #263043; }
+.app-shell[data-theme="dark"] .text-slate-900 { color: var(--app-text); }
+.app-shell[data-theme="dark"] .text-slate-800 { color: #e2e8f0; }
+.app-shell[data-theme="dark"] .text-slate-700 { color: #cbd5e1; }
+.app-shell[data-theme="dark"] .text-slate-600 { color: #b5c0cf; }
+.app-shell[data-theme="dark"] .text-slate-500 { color: var(--app-muted); }
+.app-shell[data-theme="dark"] .text-slate-400 { color: #7d8aa0; }
+.app-shell[data-theme="dark"] .hover\:text-slate-900:hover { color: #fff; }
+.app-shell[data-theme="dark"] .border-slate-300 { border-color: #334155; }
+.app-shell[data-theme="dark"] .text-indigo-700 { color: #8fb0ff; }
+.app-shell[data-theme="dark"] .hover\:bg-indigo-50:hover,
+.app-shell[data-theme="dark"] .bg-indigo-50 { background-color: #15204a; }
+.app-shell[data-theme="dark"] .bg-indigo-100 { background-color: #1a2a5e; }
+.app-shell[data-theme="dark"] .bg-red-50,
+.app-shell[data-theme="dark"] .bg-red-100 { background-color: #2a1214; }
+.app-shell[data-theme="dark"] .text-red-700,
+.app-shell[data-theme="dark"] .text-red-800,
+.app-shell[data-theme="dark"] .text-red-600 { color: #fb8a8a; }
+.app-shell[data-theme="dark"] .border-red-200 { border-color: #5b1f24; }
+.app-shell[data-theme="dark"] .bg-amber-50,
+.app-shell[data-theme="dark"] .bg-amber-100 { background-color: #2a2008; }
+.app-shell[data-theme="dark"] .text-amber-700,
+.app-shell[data-theme="dark"] .text-amber-800 { color: #f6c453; }
+.app-shell[data-theme="dark"] .border-amber-200,
+.app-shell[data-theme="dark"] .border-amber-300 { border-color: #5c4510; }
+.app-shell[data-theme="dark"] .bg-green-50,
+.app-shell[data-theme="dark"] .bg-green-100,
+.app-shell[data-theme="dark"] .bg-emerald-50 { background-color: #0f2a1d; }
+.app-shell[data-theme="dark"] .text-green-700,
+.app-shell[data-theme="dark"] .text-green-800,
+.app-shell[data-theme="dark"] .text-emerald-700 { color: #5fe0a0; }
+.app-shell[data-theme="dark"] .border-green-200 { border-color: #1d5a3b; }
+.app-shell[data-theme="dark"] .bg-blue-100 { background-color: #12264d; }
+.app-shell[data-theme="dark"] .text-blue-800 { color: #8fb8ff; }
+.app-shell[data-theme="dark"] .bg-yellow-100 { background-color: #2b2508; }
+.app-shell[data-theme="dark"] thead,
+.app-shell[data-theme="dark"] .bg-slate-50 thead { background-color: var(--app-surface2); }
+
+/* native controls and form fields follow the theme */
+.app-shell input, .app-shell select, .app-shell textarea { color: var(--app-text); background-color: transparent; }
+.app-shell[data-theme="dark"] input, .app-shell[data-theme="dark"] select, .app-shell[data-theme="dark"] textarea { background-color: var(--app-surface2); border-color: #2b374b; }
+.app-shell[data-theme="dark"] ::placeholder { color: #6b7a90; }
+.app-shell[data-theme="dark"] option { background: var(--app-surface); color: var(--app-text); }
+.app-shell[data-theme="dark"] pre.bg-slate-900 { background-color: #0a0f19; border: 1px solid var(--app-border); }
+
+/* "on" state for pills/tabs/nav: inverted in both themes */
+.app-shell .pill-on { background: #0b0f17; color: #fff; border-color: #0b0f17; }
+.app-shell[data-theme="dark"] .pill-on { background: #e8edf5; color: #0a0e15; border-color: #e8edf5; }
+.app-shell[data-theme="dark"] .pill-on * { color: inherit; }
+
+/* ---------- ambient background (slow drifting glow + faint grid) ---------- */
+.app-shell::before {
+  content: ""; position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background:
+    radial-gradient(600px 400px at 85% -5%, rgba(26, 92, 255, 0.16), transparent 70%),
+    radial-gradient(520px 380px at 5% 105%, rgba(236, 72, 153, 0.08), transparent 70%);
+  animation: bw-drift 22s ease-in-out infinite alternate;
+}
+.app-shell::after {
+  content: ""; position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: 0.5;
+  background-image: linear-gradient(var(--app-border) 1px, transparent 1px), linear-gradient(90deg, var(--app-border) 1px, transparent 1px);
+  background-size: 56px 56px;
+  -webkit-mask-image: radial-gradient(ellipse at 50% 0%, #000 0%, transparent 70%);
+  mask-image: radial-gradient(ellipse at 50% 0%, #000 0%, transparent 70%);
+}
+.app-shell:not([data-theme="dark"])::before { opacity: 0.45; }
+.app-shell:not([data-theme="dark"])::after { opacity: 0.35; }
+.app-shell > header { position: sticky; z-index: 40; }
+.app-shell > main { position: relative; z-index: 1; }
+
+/* ---------- motion: entrance ---------- */
+@keyframes bw-rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+@keyframes bw-drift { from { transform: translate3d(0, 0, 0) scale(1); } to { transform: translate3d(-3%, 2%, 0) scale(1.08); } }
+@keyframes bw-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
+@keyframes bw-shimmer { from { background-position: -200% 0; } to { background-position: 200% 0; } }
+
+.app-shell > main > * { animation: bw-rise 0.55s cubic-bezier(0.2, 0.7, 0.2, 1) backwards; }
+.app-shell > main > *:nth-child(2) { animation-delay: 60ms; }
+.app-shell > main > *:nth-child(3) { animation-delay: 120ms; }
+.app-shell > main > *:nth-child(4) { animation-delay: 180ms; }
+.app-shell > main > *:nth-child(5) { animation-delay: 240ms; }
+.app-shell > main > *:nth-child(n + 6) { animation-delay: 300ms; }
+.app-shell > main .grid > * { animation: bw-rise 0.55s cubic-bezier(0.2, 0.7, 0.2, 1) backwards; }
+.app-shell > main .grid > *:nth-child(2) { animation-delay: 80ms; }
+.app-shell > main .grid > *:nth-child(3) { animation-delay: 160ms; }
+.app-shell > main .grid > *:nth-child(4) { animation-delay: 240ms; }
+.app-shell > main .grid > *:nth-child(n + 5) { animation-delay: 300ms; }
+.app-shell tbody tr { animation: bw-rise 0.45s ease backwards; }
+.app-shell tbody tr:nth-child(2) { animation-delay: 50ms; }
+.app-shell tbody tr:nth-child(3) { animation-delay: 100ms; }
+.app-shell tbody tr:nth-child(n + 4) { animation-delay: 150ms; }
+
+/* ---------- motion: hover / press ---------- */
+.app-shell .bg-white[class*="rounded-"]:not([class*="overflow"]):not(.h-2):not(input):not(select):not(textarea):not(button) {
+  position: relative; transition: transform 0.25s cubic-bezier(0.2, 0.7, 0.2, 1), box-shadow 0.25s, border-color 0.25s;
+}
+.app-shell .bg-white[class*="rounded-"]:not([class*="overflow"]):not(.h-2):not(input):not(select):not(textarea):not(button):hover {
+  transform: translateY(-3px);
+  border-color: rgba(91, 140, 255, 0.55);
+  box-shadow: 0 12px 30px -12px rgba(26, 92, 255, 0.35), 0 0 0 1px rgba(91, 140, 255, 0.12);
+}
+/* cursor spotlight: Spotlight.tsx sets --mx/--my on the hovered card */
+.app-shell .bg-white[class*="rounded-"]:not([class*="overflow"]):not(.h-2):not(input):not(select):not(textarea):not(button)::after {
+  content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; opacity: 0; transition: opacity 0.25s;
+  background: radial-gradient(260px circle at var(--mx, 50%) var(--my, 50%), var(--app-glow), transparent 70%);
+}
+.app-shell .bg-white[class*="rounded-"]:not([class*="overflow"]):not(.h-2):not(input):not(select):not(textarea):not(button):hover::after { opacity: 1; }
+
+.app-shell tbody tr { transition: background-color 0.15s; }
+.app-shell tbody tr:hover { background-color: rgba(127, 150, 200, 0.1); }
+.app-shell a, .app-shell button { transition: color 0.15s, background-color 0.15s, border-color 0.15s, transform 0.12s, box-shadow 0.2s; }
+.app-shell button:active:not(:disabled), .app-shell a[class*="bg-indigo"]:active { transform: scale(0.96); }
+.app-shell button[class*="bg-indigo-600"]:hover, .app-shell a[class*="bg-indigo-600"]:hover { box-shadow: 0 0 0 4px rgba(26, 92, 255, 0.22), 0 6px 18px -6px rgba(26, 92, 255, 0.6); }
+.app-shell button:not([class*="bg-indigo"]):not(.pill-on):hover:not(:disabled) { border-color: rgba(91, 140, 255, 0.6); }
+
+/* progress bars: animated fill + moving highlight (see ProgressBar.tsx) */
+.bw-bar { position: relative; overflow: hidden; }
+.bw-bar > i { display: block; height: 100%; border-radius: inherit; transition: width 0.9s cubic-bezier(0.2, 0.7, 0.2, 1);
+  background: linear-gradient(90deg, #1a5cff, #5b8cff, #1a5cff); background-size: 200% 100%; animation: bw-shimmer 3s linear infinite; }
+
+.bw-live { display: inline-block; width: 8px; height: 8px; border-radius: 9999px; background: #22c55e; animation: bw-pulse 1.8s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .app-shell *, .app-shell *::before, .app-shell *::after { animation: none !important; transition: none !important; }
+}

@@ -20,7 +20,7 @@ const radius = (n: MapNode) => Math.min(18, 5 + Math.sqrt(n.inCount + n.outCount
 
 type Drag = { kind: "pan" | "node"; id?: string; sx: number; sy: number; ox: number; oy: number; moved: boolean };
 
-export function CodeMap({ repoId, assignmentId, height = 620 }: { repoId: string; assignmentId?: string; height?: number }) {
+export function CodeMap({ repoId, assignmentId, height = 620, compact = false }: { repoId: string; assignmentId?: string; height?: number; compact?: boolean }) {
   const [data, setData] = useState<MapData | null>(null);
   const [err, setErr] = useState("");
   const sim = useRef<FNode[]>([]);
@@ -66,9 +66,18 @@ export function CodeMap({ repoId, assignmentId, height = 620 }: { repoId: string
   const modIndex = useMemo(() => new Map((data?.modules ?? []).map((m, i) => [m.id, i])), [data]);
   const modName = useMemo(() => new Map((data?.modules ?? []).map((m) => [m.id, m.name])), [data]);
   const simEdges = useMemo(() => (data?.edges ?? []).map((e) => ({ from: e.from, to: e.to })), [data]);
+  // bigger graphs need more room: stronger repulsion, longer springs, weaker module pull (avoids a central hairball)
+  const forceOpt = useMemo(() => { const n = data?.nodes.length ?? 0; return { repulsion: 1800 * (1 + n / 250), springLen: 70 + Math.min(70, n / 3), groupPull: n > 120 ? 0.018 : 0.03 }; }, [data]);
 
   const fit = useCallback((nodes?: { x: number; y: number; r: number }[]) => {
-    const b = bounds(nodes ?? sim.current);
+    // fit the core of the graph: ignore stray outliers (beyond 1.6x the 90th-percentile distance from the median centre)
+    const pts = nodes ?? sim.current;
+    const med = (v: number[]) => [...v].sort((x, y) => x - y)[Math.floor(v.length / 2)] ?? 0;
+    const cx = med(pts.map((p) => p.x)), cy = med(pts.map((p) => p.y));
+    const ds = pts.map((p) => Math.hypot(p.x - cx, p.y - cy)).sort((x, y) => x - y);
+    const lim = (ds[Math.floor(ds.length * 0.9)] ?? 0) * 1.6 + 40;
+    const core = pts.filter((p) => Math.hypot(p.x - cx, p.y - cy) <= lim);
+    const b = bounds(core.length ? core : pts);
     const bw = Math.max(1, b.maxX - b.minX), bh = Math.max(1, b.maxY - b.minY);
     const k = Math.min(size.w / (bw + 80), size.h / (bh + 80), 2.2);
     setView({ k, x: size.w / 2 - ((b.minX + b.maxX) / 2) * k, y: size.h / 2 - ((b.minY + b.maxY) / 2) * k });
@@ -77,11 +86,11 @@ export function CodeMap({ repoId, assignmentId, height = 620 }: { repoId: string
   const layout = useCallback(() => {
     if (!data) return;
     sim.current = initNodes(data.nodes.map((n) => ({ id: n.id, group: n.moduleId, r: radius(n) })));
-    settle(sim.current, simEdges, 260);
+    settle(sim.current, simEdges, 320, forceOpt);
     alpha.current = 0;
     fit();
     setFrame((f) => f + 1);
-  }, [data, simEdges, fit]);
+  }, [data, simEdges, fit, forceOpt]);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { layout(); }, [data]);
 
@@ -90,7 +99,7 @@ export function CodeMap({ repoId, assignmentId, height = 620 }: { repoId: string
     let raf = 0;
     const loop = () => {
       if (alpha.current > 0.03) {
-        tick(sim.current, simEdges, alpha.current);
+        tick(sim.current, simEdges, alpha.current, forceOpt);
         alpha.current *= 0.97;
         setFrame((f) => f + 1);
       }
@@ -98,7 +107,7 @@ export function CodeMap({ repoId, assignmentId, height = 620 }: { repoId: string
     };
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
-  }, [simEdges]);
+  }, [simEdges, forceOpt]);
 
   // wheel zoom around the pointer (needs a non-passive listener to stop the page scrolling)
   useEffect(() => {
@@ -237,16 +246,17 @@ export function CodeMap({ repoId, assignmentId, height = 620 }: { repoId: string
   if (!data.nodes.length) return <p className="rounded-xl border bg-white p-4 text-sm text-slate-500">{data.notes[0] ?? "Nothing to show yet."}</p>;
 
   const centres = groupCentres(sim.current);
-  const halo = [...centres].map(([g, c]) => {
-    const r = Math.max(...sim.current.filter((n) => n.group === g).map((n) => Math.hypot(n.x - c.x, n.y - c.y) + n.r)) + 20;
-    return { g, x: c.x, y: c.y, r };
+  // halo = circle around the core of a module (85th percentile distance), so a few stray files do not blow it up
+  const halo = [...centres].filter(([, c]) => c.n >= 3).map(([g, c]) => {
+    const d = sim.current.filter((n) => n.group === g).map((n) => Math.hypot(n.x - c.x, n.y - c.y) + n.r).sort((a, b) => a - b);
+    return { g, x: c.x, y: c.y, r: d[Math.min(d.length - 1, Math.floor(d.length * 0.85))] + 16 };
   });
   const dimNode = (id: string) => (focusSet ? !focusSet.has(id) : learning ? !learning[id] : false);
   const toggleType = (t: string) => setTypes((s) => { const n = new Set(s); n.has(t) ? n.delete(t) : n.add(t); return n; });
   const nodeLabel = (id: string) => nodeById.get(id)?.path ?? id;
   const showLabel = (n: MapNode) => labels || n.id === active || (!!active && neighbours.has(n.id)) || (!!needle && n.path.toLowerCase().includes(needle)) || (view.k > 1.6 && (!focusSet || focusSet.has(n.id)));
 
-  const chip = (on: boolean) => `rounded-full border px-2.5 py-1 text-xs transition-colors ${on ? "border-slate-900 bg-slate-900 text-white" : "bg-white text-slate-600 hover:bg-slate-100"}`;
+  const chip = (on: boolean) => `rounded-full border px-2.5 py-1 text-xs transition-colors ${on ? "pill-on" : "bg-white text-slate-600 hover:bg-slate-100"}`;
 
   return (
     <div>
@@ -278,14 +288,14 @@ export function CodeMap({ repoId, assignmentId, height = 620 }: { repoId: string
         </div>
       )}
 
-      <div className="grid gap-3 lg:grid-cols-[1fr_340px]">
+      <div className={compact ? "grid gap-3" : "grid gap-3 lg:grid-cols-[1fr_340px]"}>
         <div ref={wrap} className="relative overflow-hidden rounded-xl border bg-white" style={{ height }}>
           <svg ref={svg} width={size.w} height={size.h} className="touch-none select-none" style={{ cursor: drag.current?.kind === "pan" ? "grabbing" : "grab" }}
             role="img" aria-label="Interactive map of how the files in this codebase connect"
             onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}>
             <defs>
               {TYPES.map((t) => (
-                <marker key={t} id={`arr-${t}`} viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+                <marker key={t} id={`arr-${t}`} viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
                   <path d="M0 0L10 5L0 10z" fill={EDGE_STYLE[t].color} />
                 </marker>
               ))}
@@ -313,7 +323,7 @@ export function CodeMap({ repoId, assignmentId, height = 620 }: { repoId: string
                 const st = EDGE_STYLE[e.type];
                 return (
                   <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke={st.color} strokeWidth={(hot ? 2.2 : Math.min(1 + Math.log2(e.count), 3)) / Math.max(view.k, 0.7)}
-                    strokeOpacity={hot ? 0.95 : faded ? 0.06 : 0.45} strokeDasharray={e.heuristic === e.count ? "4 3" : undefined} markerEnd={`url(#arr-${e.type})`}>
+                    strokeOpacity={hot ? 0.95 : faded ? (learning && !focusSet ? 0.14 : 0.06) : edges.length > 300 ? 0.3 : 0.45} strokeDasharray={e.heuristic === e.count ? "4 3" : undefined} markerEnd={`url(#arr-${e.type})`}>
                     <title>{`${nodeLabel(e.from)} ${st.label.toLowerCase()} ${nodeLabel(e.to)}${e.count > 1 ? ` (×${e.count})` : ""}${e.heuristic ? " · heuristic match" : ""}`}</title>
                   </line>
                 );
@@ -326,12 +336,12 @@ export function CodeMap({ repoId, assignmentId, height = 620 }: { repoId: string
                 const dim = dimNode(n.id);
                 const i = modIndex.get(n.moduleId) ?? -1;
                 return (
-                  <g key={n.id} data-node={n.id} opacity={dim ? 0.18 : 1} className="cursor-pointer"
+                  <g key={n.id} data-node={n.id} opacity={dim ? (learning && !focusSet ? 0.38 : 0.18) : 1} className="cursor-pointer"
                     onPointerEnter={() => setHover(n.id)} onPointerLeave={() => setHover(null)}>
-                    {n.id === sel && <circle cx={p.x} cy={p.y} r={p.r + 6} fill="none" stroke="#0b0f17" strokeWidth={2 / Math.max(view.k, 0.7)} />}
-                    <circle cx={p.x} cy={p.y} r={p.r} fill={modColor(i)} stroke={st === "done" ? "#10b981" : st === "todo" ? "#1a5cff" : "#fff"} strokeWidth={(st ? 3.5 : 1.5) / Math.max(view.k, 0.7)} />
+                    {n.id === sel && <circle cx={p.x} cy={p.y} r={p.r + 6} fill="none" style={{ stroke: "var(--map-text)" }} strokeWidth={2 / Math.max(view.k, 0.7)} />}
+                    <circle cx={p.x} cy={p.y} r={p.r} fill={modColor(i)} stroke={st === "done" ? "#10b981" : st === "todo" ? "#4d82ff" : "var(--map-bg)"} strokeWidth={(st ? 3.5 : 1.5) / Math.max(view.k, 0.7)} />
                     {showLabel(n) && (
-                      <text x={p.x} y={p.y + p.r + 11 / Math.max(view.k, 0.8)} textAnchor="middle" fontSize={11 / Math.max(view.k, 0.8)} fill="#0f172a" stroke="#fff" strokeWidth={3 / Math.max(view.k, 0.8)} paintOrder="stroke">{n.label}</text>
+                      <text x={p.x} y={p.y + p.r + 11 / Math.max(view.k, 0.8)} textAnchor="middle" fontSize={11 / Math.max(view.k, 0.8)} style={{ fill: "var(--map-text)", stroke: "var(--map-bg)" }} strokeWidth={3 / Math.max(view.k, 0.8)} paintOrder="stroke">{n.label}</text>
                     )}
                     <title>{`${n.path}\n${n.lineCount} lines · imported by ${n.inCount} · links out ${n.outCount}\nClick to open details, drag to move`}</title>
                   </g>
@@ -342,7 +352,7 @@ export function CodeMap({ repoId, assignmentId, height = 620 }: { repoId: string
           <div className="pointer-events-none absolute bottom-2 left-3 text-[11px] text-slate-400">Drag to pan · scroll to zoom · drag a dot to move it · click a dot for details · click a module name to focus</div>
         </div>
 
-        <aside className="max-h-[70vh] overflow-auto rounded-xl border bg-white p-3 text-sm" style={{ maxHeight: height }}>
+        <aside className="max-h-[70vh] overflow-auto rounded-xl border bg-white p-3 text-sm" style={{ maxHeight: compact ? 360 : height }}>
           <div className="mb-3 flex flex-wrap gap-1">
             <button onClick={() => setMod(null)} className={chip(!mod)}>All modules</button>
             {data.modules.map((m, i) => (

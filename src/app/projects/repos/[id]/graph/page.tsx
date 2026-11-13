@@ -13,7 +13,7 @@ export default async function RepoGraphPage({ params, searchParams }: { params: 
   const repo = await db.repository.findFirst({ where: { id, orgId: me.orgId }, select: { id: true, name: true } });
   if (!repo) notFound();
   const drill = view === "drill";
-  const tab = (active: boolean) => `rounded-full px-3 py-1 text-sm ${active ? "bg-slate-900 text-white" : "border bg-white text-slate-600 hover:bg-slate-100"}`;
+  const tab = (active: boolean) => `rounded-full px-3 py-1 text-sm ${active ? "pill-on" : "border bg-white text-slate-600 hover:bg-slate-100"}`;
   return (
     <Shell user={me} wide>
       <p className="text-xs text-slate-500"><Link href={`/projects/repos/${repo.id}`} className="underline">{repo.name}</Link> / graph</p>
