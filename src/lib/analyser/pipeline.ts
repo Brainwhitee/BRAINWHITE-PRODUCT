@@ -24,11 +24,10 @@ async function pool<T>(items: T[], n: number, fn: (x: T) => Promise<void>) {
   );
 }
 
-// Entry point. Runs in-process for the MVP; swap for a queue worker when PLT-08 lands.
-export async function syncRepository(repoId: string): Promise<string> {
-  const repo = await db.repository.findUniqueOrThrow({ where: { id: repoId }, include: { project: true } });
-  // Per-repo lock: claim the repo atomically so two syncs (double click, webhook + manual) never overlap.
-  // A RUNNING status whose newest run is older than STALE_SYNC_MS is a crashed sync and can be taken over.
+// Per-repo lock: claim the repo atomically so two syncs (double click, webhook + manual) never overlap.
+// A RUNNING status whose newest run is older than STALE_SYNC_MS is a crashed sync and can be taken over.
+// Shared by the full sync below and the incremental sync (incremental.ts).
+export async function claimRepo(repoId: string): Promise<boolean> {
   const claimed = await db.repository.updateMany({
     where: {
       id: repoId,
@@ -39,7 +38,13 @@ export async function syncRepository(repoId: string): Promise<string> {
     },
     data: { syncStatus: "RUNNING" },
   });
-  if (claimed.count === 0) return ""; // another sync is already running for this repo
+  return claimed.count > 0;
+}
+
+// Entry point. Runs in-process for the MVP; swap for a queue worker when PLT-08 lands.
+export async function syncRepository(repoId: string): Promise<string> {
+  const repo = await db.repository.findUniqueOrThrow({ where: { id: repoId }, include: { project: true } });
+  if (!(await claimRepo(repoId))) return ""; // another sync is already running for this repo
   let run: { id: string };
   try {
     run = await db.syncRun.create({ data: { repoId } });

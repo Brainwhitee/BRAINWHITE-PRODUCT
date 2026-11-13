@@ -15,6 +15,11 @@
     "smoke": "tsx scripts/smoke.ts",
     "inspect": "tsx scripts/inspect-core.ts",
     "eval:retrieval": "tsx scripts/eval-retrieval.ts",
+    "check:incremental": "tsx scripts/check-incremental.ts",
+    "check:boot": "tsx scripts/check-boot.ts",
+    "check:webhook": "tsx scripts/check-webhook-flag.ts",
+    "eval:retrieval-db": "tsx scripts/eval-retrieval-db.ts",
+    "db:retrieval-index": "tsx scripts/apply-retrieval-index.ts",
     "test:core": "vitest run --dir scripts"
   },
   "dependencies": {

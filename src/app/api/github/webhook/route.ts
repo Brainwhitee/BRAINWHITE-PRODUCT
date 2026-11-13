@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { createHmac, timingSafeEqual } from "crypto";
 import { db } from "@/lib/db";
 import { processGithubEvent } from "@/lib/domain/github";
+import { syncAuto } from "@/lib/analyser/incremental";
+import { changeFromPush } from "@/lib/analyser/sync-plan";
 
 // GitHub App / repo webhook receiver. Signature is mandatory in production.
 export async function POST(req: NextRequest) {
@@ -23,5 +25,17 @@ export async function POST(req: NextRequest) {
   const repos = await db.repository.findMany({ where: { source: "github", location: full } });
   const results: string[] = [];
   for (const r of repos) results.push(await processGithubEvent(r.orgId, event, payload));
+
+  // A push to the branch a repository tracks keeps its knowledge graph fresh: incremental when safe, full sync otherwise.
+  // Runs in the background so GitHub gets its response quickly; progress shows up as a SyncRun on the repo page.
+  // OPT-IN: off unless AUTO_SYNC_ON_PUSH=true, so deploying this code never starts syncing (DB writes + GitHub API calls) by surprise.
+  if (event === "push" && process.env.AUTO_SYNC_ON_PUSH === "true") {
+    const branch = String(payload.ref ?? "").replace("refs/heads/", "");
+    const change = changeFromPush(payload);
+    for (const r of repos.filter((x) => x.branch === branch)) {
+      void syncAuto(r.id, change).catch((e) => console.error("[webhook] sync failed", r.location, e));
+      results.push("sync: scheduled");
+    }
+  }
   return NextResponse.json({ ok: true, results });
 }

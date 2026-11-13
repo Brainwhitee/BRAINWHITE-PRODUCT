@@ -5,6 +5,7 @@ import { Readable } from "stream";
 import { pipeline as streamPipeline } from "stream/promises";
 import * as tar from "tar";
 import { IGNORED_DIRS } from "./filter";
+import { fetchWithRetry, rateLimitHint } from "../github-fetch";
 
 export type SourceFile = { path: string; size: number; abs: string };
 export type LoadedSource = { root: string; files: SourceFile[]; sha: string | null; cleanup: () => Promise<void> };
@@ -37,14 +38,14 @@ export async function loadSource(source: string, location: string, branch: strin
   const headers: Record<string, string> = { "User-Agent": "brainwhite" };
   if (process.env.GITHUB_TOKEN) headers.Authorization = `Bearer ${process.env.GITHUB_TOKEN}`;
 
-  const res = await fetch(`https://codeload.github.com/${location}/tar.gz/${encodeURIComponent(branch)}`, { headers });
-  if (!res.ok || !res.body) throw new Error(`GitHub download failed (${res.status}). Check owner/name, branch and access.`);
+  const res = await fetchWithRetry(`${process.env.GITHUB_CODELOAD_BASE ?? "https://codeload.github.com"}/${location}/tar.gz/${encodeURIComponent(branch)}`, { headers });
+  if (!res.ok || !res.body) throw new Error(rateLimitHint(res) ?? `GitHub download failed (${res.status}). Check owner/name, branch and access.`);
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), "brainwhite-"));
   await streamPipeline(Readable.fromWeb(res.body as never), tar.x({ cwd: dir, strip: 1 }));
 
   let sha: string | null = null;
   try {
-    const c = await fetch(`https://api.github.com/repos/${location}/commits/${encodeURIComponent(branch)}`, { headers });
+    const c = await fetchWithRetry(`${process.env.GITHUB_API_BASE ?? "https://api.github.com"}/repos/${location}/commits/${encodeURIComponent(branch)}`, { headers });
     if (c.ok) sha = (await c.json()).sha;
   } catch {}
   return { root: dir, files: await walk(dir), sha, cleanup: () => fs.rm(dir, { recursive: true, force: true }) };
