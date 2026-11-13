@@ -1,5 +1,6 @@
 "use client";
 
+import { isAppRoute } from "@/lib/app-routes";
 import React, { useState, useRef, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { Bot, X, Send, Sparkles, MessageSquare, RefreshCw, ChevronDown } from "lucide-react";
@@ -39,7 +40,7 @@ export function SupportChatWidget() {
     }
   }, [messages, isOpen]);
 
-  if (pathname?.startsWith("/learn")) {
+  if (isAppRoute(pathname)) {
     return null;
   }
 

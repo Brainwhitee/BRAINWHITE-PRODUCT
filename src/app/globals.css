@@ -198,3 +198,33 @@
     cursor: pointer;
   }
 }
+
+/* ------------------------------------------------------------- */
+/* APP SHELL: one palette for every signed-in page               */
+/* Pages use Tailwind slate/indigo utilities; remap them to the  */
+/* brand tokens here so all dashboards look like one product.    */
+/* ------------------------------------------------------------- */
+.app-shell {
+  --color-indigo-50: #eaf1ff;
+  --color-indigo-100: #d9e6ff;
+  --color-indigo-200: #b7ceff;
+  --color-indigo-400: #5b8cff;
+  --color-indigo-500: #3a73ff;
+  --color-indigo-600: #1a5cff;
+  --color-indigo-700: #1448cc;
+  --color-indigo-800: #103aa3;
+  --color-slate-50: #f6f7f9;
+  --color-slate-900: #0b0f17;
+  font-family: var(--font-sans);
+  letter-spacing: -0.005em;
+}
+.app-shell h1, .app-shell h2 { letter-spacing: -0.02em; }
+.app-shell .bg-white { box-shadow: 0 1px 2px rgba(11, 15, 23, 0.04); }
+.app-shell button, .app-shell input, .app-shell select, .app-shell textarea { font-family: inherit; }
+.app-shell button[class*="bg-indigo-600"], .app-shell a[class*="bg-indigo-600"] { border-radius: 9999px; font-weight: 500; }
+.app-shell :focus-visible { outline: 2px solid var(--color-indigo-500); outline-offset: 2px; }
+
+/* Tailwind v4 borders default to currentColor (black). Soften them inside the app; utilities like border-red-200 still win (base layer). */
+@layer base {
+  .app-shell *, .app-shell ::before, .app-shell ::after { border-color: #e3e6ec; }
+}

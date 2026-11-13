@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { logout } from "@/app/actions";
 import { can } from "@/lib/rbac";
+import { NavLinks } from "@/components/NavLinks";
 
 export function Shell({
   user,
@@ -12,35 +13,32 @@ export function Shell({
   wide?: boolean;
 }) {
   const staff = user.role !== "CANDIDATE";
+  const links = staff
+    ? [
+        { href: "/dashboard", label: "Dashboard" },
+        ...(can(user.role, "members:view") ? [{ href: "/team", label: "Team" }, { href: "/paths", label: "Paths" }, { href: "/tasks", label: "Tasks" }] : []),
+        ...(can(user.role, "codebase:view") ? [{ href: "/projects", label: "Codebase" }] : []),
+        ...(can(user.role, "audit:view") ? [{ href: "/audit", label: "Audit log" }] : []),
+      ]
+    : [{ href: "/learn", label: "My learning" }, { href: "/tasks", label: "My tasks" }];
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900">
-      <header className="flex items-center justify-between border-b bg-white px-6 py-3">
-        <div className="flex items-center gap-6">
-          <span className="font-semibold text-indigo-700">BrainWhite</span>
-          <span className="text-sm text-slate-500">{user.org.name}</span>
-          <nav className="flex gap-4 text-sm">
-            {staff ? (
-              <>
-                <Link href="/dashboard">Dashboard</Link>
-                {can(user.role, "members:view") && <Link href="/team">Team</Link>}
-                {can(user.role, "members:view") && <Link href="/paths">Paths</Link>}
-                {can(user.role, "members:view") && <Link href="/tasks">Tasks</Link>}
-                {can(user.role, "codebase:view") && <Link href="/projects">Codebase</Link>}
-                {can(user.role, "audit:view") && <Link href="/audit">Audit log</Link>}
-              </>
-            ) : (
-              <><Link href="/learn">My learning</Link><Link href="/tasks">My tasks</Link></>
-            )}
-          </nav>
+    <div className="app-shell min-h-screen bg-slate-50 text-slate-900">
+      <header className="sticky top-0 z-40 flex items-center justify-between gap-4 border-b bg-white/90 px-6 py-2.5 backdrop-blur">
+        <div className="flex min-w-0 items-center gap-5">
+          <Link href={staff ? "/dashboard" : "/learn"} className="flex items-center gap-2 text-[15px] font-semibold tracking-tight text-slate-900">
+            <span className="grid h-7 w-7 place-items-center rounded-lg bg-slate-900 text-xs font-bold text-white">B</span>
+            BrainWhite
+          </Link>
+          <span className="hidden rounded-full border px-2.5 py-0.5 text-xs text-slate-500 sm:inline">{user.org.name}</span>
+          <NavLinks links={links} />
         </div>
-        <form action={logout} className="flex items-center gap-3 text-sm">
-          <span>
-            {user.name} · {user.role.toLowerCase()}
-          </span>
-          <button className="text-indigo-700 underline">Log out</button>
+        <form action={logout} className="flex shrink-0 items-center gap-3 text-sm">
+          <span className="hidden text-slate-600 md:inline">{user.name}</span>
+          <span className="rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-medium capitalize text-indigo-700">{user.role.toLowerCase()}</span>
+          <button className="rounded-full border px-3 py-1 text-slate-700 transition-colors hover:bg-slate-100">Log out</button>
         </form>
       </header>
-      <main className={wide ? "p-3" : "mx-auto max-w-5xl p-6"}>{children}</main>
+      <main className={wide ? "p-4" : "mx-auto max-w-5xl p-6"}>{children}</main>
     </div>
   );
 }
