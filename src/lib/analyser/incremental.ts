@@ -8,13 +8,14 @@ import path from "path";
 import { createHash } from "crypto";
 import { db } from "../db";
 import { claimRepo, syncRepository } from "./pipeline";
+import { getOrgGithubToken } from "../domain/github-app";
 import { languageOf, makeFilter } from "./filter";
 import { redactSecrets } from "./secrets";
 import { isParsable, parseSource, type ParsedSymbol } from "./parse";
 import { createResolver, emptyImportStats } from "./resolve-ts";
 import { buildChunks } from "./chunk";
 import { buildSymbolEdges, withSymbolIds, type FileFacts, type SymbolWithId } from "./edges";
-import { heuristicChunk, newStats, summariseChunk, summariseRollup } from "./summarise";
+import { heuristicChunk } from "./summarise";
 import { isConfigFile, planSync, type ChangeSet } from "./sync-plan";
 import { fetchWithRetry, rateLimitHint } from "../github-fetch";
 
@@ -23,9 +24,9 @@ const SYMBOL_TYPES = ["CALLS", "REFERENCES", "EXTENDS", "IMPLEMENTS"];
 const MAX_IMPORTERS = 120; // more importers than this and a full sync is just as cheap
 const sha1 = (s: string) => createHash("sha1").update(s).digest("hex");
 
-type RepoRow = { id: string; source: string; location: string; branch: string };
+type RepoRow = { id: string; orgId: string; source: string; location: string; branch: string };
 
-function defaultFetch(repo: RepoRow, ref: string): FetchFile {
+function defaultFetch(repo: RepoRow, ref: string, token: string | null): FetchFile {
   if (repo.source === "local") {
     const root = path.resolve(repo.location);
     return async (p) => {
@@ -35,7 +36,7 @@ function defaultFetch(repo: RepoRow, ref: string): FetchFile {
     };
   }
   const headers: Record<string, string> = { Accept: "application/vnd.github.raw", "User-Agent": "brainwhite" };
-  if (process.env.GITHUB_TOKEN) headers.Authorization = `Bearer ${process.env.GITHUB_TOKEN}`;
+  if (token) headers.Authorization = `Bearer ${token}`;
   return async (p) => {
     const url = `${process.env.GITHUB_API_BASE ?? "https://api.github.com"}/repos/${repo.location}/contents/${p.split("/").map(encodeURIComponent).join("/")}?ref=${encodeURIComponent(ref)}`;
     const r = await fetchWithRetry(url, { headers });
@@ -71,7 +72,7 @@ async function runIncremental(repo: RepoRow & { lastSyncedSha: string | null }, 
   const progress = (p: string, extra: object = {}) => db.syncRun.update({ where: { id: run.id }, data: { progress: p, ...extra } });
 
   try {
-    const fetch = fetchFile ?? defaultFetch(repo, change.after ?? repo.branch);
+    const fetch = fetchFile ?? defaultFetch(repo, change.after ?? repo.branch, repo.source === "local" ? null : await getOrgGithubToken(repo.orgId));
 
     // ---- 1. fetch + redact the modified files ----
     await progress(`Incremental: fetching ${files.length} file(s)`);
@@ -189,11 +190,10 @@ async function runIncremental(repo: RepoRow & { lastSyncedSha: string | null }, 
     const symEdges = buildSymbolEdges(facts, resolve).map((e) => ({ repoId, ...e }));
     for (let i = 0; i < symEdges.length; i += 2000) await db.graphEdge.createMany({ data: symEdges.slice(i, i + 2000) });
 
-    // ---- 7. chunks of the changed files (same rules as the full sync: stable ids, summary cache by content hash) ----
+    // ---- 7. chunks of the changed files: same rules as the full sync (stable ids, heuristic summaries); a chunk whose code changed is UPDATED ----
+    // (File and module summaries are not touched: only modified files are handled here, so files and module membership do not change.)
     await progress("Incremental: updating learning chunks");
     const sha = repo.source === "local" ? sha1(allFiles.map((f) => f.path + f.contentHash).sort().join("")) : change.after ?? repo.lastSyncedSha;
-    const llm = newStats();
-    const needSummary: { id: string; filePath: string; title: string; code: string; heuristic: string; hash: string }[] = [];
     for (const c of changed) {
       const syms = parsed.get(c.path)?.symbols ?? [];
       const lines = c.content.split("\n");
@@ -204,47 +204,24 @@ async function runIncremental(repo: RepoRow & { lastSyncedSha: string | null }, 
         const prev = prevChunks.get(d.id);
         const inside = syms.filter((s) => s.startLine >= d.startLine && s.endLine <= d.endLine);
         const doc = inside.find((s) => s.doc)?.doc ?? "";
-        const heuristic = heuristicChunk(c.path, d.title, doc, inside.map((s) => s.kind), d.endLine - d.startLine + 1, c.lang);
+        const codeSnippet = lines.slice(d.startLine - 1, d.endLine).join("\n");
+        const summary = heuristicChunk(c.path, d.title, doc, inside.map((s) => s.kind), d.endLine - d.startLine + 1, c.lang, inside, codeSnippet);
         const didChange = prev ? prev.contentHash !== d.contentHash : false;
         const base = {
           moduleId: c.row.moduleId!, repoId, title: d.title, filePath: c.path, startLine: d.startLine, endLine: d.endLine,
-          estMinutes: d.estMinutes, difficulty: d.difficulty, contentHash: d.contentHash, sha,
+          estMinutes: d.estMinutes, difficulty: d.difficulty, contentHash: d.contentHash, sha, summary,
         };
         if (prev) await db.chunk.update({ where: { id: d.id }, data: { ...base, status: didChange ? "UPDATED" : prev.status } });
-        else await db.chunk.create({ data: { id: d.id, ...base, summary: heuristic } });
-        if (!prev || didChange) needSummary.push({ id: d.id, filePath: c.path, title: d.title, code: lines.slice(d.startLine - 1, d.endLine).join("\n"), heuristic, hash: d.contentHash });
+        else await db.chunk.create({ data: { id: d.id, ...base } });
       }
       await db.chunk.deleteMany({ where: { repoId, filePath: c.path, id: { notIn: [...seen] } } });
-    }
-    await progress(`Incremental: summarising ${needSummary.length} chunk(s)`);
-    for (const k of needSummary) {
-      const s = await summariseChunk(k, llm);
-      await db.chunk.update({ where: { id: k.id }, data: { summary: s.text, summaryHash: s.llm ? k.hash : "" } });
-    }
-
-    // ---- 8. roll up the changed files and the modules they live in ----
-    const fresh = await db.file.findMany({ where: { id: { in: changedIds } }, include: { symbols: true } });
-    for (const f of fresh) {
-      const parts = (await db.chunk.findMany({ where: { repoId, filePath: f.path }, select: { summary: true } })).map((k) => k.summary);
-      const names = f.symbols.slice(0, 8).map((s) => s.name);
-      const heuristic = `${f.path.split("/").pop()}: ${f.language} file, ${f.lineCount} lines${names.length ? `, defines ${names.join(", ")}` : ""}.`;
-      const text = parts.length > 1 ? await summariseRollup({ kind: "file", name: f.path, parts, heuristic }, llm) : parts[0] ?? heuristic;
-      await db.file.update({ where: { id: f.id }, data: { summary: text, summaryHash: f.contentHash } });
-    }
-    for (const mid of new Set(fresh.map((f) => f.moduleId).filter((x): x is string => !!x))) {
-      const m = await db.module.findUniqueOrThrow({ where: { id: mid }, include: { files: true } });
-      const fileSums = (await db.file.findMany({ where: { moduleId: mid }, select: { summary: true } })).map((f) => f.summary);
-      const top = m.files.slice(0, 5).map((f) => f.path.split("/").pop()).join(", ");
-      const heuristic = `${m.name}: ${m.files.length} files (${top}${m.files.length > 5 ? ", …" : ""}).`;
-      const summary = await summariseRollup({ kind: "module", name: m.name, parts: fileSums, heuristic }, llm);
-      await db.module.update({ where: { id: mid }, data: { summary, description: summary.split(".")[0] + "." } });
     }
 
     await db.repository.update({ where: { id: repoId }, data: { syncStatus: "HEALTHY", lastSyncedSha: sha, lastSyncedAt: new Date() } });
     await db.syncRun.update({
       where: { id: run.id },
       data: {
-        status: "SUCCESS", finishedAt: new Date(), sha, filesParsed: changed.length, filesSeen: files.length, summariesGenerated: llm.calls,
+        status: "SUCCESS", finishedAt: new Date(), sha, filesParsed: changed.length, filesSeen: files.length, summariesGenerated: 0,
         progress: `Incremental: ${changed.length} file(s) re-analysed (${why}); imports in those files: ${stats.internal} resolved, ${stats.unresolved} unresolved`,
       },
     });

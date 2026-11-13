@@ -37,7 +37,9 @@ export async function createPath(_: FormState, fd: FormData): Promise<FormState>
 // Phase 7: draft a path from the knowledge graph. Always a DRAFT: a manager reviews and edits it before publishing.
 export async function createSuggestedPath(_: FormState, fd: FormData): Promise<FormState> {
   const me = await requirePermission("paths:manage");
-  const repo = await db.repository.findFirst({ where: { id: String(fd.get("repoId")), orgId: me.orgId }, select: { id: true, name: true } });
+  const parsed = z.object({ repoId: z.string().min(1).max(64) }).safeParse({ repoId: fd.get("repoId") });
+  if (!parsed.success) return { error: "Choose a repository" };
+  const repo = await db.repository.findFirst({ where: { id: parsed.data.repoId, orgId: me.orgId }, select: { id: true, name: true } });
   if (!repo) return { error: "Choose a repository" };
   const s = suggestPath(await loadSuggestInput(repo.id));
   if (s.sections.length === 0) return { error: "Nothing to suggest yet: this repository has no analysed modules with lessons. Run a sync first." };

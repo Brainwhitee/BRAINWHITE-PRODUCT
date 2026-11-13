@@ -22,7 +22,7 @@
     "check:webhook": "tsx scripts/check-webhook-flag.ts",
     "eval:retrieval-db": "tsx scripts/eval-retrieval-db.ts",
     "db:retrieval-index": "tsx scripts/apply-retrieval-index.ts",
-    "test:core": "vitest run --dir scripts"
+    "test:core": "vitest run scripts/"
   },
   "dependencies": {
     "@paper-design/shaders-react": "^0.0.82",

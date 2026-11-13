@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { after, NextRequest, NextResponse } from "next/server";
 import { createHmac, timingSafeEqual } from "crypto";
 import { db } from "@/lib/db";
 import { processGithubEvent } from "@/lib/domain/github";
@@ -33,7 +33,10 @@ export async function POST(req: NextRequest) {
     const branch = String(payload.ref ?? "").replace("refs/heads/", "");
     const change = changeFromPush(payload);
     for (const r of repos.filter((x) => x.branch === branch)) {
-      void syncAuto(r.id, change).catch((e) => console.error("[webhook] sync failed", r.location, e));
+      // after() keeps a serverless function alive until the sync finishes (a bare promise can be cut off once the response is sent).
+      // Outside a request (tests) it throws, and we fall back to a plain background promise.
+      const run = () => syncAuto(r.id, change).catch((e) => console.error("[webhook] sync failed", r.location, e));
+      try { after(run); } catch { void run(); }
       results.push("sync: scheduled");
     }
   }

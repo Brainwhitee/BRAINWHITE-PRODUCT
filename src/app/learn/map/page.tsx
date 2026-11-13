@@ -24,7 +24,7 @@ export default async function LearnMap({ searchParams }: { searchParams: Promise
           <h1 className="text-xl font-semibold">Code map</h1>
           <p className="text-sm text-slate-600">The codebase as a tree: the repository holds folders, folders hold files, files hold functions. Click a node to open it; select one to see what it connects to. The numbers are the order your learning path reads the code.</p>
         </div>
-        <Link href="/learn" className="text-sm text-indigo-700 underline">Back to my learning</Link>
+        <Link href="/learn" className="text-sm text-slate-950 underline">Back to my learning</Link>
       </div>
       {!current && <p className="rounded-xl border bg-white p-4 text-sm text-slate-500">No codebase is linked to your learning path yet. Once your manager adds code lessons, the map will appear here.</p>}
       {choices.length > 1 && (

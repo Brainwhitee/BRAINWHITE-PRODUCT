@@ -56,9 +56,9 @@ export function GraphExplorer({ repoId }: { repoId: string }) {
           </span>
         ))}
       </nav>
-      {err && <p className="rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">Could not load graph: {err}</p>}
+      {err && <p className="text-sm text-slate-950">Could not load graph: {err}</p>}
       {!data && !err && <p className="text-sm text-slate-500">Loading…</p>}
-      {data?.notes.map((n) => <p key={n} className="mb-2 rounded border border-amber-200 bg-amber-50 p-2 text-xs text-amber-800">{n}</p>)}
+      {data?.notes.map((n) => <p key={n} className="mb-2 text-sm text-slate-500">{n}</p>)}
       {data && layout && layout.nodes.length === 0 && <p className="text-sm text-slate-500">Nothing to show at this level.</p>}
       {data && layout && layout.nodes.length > 0 && (
         <div className="grid gap-4 lg:grid-cols-[1fr_360px]">
@@ -101,9 +101,9 @@ export function GraphExplorer({ repoId }: { repoId: string }) {
               <>
                 <p className="font-semibold">{sel.label}</p>
                 <p className="mb-2 text-xs text-slate-500">{sel.kind}{sel.filePath ? ` · ${sel.filePath}` : ""}{sel.startLine ? ` · lines ${sel.startLine}-${sel.endLine}` : ""}</p>
-                {sel.drill && <button onClick={() => drill(sel)} className="mb-2 rounded bg-indigo-600 px-2 py-1 text-xs text-white">Open {sel.drill.level === "symbol" ? "symbols" : sel.drill.level === "file" ? "files" : "modules"}</button>}
+                {sel.drill && <button onClick={() => drill(sel)} className="mb-2 rounded bg-slate-950 px-2 py-1 text-xs text-white">Open {sel.drill.level === "symbol" ? "symbols" : sel.drill.level === "file" ? "files" : "modules"}</button>}
                 {code && (
-                  <pre className="max-h-96 overflow-auto rounded bg-slate-900 p-2 text-[11px] leading-4 text-slate-100">
+                  <pre className="max-h-96 overflow-auto rounded bg-slate-900 p-2 text-xs leading-4 text-slate-100">
                     {code.lines.map((l, i) => `${String(code.from + i).padStart(4)}  ${l}`).join("\n")}
                   </pre>
                 )}

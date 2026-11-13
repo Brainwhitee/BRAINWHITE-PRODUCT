@@ -5,7 +5,7 @@
 // to "my path": only the files the learning path reads, numbered in reading order, green = understood, blue = still to learn.
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { GraphData, MapData } from "@/lib/graph";
-import { connectorPath, connectorPoint } from "@/lib/flowlayout";
+import { connectorPath, connectorPoint } from "@/lib/connector";
 import { nextToLearn } from "@/lib/learning-order";
 import { ancestors, buildTree, descendantFileIds, foldersToOpen, layoutTree, nearestVisible, openToDepth, type TNode } from "@/lib/tree";
 
@@ -243,7 +243,7 @@ export function TreeMap({ repoId, repoName = "repository", assignmentId, height 
     if (p) keepOnScreen.current = { id, sx: p.x * view.k + view.x, sy: p.y * view.k + view.y };
     const n = nodeOf(id);
     if (n?.kind === "file" && n.fileId) void loadSymbols(n.fileId);
-    setExpanded((s) => { const x = new Set(s); x.has(id) ? x.delete(id) : x.add(id); return x; });
+    setExpanded((s) => { const x = new Set(s); if (x.has(id)) x.delete(id); else x.add(id); return x; });
   };
   const select = (id: string) => { setSel(id); setCode(null); };
   const reveal = useCallback((fileId: string) => {
@@ -258,7 +258,7 @@ export function TreeMap({ repoId, repoName = "repository", assignmentId, height 
   }, [tree, hasPath, scope]);
   const expandAllFolders = () => setExpanded(openToDepth(tree, 99));
   const collapseAll = () => setExpanded(new Set(["root"]));
-  const toggleType = (t: string) => setTypes((s) => { const n = new Set(s); n.has(t) ? n.delete(t) : n.add(t); return n; });
+  const toggleType = (t: string) => setTypes((s) => { const n = new Set(s); if (n.has(t)) n.delete(t); else n.add(t); return n; });
 
   // ---------- pointer ----------
   const onDown = (e: React.PointerEvent) => {
@@ -290,8 +290,8 @@ export function TreeMap({ repoId, repoName = "repository", assignmentId, height 
     const f = selNode.fileId;
     for (const e of data?.edges ?? []) {
       if (!types.has(e.type)) continue;
-      if (e.from === f) (e.type === "IMPORTS" ? r.imports.push(e.to) : r.uses.push({ id: e.to, type: e.type, n: e.count }));
-      if (e.to === f) (e.type === "IMPORTS" ? r.importedBy.push(e.from) : r.usedBy.push({ id: e.from, type: e.type, n: e.count }));
+      if (e.from === f) { if (e.type === "IMPORTS") r.imports.push(e.to); else r.uses.push({ id: e.to, type: e.type, n: e.count }); }
+      if (e.to === f) { if (e.type === "IMPORTS") r.importedBy.push(e.from); else r.usedBy.push({ id: e.from, type: e.type, n: e.count }); }
     }
     return r;
   }, [data, selNode, types]);
@@ -322,7 +322,7 @@ export function TreeMap({ repoId, repoName = "repository", assignmentId, height 
   };
 
   // ---------- render ----------
-  if (err) return <p className="rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">Could not load the code map: {err}</p>;
+  if (err) return <p className="text-sm text-slate-950">Could not load the code map: {err}</p>;
   if (!data) return <div className="grid place-items-center rounded-xl border bg-white text-sm text-slate-500" style={{ height }}>Loading code map…</div>;
   if (!data.nodes.length) return <p className="rounded-xl border bg-white p-4 text-sm text-slate-500">{data.notes[0] ?? "Nothing to show yet."}</p>;
 
@@ -343,16 +343,16 @@ export function TreeMap({ repoId, repoName = "repository", assignmentId, height 
 
   return (
     <div>
-      {data.notes.map((n) => <p key={n} className="mb-2 rounded border border-amber-200 bg-amber-50 p-2 text-xs text-amber-800">{n}</p>)}
+      {data.notes.map((n) => <p key={n} className="mb-2 text-sm text-slate-500">{n}</p>)}
       <div className="mb-2 flex flex-wrap items-center gap-2">
         <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search a file or folder…" aria-label="Search"
           onKeyDown={(e) => { if (e.key === "Enter" && matches[0]) { const m = matches[0]; if (m.kind === "file" && m.fileId) reveal(m.fileId); else { setSel(m.id); pendingCenter.current = m.id; } } }}
-          className="w-56 rounded-full border bg-white px-3 py-1 text-sm outline-none focus:border-indigo-500" />
+          className="w-56 rounded-full border bg-white px-3 py-1 text-sm outline-none focus:border-slate-950" />
         {hasPath && (
           <>
             <button onClick={() => setScope("path")} className={chip(scope === "path")}>My path</button>
             <button onClick={() => setScope("all")} className={chip(scope === "all")}>Whole codebase</button>
-            {nextId && <button onClick={() => reveal(nextId)} className="rounded-full bg-indigo-600 px-3 py-1 text-xs text-white">Next lesson</button>}
+            {nextId && <button onClick={() => reveal(nextId)} className="rounded-full bg-slate-950 px-3 py-1 text-xs text-white">Next lesson</button>}
           </>
         )}
         <button onClick={expandAllFolders} className={chip(false)}>Open all folders</button>
@@ -464,7 +464,7 @@ export function TreeMap({ repoId, repoName = "repository", assignmentId, height 
               })}
             </g>
           </svg>
-          <div className="pointer-events-none absolute bottom-2 left-3 text-[11px] text-slate-400">Click a node to open or close it · the selected node shows what it connects to{moreLinks > 0 ? ` (strongest 16 drawn, +${moreLinks} in the panel)` : ""} · drag to pan · scroll to zoom</div>
+          <div className="pointer-events-none absolute bottom-2 left-3 text-xs text-slate-400">Click a node to open or close it · the selected node shows what it connects to{moreLinks > 0 ? ` (strongest 16 drawn, +${moreLinks} in the panel)` : ""} · drag to pan · scroll to zoom</div>
         </div>
 
         <aside className="overflow-auto rounded-xl border bg-white p-3 text-sm" style={{ maxHeight: compact ? 380 : height }}>
@@ -476,7 +476,7 @@ export function TreeMap({ repoId, repoName = "repository", assignmentId, height 
                   <p className="mb-1 text-xs font-medium uppercase tracking-wide text-slate-500">Your path, in reading order</p>
                   <ol className="space-y-0.5">{pathList.slice(0, 14).map(([id, n]) => (
                     <li key={id}><button onClick={() => reveal(id)} className="flex w-full items-center gap-2 rounded px-1 py-0.5 text-left text-xs hover:bg-slate-100">
-                      <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full border-2 text-[10px] font-semibold" style={{ borderColor: statusColor(id) ?? "#94a3b8" }}>{n}</span>
+                      <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full border-2 text-xs font-semibold" style={{ borderColor: statusColor(id) ?? "#94a3b8" }}>{n}</span>
                       <span className="break-all">{label(id)}</span>
                     </button></li>
                   ))}</ol>
@@ -510,10 +510,10 @@ export function TreeMap({ repoId, repoName = "repository", assignmentId, height 
                 {sym && <p className="text-xs text-slate-500">function in</p>}
                 <p className="break-all font-semibold">{sym ? sym.name : selNode.path}</p>
                 <p className="mb-2 text-xs text-slate-500">{sym ? `${selNode.path} · ${sym.sub}` : `${f?.lineCount ?? ""} lines · imported by ${f?.inCount ?? 0}`}</p>
-                {learning && !sym && <p className={`mb-2 inline-block rounded-full px-2 py-0.5 text-xs ${learning[selNode.fileId!] === "done" ? "bg-emerald-50 text-emerald-700" : learning[selNode.fileId!] === "todo" ? "bg-indigo-50 text-indigo-700" : "bg-slate-100 text-slate-500"}`}>
+                {learning && !sym && <p className="mb-2 text-sm text-slate-500">
                   {learning[selNode.fileId!] === "done" ? "You have completed this" : learning[selNode.fileId!] === "todo" ? "In your path: still to learn" : "Not in your path"}</p>}
                 {f?.summary && !sym && <p className="mb-2 text-slate-700">{f.summary}</p>}
-                <button onClick={openCode} className="mb-3 rounded-full bg-indigo-600 px-3 py-1 text-xs text-white">{sym ? "View function" : "View code"}</button>
+                <button onClick={openCode} className="mb-3 rounded-full bg-slate-950 px-3 py-1 text-xs text-white">{sym ? "View function" : "View code"}</button>
                 {([["Imports", rel.imports.map((id) => ({ id, type: "IMPORTS", n: 1 }))], ["Imported by", rel.importedBy.map((id) => ({ id, type: "IMPORTS", n: 1 }))], ["Uses / calls", rel.uses], ["Used / called by", rel.usedBy]] as [string, { id: string; type: string; n: number }[]][]).map(([title, list]) => list.length ? (
                   <div key={title} className="mb-3">
                     <p className="mb-1 text-xs font-medium uppercase tracking-wide text-slate-500">{title} ({list.length})</p>
@@ -525,7 +525,7 @@ export function TreeMap({ repoId, repoName = "repository", assignmentId, height 
                   </div>
                 ) : null)}
                 {!rel.imports.length && !rel.importedBy.length && !rel.uses.length && !rel.usedBy.length && <p className="text-xs text-slate-500">No connections with the current filters.</p>}
-                {code?.id === selNode.id && <pre className="max-h-80 overflow-auto rounded bg-slate-900 p-2 text-[11px] leading-4 text-slate-100">{code.lines.map((l, i) => `${String(code.from + i).padStart(4)}  ${l}`).join("\n")}</pre>}
+                {code?.id === selNode.id && <pre className="max-h-80 overflow-auto rounded bg-slate-900 p-2 text-xs leading-4 text-slate-100">{code.lines.map((l, i) => `${String(code.from + i).padStart(4)}  ${l}`).join("\n")}</pre>}
               </div>
             );
           })()}

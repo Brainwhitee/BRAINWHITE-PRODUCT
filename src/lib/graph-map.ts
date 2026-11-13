@@ -1,7 +1,5 @@
 import { db } from "./db";
 import type { MapData, MapEdge, MapNode } from "./graph";
-import { parentLabels } from "./analyser/module-tree";
-import { moduleNameFor } from "./analyser/modules";
 import { lessonOrder } from "./learning-order";
 
 const MAP_MAX_NODES = 800;
@@ -68,10 +66,9 @@ export async function loadMap(repoId: string): Promise<MapData> {
       summary: f.summary.slice(0, 300), inCount: inC.get(f.id) ?? 0, outCount: outC.get(f.id) ?? 0,
     }));
   const shownMods = new Set(nodes.map((n) => n.moduleId));
-  const parents = parentLabels(modules.map((m) => m.path), moduleNameFor); // hierarchy derived from paths: no stored column
   return {
     repoId, nodes, edges: edges.filter((e) => keep.has(e.from) && keep.has(e.to)),
-    modules: modules.filter((m) => shownMods.has(m.id)).map((m) => ({ id: m.id, name: m.name, files: m._count.files, parentName: parents.get(m.path) ?? null })),
+    modules: modules.filter((m) => shownMods.has(m.id)).map((m) => ({ id: m.id, name: m.name, files: m._count.files })),
     notes, truncated, totalFiles: files.length,
   };
 }
