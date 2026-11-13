@@ -4,7 +4,6 @@ import { db } from "@/lib/db";
 import { can } from "@/lib/rbac";
 import { computeMetrics } from "@/lib/domain/metrics";
 import { Shell } from "@/components/Shell";
-import { CountUp } from "@/components/app-fx";
 import { runJobsNow } from "../people/actions";
 
 export default async function Dashboard({ searchParams }: { searchParams: Promise<{ path?: string; risk?: string }> }) {
@@ -23,7 +22,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
   const atRisk = rows.filter((r) => r.m.overall.riskFlags.length).length;
   const stat = (label: string, n: number | string) => (
     <div className="rounded-lg border bg-white p-4">
-      <div className="text-2xl font-semibold"><CountUp value={n} /></div>
+      <div className="text-2xl font-semibold">{n}</div>
       <div className="text-sm text-slate-500">{label}</div>
     </div>
   );

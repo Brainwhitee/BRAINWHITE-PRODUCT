@@ -1,30 +1,31 @@
-/* Signed-in app theme + motion. Everything is scoped to .app-shell, so the landing page and auth pages are untouched.
-   Dark is the default (cookie bw-theme=light switches to light). Pages use Tailwind slate/indigo utilities; the
-   dark theme re-colours those utilities here instead of editing every page. */
+/* Signed-in app theme. Everything is scoped to .app-shell, so the landing page and auth pages are untouched.
+   Dark is the default (cookie bw-theme=light switches to light). Pages use Tailwind slate/indigo utilities; the dark
+   theme re-colours those utilities here instead of editing every page.
+   Deliberately plain: flat surfaces, thin borders, one accent colour, short transitions. No decorative glow, gradients or motion. */
 
 .app-shell {
   --app-bg: #f6f7f9;
   --app-surface: #ffffff;
   --app-surface2: #f1f4f8;
   --app-border: #e3e6ec;
+  --app-border-strong: #c8cfdb;
   --app-text: #0b0f17;
   --app-muted: #5b6678;
-  --app-glow: rgba(26, 92, 255, 0.1);
   --map-text: #0f172a;
   --map-bg: #ffffff;
   position: relative;
 }
 
 .app-shell[data-theme="dark"] {
-  --app-bg: #090d14;
-  --app-surface: #111823;
-  --app-surface2: #18212f;
-  --app-border: #222c3d;
-  --app-text: #e8edf5;
-  --app-muted: #9aa8bb;
-  --app-glow: rgba(91, 140, 255, 0.16);
-  --map-text: #e8edf5;
-  --map-bg: #111823;
+  --app-bg: #0d1117;
+  --app-surface: #151b23;
+  --app-surface2: #1c242f;
+  --app-border: #262f3b;
+  --app-border-strong: #3a4656;
+  --app-text: #e6edf3;
+  --app-muted: #9aa7b8;
+  --map-text: #e6edf3;
+  --map-bg: #151b23;
   color-scheme: dark;
   background: var(--app-bg);
   color: var(--app-text);
@@ -32,7 +33,7 @@
 
 /* ---------- dark: surfaces, text, borders ---------- */
 .app-shell[data-theme="dark"] .bg-white { background-color: var(--app-surface); }
-.app-shell[data-theme="dark"] .bg-white\/90 { background-color: rgba(9, 13, 20, 0.82); }
+.app-shell[data-theme="dark"] .bg-white\/90 { background-color: rgba(13, 17, 23, 0.9); }
 .app-shell[data-theme="dark"] .bg-slate-50 { background-color: var(--app-bg); }
 .app-shell[data-theme="dark"] .bg-slate-100,
 .app-shell[data-theme="dark"] .hover\:bg-slate-100:hover { background-color: var(--app-surface2); }
@@ -71,8 +72,7 @@
 .app-shell[data-theme="dark"] .bg-blue-100 { background-color: #12264d; }
 .app-shell[data-theme="dark"] .text-blue-800 { color: #8fb8ff; }
 .app-shell[data-theme="dark"] .bg-yellow-100 { background-color: #2b2508; }
-.app-shell[data-theme="dark"] thead,
-.app-shell[data-theme="dark"] .bg-slate-50 thead { background-color: var(--app-surface2); }
+.app-shell[data-theme="dark"] thead { background-color: var(--app-surface2); }
 
 /* native controls and form fields follow the theme */
 .app-shell input, .app-shell select, .app-shell textarea { color: var(--app-text); background-color: transparent; }
@@ -83,81 +83,36 @@
 
 /* "on" state for pills/tabs/nav: inverted in both themes */
 .app-shell .pill-on { background: #0b0f17; color: #fff; border-color: #0b0f17; }
-.app-shell[data-theme="dark"] .pill-on { background: #e8edf5; color: #0a0e15; border-color: #e8edf5; }
+.app-shell[data-theme="dark"] .pill-on { background: #e6edf3; color: #0d1117; border-color: #e6edf3; }
 .app-shell[data-theme="dark"] .pill-on * { color: inherit; }
 
-/* ---------- ambient background (slow drifting glow + faint grid) ---------- */
-.app-shell::before {
-  content: ""; position: fixed; inset: 0; z-index: 0; pointer-events: none;
-  background:
-    radial-gradient(600px 400px at 85% -5%, rgba(26, 92, 255, 0.16), transparent 70%),
-    radial-gradient(520px 380px at 5% 105%, rgba(236, 72, 153, 0.08), transparent 70%);
-  animation: bw-drift 22s ease-in-out infinite alternate;
-}
-.app-shell::after {
-  content: ""; position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: 0.5;
-  background-image: linear-gradient(var(--app-border) 1px, transparent 1px), linear-gradient(90deg, var(--app-border) 1px, transparent 1px);
-  background-size: 56px 56px;
-  -webkit-mask-image: radial-gradient(ellipse at 50% 0%, #000 0%, transparent 70%);
-  mask-image: radial-gradient(ellipse at 50% 0%, #000 0%, transparent 70%);
-}
-.app-shell:not([data-theme="dark"])::before { opacity: 0.45; }
-.app-shell:not([data-theme="dark"])::after { opacity: 0.35; }
 .app-shell > header { position: sticky; z-index: 40; }
 .app-shell > main { position: relative; z-index: 1; }
 
-/* ---------- motion: entrance ---------- */
-@keyframes bw-rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
-@keyframes bw-drift { from { transform: translate3d(0, 0, 0) scale(1); } to { transform: translate3d(-3%, 2%, 0) scale(1.08); } }
-@keyframes bw-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
-@keyframes bw-shimmer { from { background-position: -200% 0; } to { background-position: 200% 0; } }
-
-.app-shell > main > * { animation: bw-rise 0.55s cubic-bezier(0.2, 0.7, 0.2, 1) backwards; }
-.app-shell > main > *:nth-child(2) { animation-delay: 60ms; }
-.app-shell > main > *:nth-child(3) { animation-delay: 120ms; }
-.app-shell > main > *:nth-child(4) { animation-delay: 180ms; }
-.app-shell > main > *:nth-child(5) { animation-delay: 240ms; }
-.app-shell > main > *:nth-child(n + 6) { animation-delay: 300ms; }
-.app-shell > main .grid > * { animation: bw-rise 0.55s cubic-bezier(0.2, 0.7, 0.2, 1) backwards; }
-.app-shell > main .grid > *:nth-child(2) { animation-delay: 80ms; }
-.app-shell > main .grid > *:nth-child(3) { animation-delay: 160ms; }
-.app-shell > main .grid > *:nth-child(4) { animation-delay: 240ms; }
-.app-shell > main .grid > *:nth-child(n + 5) { animation-delay: 300ms; }
-.app-shell tbody tr { animation: bw-rise 0.45s ease backwards; }
-.app-shell tbody tr:nth-child(2) { animation-delay: 50ms; }
-.app-shell tbody tr:nth-child(3) { animation-delay: 100ms; }
-.app-shell tbody tr:nth-child(n + 4) { animation-delay: 150ms; }
-
-/* ---------- motion: hover / press ---------- */
-.app-shell .bg-white[class*="rounded-"]:not([class*="overflow"]):not(.h-2):not(input):not(select):not(textarea):not(button) {
-  position: relative; transition: transform 0.25s cubic-bezier(0.2, 0.7, 0.2, 1), box-shadow 0.25s, border-color 0.25s;
+/* Background: a plain static grid of thin lines (the "checks" look), fading out towards the bottom. No glow, no motion. */
+.app-shell::after {
+  content: ""; position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background-image: linear-gradient(var(--app-border) 1px, transparent 1px), linear-gradient(90deg, var(--app-border) 1px, transparent 1px);
+  background-size: 56px 56px;
+  opacity: 0.55;
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, rgba(0, 0, 0, 0.35) 55%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 0%, rgba(0, 0, 0, 0.35) 55%, transparent 100%);
 }
-.app-shell .bg-white[class*="rounded-"]:not([class*="overflow"]):not(.h-2):not(input):not(select):not(textarea):not(button):hover {
-  transform: translateY(-3px);
-  border-color: rgba(91, 140, 255, 0.55);
-  box-shadow: 0 12px 30px -12px rgba(26, 92, 255, 0.35), 0 0 0 1px rgba(91, 140, 255, 0.12);
-}
-/* cursor spotlight: Spotlight.tsx sets --mx/--my on the hovered card */
-.app-shell .bg-white[class*="rounded-"]:not([class*="overflow"]):not(.h-2):not(input):not(select):not(textarea):not(button)::after {
-  content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; opacity: 0; transition: opacity 0.25s;
-  background: radial-gradient(260px circle at var(--mx, 50%) var(--my, 50%), var(--app-glow), transparent 70%);
-}
-.app-shell .bg-white[class*="rounded-"]:not([class*="overflow"]):not(.h-2):not(input):not(select):not(textarea):not(button):hover::after { opacity: 1; }
+.app-shell:not([data-theme="dark"])::after { opacity: 0.45; }
 
-.app-shell tbody tr { transition: background-color 0.15s; }
-.app-shell tbody tr:hover { background-color: rgba(127, 150, 200, 0.1); }
-.app-shell a, .app-shell button { transition: color 0.15s, background-color 0.15s, border-color 0.15s, transform 0.12s, box-shadow 0.2s; }
-.app-shell button:active:not(:disabled), .app-shell a[class*="bg-indigo"]:active { transform: scale(0.96); }
-.app-shell button[class*="bg-indigo-600"]:hover, .app-shell a[class*="bg-indigo-600"]:hover { box-shadow: 0 0 0 4px rgba(26, 92, 255, 0.22), 0 6px 18px -6px rgba(26, 92, 255, 0.6); }
-.app-shell button:not([class*="bg-indigo"]):not(.pill-on):hover:not(:disabled) { border-color: rgba(91, 140, 255, 0.6); }
+/* ---------- interaction: feedback only, short and quiet ---------- */
+.app-shell a, .app-shell button, .app-shell input, .app-shell select, .app-shell textarea { transition: color 0.12s, background-color 0.12s, border-color 0.12s; }
+.app-shell .bg-white[class*="rounded-"]:not([class*="overflow"]):not(input):not(select):not(textarea):not(button) { transition: border-color 0.12s; }
+.app-shell .bg-white[class*="rounded-"]:not([class*="overflow"]):not(input):not(select):not(textarea):not(button):hover { border-color: var(--app-border-strong); }
+.app-shell tbody tr:hover { background-color: rgba(127, 150, 200, 0.08); }
+.app-shell button:active:not(:disabled) { opacity: 0.85; }
+.app-shell button[class*="bg-indigo-600"]:hover, .app-shell a[class*="bg-indigo-600"]:hover { background-color: var(--color-indigo-700); }
+.app-shell button:not([class*="bg-indigo"]):not(.pill-on):hover:not(:disabled) { border-color: var(--app-border-strong); }
 
-/* progress bars: animated fill + moving highlight (see ProgressBar.tsx) */
-.bw-bar { position: relative; overflow: hidden; }
-.bw-bar > i { display: block; height: 100%; border-radius: inherit; transition: width 0.9s cubic-bezier(0.2, 0.7, 0.2, 1);
-  background: linear-gradient(90deg, #1a5cff, #5b8cff, #1a5cff); background-size: 200% 100%; animation: bw-shimmer 3s linear infinite; }
-
-.bw-live { display: inline-block; width: 8px; height: 8px; border-radius: 9999px; background: #22c55e; animation: bw-pulse 1.8s ease-in-out infinite; }
+/* progress bar: a plain fill that grows to its value */
+.bw-bar { overflow: hidden; }
+.bw-bar > i { display: block; height: 100%; border-radius: inherit; background: var(--color-indigo-600, #1a5cff); transition: width 0.4s ease-out; }
 
 @media (prefers-reduced-motion: reduce) {
-  .app-shell *, .app-shell *::before, .app-shell *::after { animation: none !important; transition: none !important; }
+  .app-shell *, .app-shell *::before, .app-shell *::after { transition: none !important; }
 }
