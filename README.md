@@ -6,7 +6,7 @@ Built from `Onboarding_Platform_Feature_List.xlsx`. This is a **v0 for the team 
 
 ## Quick start
 
-Requires Node 20+ (tested on 24). No Docker or database server needed (SQLite for dev).
+Requires Node 20+ (tested on 24) and a PostgreSQL database (a local container is enough: see the `DATABASE_URL` comment in `.env.example`).
 
 ```bash
 git clone <repo-url> && cd brainwhite
