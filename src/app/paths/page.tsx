@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 import { can } from "@/lib/rbac";
 import { Shell } from "@/components/Shell";
 import { ActionForm, inputCls } from "@/components/ActionForm";
-import { createPath } from "./actions";
+import { createPath, createSuggestedPath } from "./actions";
 
 export default async function Paths() {
   const me = await requirePermission("members:view");
@@ -13,6 +13,7 @@ export default async function Paths() {
     include: { sections: { include: { _count: { select: { items: true } } } }, _count: { select: { assignments: true } } },
     orderBy: { createdAt: "desc" },
   });
+  const repos = await db.repository.findMany({ where: { orgId: me.orgId, syncStatus: "HEALTHY" }, select: { id: true, name: true }, orderBy: { name: "asc" } });
   return (
     <Shell user={me}>
       <h1 className="mb-4 text-xl font-semibold">Learning paths</h1>
@@ -25,6 +26,17 @@ export default async function Paths() {
             <select name="type" className={inputCls + " !w-40"}>
               <option value="NEW_JOINEE">New joinee</option>
               <option value="NEW_PROJECT">New project</option>
+            </select>
+          </ActionForm>
+        </section>
+      )}
+      {can(me.role, "paths:manage") && repos.length > 0 && (
+        <section className="mb-8 rounded-lg border bg-white p-4">
+          <h2 className="mb-1 font-medium">Suggest a path from the code graph</h2>
+          <p className="mb-3 text-sm text-slate-500">Creates a draft: modules in dependency order (foundations first), the most imported files first, each lesson linked to real code. You review and edit it before publishing.</p>
+          <ActionForm action={createSuggestedPath} submit="Suggest a draft path" className="flex flex-wrap items-start gap-2">
+            <select name="repoId" className={inputCls + " !w-72"} required>
+              {repos.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
             </select>
           </ActionForm>
         </section>

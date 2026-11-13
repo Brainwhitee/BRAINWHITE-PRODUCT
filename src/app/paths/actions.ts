@@ -10,6 +10,8 @@ import { createAssignment } from "@/lib/domain/assign";
 import { newToken, sha256 } from "@/lib/crypto";
 import { sendEmail } from "@/lib/mailer";
 import { ALLOWED_EXT, MAX_UPLOAD_BYTES, saveFile } from "@/lib/storage";
+import { sectionNote, suggestPath } from "@/lib/domain/path-suggest";
+import { loadSuggestInput } from "@/lib/domain/path-suggest-data";
 import type { FormState } from "../actions";
 
 async function ownPath(orgId: string, id: string) {
@@ -29,6 +31,38 @@ export async function createPath(_: FormState, fd: FormData): Promise<FormState>
   });
   await db.pathSection.create({ data: { pathId: path.id, title: "Week 1", order: 0 } });
   await audit(me.orgId, me.id, "path.created", path.id);
+  redirect(`/paths/${path.id}`);
+}
+
+// Phase 7: draft a path from the knowledge graph. Always a DRAFT: a manager reviews and edits it before publishing.
+export async function createSuggestedPath(_: FormState, fd: FormData): Promise<FormState> {
+  const me = await requirePermission("paths:manage");
+  const repo = await db.repository.findFirst({ where: { id: String(fd.get("repoId")), orgId: me.orgId }, select: { id: true, name: true } });
+  if (!repo) return { error: "Choose a repository" };
+  const s = suggestPath(await loadSuggestInput(repo.id));
+  if (s.sections.length === 0) return { error: "Nothing to suggest yet: this repository has no analysed modules with lessons. Run a sync first." };
+
+  const noise = s.skipped.filter((x) => !x.reason.startsWith("less central")).map((x) => x.name);
+  const lessCentral = s.skipped.length - noise.length;
+  const skipped = s.skipped.length
+    ? ` Left out: ${[noise.length ? `${noise.slice(0, 6).join(", ")}${noise.length > 6 ? ` and ${noise.length - 6} more` : ""} (tests, fixtures, docs, scripts or no lessons)` : "", lessCentral ? `${lessCentral} less central module${lessCentral === 1 ? "" : "s"}` : ""].filter(Boolean).join("; ")}.`
+    : "";
+  const path = await db.learningPath.create({
+    data: {
+      orgId: me.orgId, createdBy: me.id, title: `Suggested: ${repo.name} onboarding`, type: "NEW_PROJECT",
+      description: `Draft generated from the knowledge graph of ${repo.name}: foundations first (modules others build on), most-imported files first, about ${s.totalMinutes} minutes. Review before publishing.${skipped}`,
+    },
+  });
+  let order = 0;
+  for (const sec of s.sections) {
+    const section = await db.pathSection.create({ data: { pathId: path.id, title: sec.title, order: order++ } });
+    let i = 0;
+    await db.pathItem.create({
+      data: { sectionId: section.id, type: "CONTENT", title: `About ${sec.title}`, body: sectionNote(sec), order: i++ },
+    });
+    for (const c of sec.chunks) await db.pathItem.create({ data: { sectionId: section.id, type: "CHUNK", refId: c.id, title: c.title, order: i++ } });
+  }
+  await audit(me.orgId, me.id, "path.suggested", `${path.id}:${repo.id}`);
   redirect(`/paths/${path.id}`);
 }
 

@@ -13,30 +13,7 @@ import { rankDocs, queryTerms, type RankDoc } from "../src/lib/domain/rank";
 
 process.env.ALLOW_LOCAL_REPOS = "true";
 
-const QUESTIONS: { q: string; expect: string[] }[] = [
-  { q: "How are secrets redacted from source files before storing?", expect: ["src/lib/analyser/secrets.ts"] },
-  { q: "How do we download a GitHub repo as a tarball?", expect: ["src/lib/analyser/source.ts"] },
-  { q: "Where is the login session created?", expect: ["src/lib/auth.ts"] },
-  { q: "How is the GitHub webhook signature verified?", expect: ["src/app/api/github/webhook/route.ts"] },
-  { q: "How are pull requests scored for quality?", expect: ["src/lib/domain/score.ts"] },
-  { q: "How are stale RUNNING syncs marked failed on boot?", expect: ["src/instrumentation-node.ts", "src/lib/analyser/pipeline.ts"] },
-  { q: "How are files clustered into modules using the import graph?", expect: ["src/lib/analyser/cluster.ts"] },
-  { q: "How are import paths resolved with tsconfig aliases?", expect: ["src/lib/analyser/resolve-ts.ts"] },
-  { q: "How does the AI provider fallback work?", expect: ["src/lib/ai.ts"] },
-  { q: "How are emails sent to users?", expect: ["src/lib/mailer.ts"] },
-  { q: "Which roles have which permissions?", expect: ["src/lib/rbac.ts"] },
-  { q: "How is a GitHub issue created for a task?", expect: ["src/lib/domain/issues.ts"] },
-  { q: "How is the weekly report generated and its numbers checked?", expect: ["src/lib/domain/reports.ts"] },
-  { q: "How are uploaded handout files saved and size limited?", expect: ["src/lib/storage.ts"] },
-  { q: "How are tokens encrypted and decrypted?", expect: ["src/lib/crypto.ts"] },
-  { q: "How are call edges between symbols built?", expect: ["src/lib/analyser/edges.ts"] },
-  { q: "How does the graph explorer lay out nodes?", expect: ["src/lib/graph.ts", "src/components/GraphExplorer.tsx"] },
-  { q: "How are files filtered using gitignore rules?", expect: ["src/lib/analyser/filter.ts"] },
-  { q: "How is an audit log entry written?", expect: ["src/lib/audit.ts"] },
-  { q: "How are code chunks split so a function is never cut?", expect: ["src/lib/analyser/chunk.ts"] },
-  { q: "Which API route returns the graph for a repo?", expect: ["src/app/api/graph/route.ts"] },
-  { q: "How is a learning assignment created and its progress tracked?", expect: ["src/lib/domain/assign.ts"] },
-];
+import { QUESTIONS } from "./retrieval-questions";
 
 const EXCLUDE = new Set(["src/lib/domain/rank.ts", "src/lib/domain/retrieve.ts"]);
 
