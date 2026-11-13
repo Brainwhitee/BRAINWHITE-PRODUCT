@@ -19,6 +19,7 @@ const EDGE: Record<string, { color: string; label: string }> = {
 const TYPES = Object.keys(EDGE);
 const PRIORITY = ["CALLS", "REFERENCES", "EXTENDS", "IMPLEMENTS", "IMPORTS"];
 const COL = 286, NODE_W = 244, SYM_W = 224, ROW = 48, NODE_H = 38;
+const MIN_FIT = 0.7; // smallest zoom that "Fit" will pick, so labels stay readable
 const trunc = (s: string, n: number) => (s.length > n ? s.slice(0, n - 1) + "…" : s);
 const topColor = (i: number) => `hsl(${(i * 137.5) % 360} 55% 52%)`;
 
@@ -187,8 +188,11 @@ export function TreeMap({ repoId, repoName = "repository", assignmentId, height 
   const fit = useCallback(() => {
     const rows = Math.max(1, layout.rows), maxDepth = Math.max(0, ...[...layout.placed.values()].map((p) => p.depth));
     const w = (maxDepth + 1) * COL, h = rows * ROW;
-    const k = Math.min(size.w / (w + 60), size.h / (h + 40), 1);
-    setView({ k, x: 24, y: size.h > h * k ? (size.h - h * k) / 2 : 24 });
+    // Never shrink below a readable size. A deep tree in a narrow panel is wider than the panel: keep the deepest
+    // column (the files) on screen and let the user pan to the folders on the left.
+    const k = Math.max(Math.min(size.w / (w + 60), size.h / (h + 40), 1), MIN_FIT);
+    const x = w * k + 48 > size.w ? Math.min(24, size.w - w * k - 24 + (COL - NODE_W) * k) : 24;
+    setView({ k, x, y: size.h > h * k ? (size.h - h * k) / 2 : 24 });
   }, [layout, size.w, size.h]);
 
   useEffect(() => {
