@@ -2,7 +2,6 @@
 
 import { motion, useScroll, useTransform } from "framer-motion";
 import { useRef } from "react";
-import Image from "next/image";
 
 export function StudioVideo() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -40,10 +39,6 @@ export function StudioVideo() {
           viewport={{ once: true }}
           className="text-center mb-6 z-20"
         >
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black/60 border border-white/10 backdrop-blur-md text-[11px] font-mono uppercase tracking-[0.2em] text-white/70 mb-2">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-            <span>BrainWhite Engine v2.0 In Action</span>
-          </div>
           <h3 className="text-xl sm:text-2xl md:text-3xl font-black uppercase tracking-tight text-white drop-shadow-md">
             Architectural Mapping & Assessment
           </h3>
@@ -68,31 +63,8 @@ export function StudioVideo() {
           {/* Sleek edge vignette and glass reflection */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/20 pointer-events-none" />
           <div className="absolute inset-0 rounded-xl sm:rounded-2xl ring-1 ring-inset ring-white/10 pointer-events-none" />
-
-          {/* Dark corner blackout patch to eliminate any watermark traces */}
-          <div className="absolute bottom-0 right-0 w-72 h-36 bg-gradient-to-tl from-black via-black/90 to-transparent pointer-events-none z-10" />
-
-          {/* Large prominent BrainWhite logo badge covering watermark */}
-          <div className="absolute bottom-3 right-3 sm:bottom-6 sm:right-6 md:bottom-8 md:right-8 z-20 flex items-center gap-3 bg-black/95 backdrop-blur-xl px-5 sm:px-6 py-2.5 sm:py-3.5 rounded-full border border-white/25 shadow-[0_10px_40px_rgba(0,0,0,0.95)] pointer-events-none">
-            <Image
-              src="/Brainwhitelogo-transparent.png"
-              alt="BrainWhite"
-              width={220}
-              height={60}
-              className="h-7 sm:h-9 md:h-11 w-auto object-contain"
-            />
-            <span className="text-xs sm:text-sm font-mono uppercase tracking-widest text-white/80 border-l border-white/20 pl-3 font-semibold">
-              Engine v2.0
-            </span>
-          </div>
         </motion.div>
-
-        {/* Sub-caption below video */}
-        <p className="mt-6 text-xs sm:text-sm font-mono text-white/50 uppercase tracking-widest text-center max-w-md">
-          Autonomous repository analysis · Live readiness verification
-        </p>
       </div>
-
     </section>
   );
 }

@@ -4,58 +4,103 @@ import bcrypt from "bcryptjs";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { headers } from "next/headers";
 import { db } from "@/lib/db";
+import type { DbClient } from "@/lib/db";
 import { createSession, destroySession, homeFor, requirePermission, requireUser } from "@/lib/auth";
 import { encrypt, newToken, sha256 } from "@/lib/crypto";
+import { appUrl } from "@/lib/config";
 import { audit } from "@/lib/audit";
 import { notify, sendEmail } from "@/lib/mailer";
+import { rateLimitDb } from "@/lib/rate-limit";
 import { syncRepository } from "@/lib/analyser/pipeline";
 import { createAssignment } from "@/lib/domain/assign";
+import {
+  issueEmailVerification,
+  signupTx,
+  loginTx,
+  requestResetTx,
+  resetTx,
+  verifyEmailWithToken,
+} from "@/lib/domain/auth";
 
-export type FormState = { error?: string; success?: boolean; home?: string } | undefined;
+export type FormState = { error?: string; success?: boolean; home?: string; emailSent?: boolean; message?: string } | undefined;
 
-const slugify = (s: string) =>
-  s.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-
-const signupSchema = z.object({
-  orgName: z.string().min(2),
-  name: z.string().min(2),
-  email: z.string().email(),
-  password: z.string().min(8, "Password must be at least 8 characters"),
-});
+// Best-effort client IP for rate limiting (proxy headers first).
+async function clientIp(): Promise<string> {
+  const h = await headers();
+  const forwarded = h.get("x-forwarded-for") ?? h.get("x-real-ip");
+  return (forwarded ?? "unknown").split(",")[0].trim();
+}
 
 export async function signupOrg(_: FormState, fd: FormData): Promise<FormState> {
-  const p = signupSchema.safeParse(Object.fromEntries(fd));
-  if (!p.success) return { error: p.error.issues[0].message };
-  const { orgName, name, email, password } = p.data;
-  const slug = slugify(orgName);
-  if (!slug) return { error: "Invalid organisation name" };
-  if (await db.organisation.findUnique({ where: { slug } })) return { error: "That organisation name is taken" };
-  if (await db.user.findUnique({ where: { email: email.toLowerCase() } })) return { error: "Email already registered" };
-
-  const org = await db.organisation.create({ data: { name: orgName, slug } });
-  const user = await db.user.create({
-    data: {
-      orgId: org.id,
-      name,
-      email: email.toLowerCase(),
-      role: "OWNER",
-      passwordHash: await bcrypt.hash(password, 12),
-    },
+  const ip = await clientIp();
+  const ipLimit = await rateLimitDb(`signup:ip:${ip}`, 10, 15 * 60 * 1000);
+  if (!ipLimit.ok)
+    return { error: "Too many sign-up attempts from this network. Try again later." };
+  const result = await signupTx({
+    orgName: String(fd.get("orgName") ?? ""),
+    name: String(fd.get("name") ?? ""),
+    email: String(fd.get("email") ?? ""),
+    password: String(fd.get("password") ?? ""),
   });
-  await audit(org.id, user.id, "org.created", org.slug);
-  await createSession(user.id);
-  return { success: true };
+  if (!result.ok) return { error: result.error };
+  await audit(result.data.orgId, result.data.userId, "org.created");
+  await createSession(result.data.userId);
+  return { success: true, emailSent: result.data.verificationSent };
 }
 
 export async function login(_: FormState, fd: FormData): Promise<FormState & { home?: string }> {
-  const email = String(fd.get("email") ?? "").toLowerCase();
-  const user = await db.user.findUnique({ where: { email } });
-  const ok = user?.passwordHash && (await bcrypt.compare(String(fd.get("password") ?? ""), user.passwordHash));
-  if (!user || !ok || user.status !== "ACTIVE") return { error: "Invalid email or password" };
-  await audit(user.orgId, user.id, "auth.login");
-  await createSession(user.id);
+  const ipLimit = await rateLimitDb(`login:ip:${await clientIp()}`, 20, 15 * 60 * 1000);
+  if (!ipLimit.ok) return { error: "Too many attempts from this network. Try again later." };
+  const result = await loginTx({
+    email: String(fd.get("email") ?? ""),
+    password: String(fd.get("password") ?? ""),
+  });
+  if (!result.ok) return { error: result.error };
+  await audit(result.data.orgId, result.data.userId, "auth.login");
+  await createSession(result.data.userId);
+  return { success: true, home: homeFor(result.data.role) };
+}
+
+// ---------- Password reset (never reveals whether an account exists) ----------
+
+export async function requestPasswordResetAction(_: FormState, fd: FormData): Promise<FormState> {
+  const ipLimit = await rateLimitDb(`reset:ip:${await clientIp()}`, 5, 15 * 60 * 1000);
+  if (!ipLimit.ok) return { error: "Too many reset requests from this network. Try again later." };
+  const email = z.string().email().safeParse(String(fd.get("email") ?? "").trim());
+  if (!email.success) return { error: "Enter a valid email address" };
+  const result = await requestResetTx(email.data);
+  if (!result.ok) return { error: result.error };
+  return { success: true };
+}
+
+export async function resetPasswordAction(_: FormState, fd: FormData): Promise<FormState> {
+  const parsed = z
+    .object({ token: z.string().min(1), password: z.string(), confirm: z.string() })
+    .safeParse(Object.fromEntries(fd));
+  if (!parsed.success) return { error: "Fill in every field" };
+  if (parsed.data.password !== parsed.data.confirm) return { error: "Passwords do not match" };
+  const result = await resetTx({ token: parsed.data.token, password: parsed.data.password });
+  if (!result.ok) return { error: result.error };
+  await createSession(result.data.userId);
+  const user = await db.user.findUniqueOrThrow({ where: { id: result.data.userId } });
   return { success: true, home: homeFor(user.role) };
+}
+
+// ---------- Email verification ----------
+
+export async function verifyEmailAction(token: string): Promise<FormState> {
+  const result = await verifyEmailWithToken(db, token);
+  if (!result.ok) return { error: result.error };
+  return { success: true };
+}
+
+export async function resendVerificationAction(): Promise<FormState> {
+  const me = await requireUser();
+  const sent = await issueEmailVerification(db, me.id);
+  if (!sent) return { error: "Verification email is not available. Add a Resend key or you are already verified." };
+  return { success: true, emailSent: true };
 }
 
 export async function logout() {
@@ -68,6 +113,7 @@ export async function logout() {
 const INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 async function issueInvite(
+  client: DbClient,
   orgId: string,
   orgName: string,
   inviterId: string,
@@ -76,7 +122,7 @@ async function issueInvite(
   role: string,
 ) {
   const token = newToken();
-  await db.invitation.create({
+  await client.invitation.create({
     data: {
       orgId,
       email,
@@ -86,12 +132,13 @@ async function issueInvite(
       expiresAt: new Date(Date.now() + INVITE_TTL_MS),
     },
   });
-  const link = `${process.env.APP_URL}/invite/${token}`;
+  const link = `${appUrl()}/invite/${token}`;
   await sendEmail(
     orgId,
     email,
     `You are invited to join ${orgName}`,
     `${inviterName} invited you to ${orgName} as ${role.toLowerCase()}.\n\nAccept: ${link}\n\nThis link expires in 7 days.`,
+    { client }
   );
 }
 
@@ -101,7 +148,7 @@ export async function inviteMember(_: FormState, fd: FormData): Promise<FormStat
   const role = z.enum(["MANAGER", "MENTOR", "CANDIDATE"]).safeParse(fd.get("role"));
   if (!email.success || !role.success) return { error: "Enter a valid email and role" };
   if (await db.user.findUnique({ where: { email: email.data } })) return { error: "That person already has an account" };
-  await issueInvite(me.orgId, me.org.name, me.id, me.name, email.data, role.data);
+  await issueInvite(db, me.orgId, me.org.name, me.id, me.name, email.data, role.data);
   await audit(me.orgId, me.id, "invite.sent", email.data);
   revalidatePath("/team");
 }
@@ -119,7 +166,7 @@ export async function resendInvite(fd: FormData) {
   const inv = await db.invitation.findFirst({ where: { id: String(fd.get("id")), orgId: me.orgId } });
   if (!inv || inv.status === "ACCEPTED") return;
   await db.invitation.update({ where: { id: inv.id }, data: { status: "REVOKED" } });
-  await issueInvite(me.orgId, me.org.name, me.id, me.name, inv.email, inv.role);
+  await issueInvite(db, me.orgId, me.org.name, me.id, me.name, inv.email, inv.role);
   await audit(me.orgId, me.id, "invite.resent", inv.email);
   revalidatePath("/team");
 }
@@ -134,18 +181,30 @@ export async function acceptInvite(token: string, _: FormState, fd: FormData): P
   if (password.length < 8) return { error: "Password must be at least 8 characters" };
   if (await db.user.findUnique({ where: { email: inv.email } })) return { error: "Account already exists. Log in instead." };
 
-  // email is locked to the invited address
+  // Email is locked to the invited address and verified automatically through private invite token
   const user = await db.user.create({
-    data: { orgId: inv.orgId, name, email: inv.email, role: inv.role, passwordHash: await bcrypt.hash(password, 12) },
+    data: {
+      orgId: inv.orgId,
+      name,
+      email: inv.email,
+      role: inv.role,
+      passwordHash: await bcrypt.hash(password, 12),
+      emailVerifiedAt: new Date(),
+    },
   });
   await db.invitation.update({ where: { id: inv.id }, data: { status: "ACCEPTED" } });
   await audit(inv.orgId, user.id, "invite.accepted", inv.email);
   await notify(inv.invitedBy, "Invite accepted", `${name} (${inv.email}) joined.`);
+
   if (inv.pathId) {
     const inviter = await db.user.findUnique({ where: { id: inv.invitedBy } });
     await createAssignment({
-      orgId: inv.orgId, userId: user.id, pathId: inv.pathId, startDate: inv.startDate ?? new Date(),
-      mentorId: null, assignerName: inviter?.name ?? "Your manager",
+      orgId: inv.orgId,
+      userId: user.id,
+      pathId: inv.pathId,
+      startDate: inv.startDate ?? new Date(),
+      mentorId: null,
+      assignerName: inviter?.name ?? "Your manager",
     });
   }
   await createSession(user.id);
@@ -178,22 +237,108 @@ export async function changeRole(fd: FormData) {
 
 // ---------- GitHub link (PLT-03 / CND-02) ----------
 
-// Dev-mode fallback used only when GITHUB_CLIENT_ID is not configured.
-export async function linkGithubDev(_: FormState, fd: FormData): Promise<FormState> {
-  if (process.env.GITHUB_CLIENT_ID) return { error: "Use the GitHub sign-in button" };
-  const me = await requireUser();
-  const username = String(fd.get("username") ?? "").trim();
-  if (!/^[a-zA-Z0-9-]{1,39}$/.test(username)) return { error: "Enter a valid GitHub username" };
-  await db.user.update({
-    where: { id: me.id },
-    data: { githubUsername: username, githubUserId: `dev:${username}`, githubTokenEnc: encrypt("dev-token") },
-  });
-  await audit(me.orgId, me.id, "github.linked", username);
-  redirect("/learn");
+// Resilient manual link handler with live GitHub profile verification
+export async function linkGithubManual(_: FormState, fd: FormData): Promise<FormState> {
+  try {
+    const me = await requireUser();
+    if (!me) return { error: "Session expired. Please log in again." };
+
+    let username = String(fd.get("username") ?? "").trim();
+    if (username.startsWith("@")) username = username.slice(1);
+    if (username.includes("github.com/")) {
+      const parts = username.split("github.com/");
+      username = parts[parts.length - 1].split("/")[0].split("?")[0];
+    }
+
+    if (!/^[a-zA-Z0-9](?:[a-zA-Z0-9]|-(?=[a-zA-Z0-9])){0,38}$/.test(username)) {
+      return { error: "Please enter a valid GitHub username (alphanumeric, max 39 characters)" };
+    }
+
+    let githubUserId = `manual:${username.toLowerCase()}`;
+    let verifiedLogin = username;
+
+    // Verify handle against GitHub public API to prevent typos
+    try {
+      const ghRes = await fetch(`https://api.github.com/users/${encodeURIComponent(username)}`, {
+        headers: {
+          Accept: "application/vnd.github+json",
+          "User-Agent": "brainwhite",
+          ...(process.env.GITHUB_TOKEN ? { Authorization: `Bearer ${process.env.GITHUB_TOKEN}` } : {}),
+        },
+        next: { revalidate: 0 },
+      });
+
+      if (ghRes.ok) {
+        const ghData = await ghRes.json();
+        if (ghData.id) {
+          githubUserId = String(ghData.id);
+          verifiedLogin = ghData.login || username;
+        }
+      } else if (ghRes.status === 404) {
+        return { error: `GitHub user "@${username}" not found. Please double-check your username.` };
+      }
+    } catch (err) {
+      console.warn("[github] Public API check warning:", err);
+    }
+
+    await db.user.update({
+      where: { id: me.id },
+      data: {
+        githubUsername: verifiedLogin,
+        githubUserId,
+        githubTokenEnc: encrypt("manual-link"),
+      },
+    });
+
+    const fallbackEmail =
+      me.email && me.email.includes("@")
+        ? me.email.toLowerCase()
+        : `${verifiedLogin.toLowerCase()}@users.noreply.github.com`;
+
+    if (!githubUserId.startsWith("manual:")) {
+      await db.oAuthAccount.upsert({
+        where: {
+          provider_providerUserId: {
+            provider: "GITHUB",
+            providerUserId: githubUserId,
+          },
+        },
+        update: {
+          userId: me.id,
+          email: fallbackEmail,
+        },
+        create: {
+          provider: "GITHUB",
+          providerUserId: githubUserId,
+          userId: me.id,
+          email: fallbackEmail,
+        },
+      });
+    }
+
+    try {
+      await audit(me.orgId, me.id, "github.linked_manual", verifiedLogin);
+    } catch (e) {
+      console.warn("[linkGithubManual] audit warning:", e);
+    }
+
+    revalidatePath("/connect-github");
+    revalidatePath("/learn");
+    redirect("/learn");
+  } catch (err: unknown) {
+    if ((err as any)?.digest?.startsWith("NEXT_REDIRECT")) {
+      throw err;
+    }
+    console.error("[linkGithubManual] unhandled error:", err);
+    return {
+      error: err instanceof Error ? err.message : "Failed to link GitHub username. Please try again.",
+    };
+  }
 }
 
-// ---------- Codebase Analyser (CBA-01 / 03) ----------
+export const linkGithubDev = linkGithubManual;
 
+// ---------- Codebase Analyser (CBA-01 / 03) ----------
 
 export async function addRepository(_: FormState, fd: FormData): Promise<FormState> {
   const me = await requirePermission("codebase:manage");
@@ -224,8 +369,36 @@ export async function addRepository(_: FormState, fd: FormData): Promise<FormSta
 
 export async function syncNow(fd: FormData) {
   const me = await requirePermission("codebase:manage");
-  const repo = await db.repository.findFirst({ where: { id: String(fd.get("id")), orgId: me.orgId } });
-  if (!repo || repo.syncStatus === "RUNNING") return;
+  const id = String(fd.get("id"));
+  const repo = await db.repository.findFirst({
+    where: { id, orgId: me.orgId },
+    include: { syncRuns: { orderBy: { startedAt: "desc" }, take: 1 } },
+  });
+  if (!repo) return;
+
+  const lastRun = repo.syncRuns[0];
+  const isStalled = Boolean(
+    lastRun &&
+      repo.syncStatus === "RUNNING" &&
+      Date.now() - new Date(lastRun.startedAt).getTime() > 2 * 60 * 1000
+  );
+
+  // If already running and NOT stalled, prevent double-syncing
+  if (repo.syncStatus === "RUNNING" && !isStalled) return;
+
+  // If stalled, mark previous run as superseded
+  if (isStalled && lastRun) {
+    await db.syncRun.update({
+      where: { id: lastRun.id },
+      data: {
+        status: "FAILED",
+        finishedAt: new Date(),
+        error: "Sync timed out / stalled mid-execution and was superseded by manual restart.",
+        progress: "Superseded",
+      },
+    });
+  }
+
   await audit(me.orgId, me.id, "repo.sync", repo.location);
   void syncRepository(repo.id);
   revalidatePath(`/projects/repos/${repo.id}`);
@@ -236,4 +409,44 @@ export async function disconnectRepo(fd: FormData) {
   await db.repository.deleteMany({ where: { id: String(fd.get("id")), orgId: me.orgId } });
   await audit(me.orgId, me.id, "repo.disconnected", String(fd.get("id")));
   redirect("/projects");
+}
+
+export async function disconnectGithubApp(fd: FormData) {
+  const me = await requirePermission("codebase:manage");
+  await db.organisation.update({
+    where: { id: me.orgId },
+    data: {
+      githubInstallationId: null,
+      githubOrgName: null,
+    },
+  });
+  await audit(me.orgId, me.id, "org.github_app_disconnected");
+  revalidatePath("/projects");
+}
+
+export async function saveCustomGithubPat(_: FormState, fd: FormData): Promise<FormState> {
+  const me = await requirePermission("codebase:manage");
+  const rawToken = String(fd.get("token") ?? "").trim();
+
+  if (!rawToken) {
+    await db.organisation.update({
+      where: { id: me.orgId },
+      data: { githubTokenEnc: null },
+    });
+    await audit(me.orgId, me.id, "org.github_pat_cleared");
+    revalidatePath("/projects");
+    return { success: true, message: "Custom token removed" };
+  }
+
+  if (rawToken.length < 20) {
+    return { error: "Please enter a valid GitHub Personal Access Token (classic or fine-grained)" };
+  }
+
+  await db.organisation.update({
+    where: { id: me.orgId },
+    data: { githubTokenEnc: encrypt(rawToken) },
+  });
+  await audit(me.orgId, me.id, "org.github_pat_saved");
+  revalidatePath("/projects");
+  return { success: true, message: "GitHub Personal Access Token saved securely" };
 }

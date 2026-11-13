@@ -1,4 +1,4 @@
-// Multi-provider AI Gateway supporting Google Gemini, Groq, xAI (Grok), and Anthropic.
+// Multi-provider AI Gateway supporting NVIDIA NIM, Google Gemini, Groq, xAI (Grok), and Anthropic.
 // Automatically splits workloads across providers to maximize free quotas and provides automatic failover.
 
 export type AiTask = "summary" | "chat" | "report" | "public_chat";
@@ -13,13 +13,16 @@ export type AiRequestOptions = {
   messages: ChatMessage[];
   maxTokens?: number;
   temperature?: number;
+  timeoutMs?: number;
 };
 
-export type ProviderName = "gemini" | "groq" | "grok" | "anthropic";
+export type ProviderName = "nvidia" | "groq" | "gemini" | "grok" | "anthropic";
 
 export function isAiConfigured(): boolean {
   return Boolean(
-    process.env.GEMINI_API_KEY ||
+    process.env.NVIDIA_API_KEY ||
+      process.env.NV_API_KEY ||
+      process.env.GEMINI_API_KEY ||
       process.env.GROQ_API_KEY ||
       process.env.GROK_API_KEY ||
       process.env.XAI_API_KEY ||
@@ -30,16 +33,17 @@ export function isAiConfigured(): boolean {
 // Determine configured providers
 export function getConfiguredProviders(): ProviderName[] {
   const providers: ProviderName[] = [];
-  if (process.env.GEMINI_API_KEY) providers.push("gemini");
+  if (process.env.NVIDIA_API_KEY || process.env.NV_API_KEY) providers.push("nvidia");
   if (process.env.GROQ_API_KEY) providers.push("groq");
+  if (process.env.GEMINI_API_KEY) providers.push("gemini");
   if (process.env.GROK_API_KEY || process.env.XAI_API_KEY) providers.push("grok");
   if (process.env.ANTHROPIC_API_KEY) providers.push("anthropic");
   return providers;
 }
 
 // Workload distribution:
-// - Codebase summaries & reports: Gemini primary (1,500 daily requests, huge context, highly grounded)
-// - Interactive candidate chat & public chat widget: Groq primary (ultra-low latency, blazing fast responses)
+// - Codebase summaries & reports: NVIDIA NIM / Groq / Gemini (optimized specialized models for code and deep reasoning)
+// - Interactive candidate chat & public chat widget: NVIDIA NIM / Groq (ultra-low latency on fast models)
 function getPriorityOrderForTask(task: AiTask): ProviderName[] {
   const configured = getConfiguredProviders();
   if (configured.length === 0) return [];
@@ -47,14 +51,17 @@ function getPriorityOrderForTask(task: AiTask): ProviderName[] {
   let preferred: ProviderName[];
   switch (task) {
     case "summary":
+      // Prefer NVIDIA specialized code models (Codestral / Llama 3.3 70B), then Groq, Gemini
+      preferred = ["nvidia", "groq", "gemini", "grok", "anthropic"];
+      break;
     case "report":
-      // Prefer Gemini for deep analysis, summaries and strictly grounded reports
-      preferred = ["gemini", "groq", "grok", "anthropic"];
+      // Prefer NVIDIA deep reasoning (DeepSeek R1 / Llama 3.3 70B), then Gemini, Groq
+      preferred = ["nvidia", "gemini", "groq", "grok", "anthropic"];
       break;
     case "chat":
     case "public_chat":
-      // Prefer Groq for ultra-fast conversational latency
-      preferred = ["groq", "gemini", "grok", "anthropic"];
+      // Prefer Groq / NVIDIA 8B for ultra-fast conversational latency (<300ms)
+      preferred = ["groq", "nvidia", "gemini", "grok", "anthropic"];
       break;
   }
 
@@ -68,11 +75,13 @@ async function callOpenAiCompatible(
   model: string,
   messages: ChatMessage[],
   maxTokens: number,
-  temperature: number
+  temperature: number,
+  timeoutMs: number = 25000
 ): Promise<string | null> {
   try {
     const res = await fetch(endpoint, {
       method: "POST",
+      signal: AbortSignal.timeout(timeoutMs),
       headers: {
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
@@ -104,7 +113,8 @@ async function callAnthropic(
   apiKey: string,
   model: string,
   messages: ChatMessage[],
-  maxTokens: number
+  maxTokens: number,
+  timeoutMs: number = 25000
 ): Promise<string | null> {
   try {
     const system = messages.find((m) => m.role === "system")?.content;
@@ -114,6 +124,7 @@ async function callAnthropic(
 
     const res = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
+      signal: AbortSignal.timeout(timeoutMs),
       headers: {
         "x-api-key": apiKey,
         "anthropic-version": "2023-06-01",
@@ -145,38 +156,84 @@ export async function callAi(options: AiRequestOptions): Promise<{ text: string 
 
   const maxTokens = options.maxTokens ?? 700;
   const temperature = options.temperature ?? 0.2;
+  const timeoutMs = options.timeoutMs ?? (options.task === "report" || options.task === "summary" ? 30000 : 15000);
 
   for (const provider of priority) {
     let result: string | null = null;
 
-    if (provider === "gemini" && process.env.GEMINI_API_KEY) {
-      const model =
-        options.task === "report"
-          ? process.env.GEMINI_REPORT_MODEL || "gemini-1.5-pro"
-          : process.env.GEMINI_MODEL || "gemini-1.5-flash";
+    if (provider === "nvidia") {
+      const apiKey = process.env.NVIDIA_API_KEY || process.env.NV_API_KEY;
+      if (apiKey) {
+        let model: string;
+        if (options.task === "summary") {
+          model = process.env.NVIDIA_CODE_MODEL || process.env.NVIDIA_MODEL || "meta/llama-3.3-70b-instruct";
+        } else if (options.task === "report") {
+          model = process.env.NVIDIA_REASONING_MODEL || process.env.NVIDIA_MODEL || "meta/llama-3.3-70b-instruct";
+        } else {
+          model = process.env.NVIDIA_FAST_MODEL || "meta/llama-3.1-8b-instruct";
+        }
 
-      result = await callOpenAiCompatible(
-        "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
-        process.env.GEMINI_API_KEY,
-        model,
-        options.messages,
-        maxTokens,
-        temperature
-      );
+        const nvidiaModels = [
+          model,
+          "meta/llama-3.3-70b-instruct",
+          "mistralai/codestral-22b-v0.1",
+          "meta/llama-3.1-8b-instruct",
+          "deepseek-ai/deepseek-r1",
+        ].filter((v, i, a) => a.indexOf(v) === i);
+
+        for (const m of nvidiaModels) {
+          result = await callOpenAiCompatible(
+            "https://integrate.api.nvidia.com/v1/chat/completions",
+            apiKey,
+            m,
+            options.messages,
+            maxTokens,
+            temperature,
+            timeoutMs
+          );
+          if (result) break;
+        }
+      }
     } else if (provider === "groq" && process.env.GROQ_API_KEY) {
       const model =
         options.task === "public_chat"
           ? process.env.GROQ_FAST_MODEL || "llama-3.1-8b-instant"
           : process.env.GROQ_MODEL || "llama-3.3-70b-versatile";
 
-      result = await callOpenAiCompatible(
-        "https://api.groq.com/openai/v1/chat/completions",
-        process.env.GROQ_API_KEY,
-        model,
-        options.messages,
-        maxTokens,
-        temperature
+      const groqModels = [...new Set([model, "qwen/qwen3.8-27b", "llama-3.3-70b-versatile", "llama-3.1-8b-instant"])].filter(Boolean);
+      for (const m of groqModels) {
+        result = await callOpenAiCompatible(
+          "https://api.groq.com/openai/v1/chat/completions",
+          process.env.GROQ_API_KEY,
+          m,
+          options.messages,
+          maxTokens,
+          temperature,
+          timeoutMs
+        );
+        if (result) break;
+      }
+    } else if (provider === "gemini" && process.env.GEMINI_API_KEY) {
+      const model =
+        options.task === "report"
+          ? process.env.GEMINI_REPORT_MODEL || "gemini-1.5-pro"
+          : process.env.GEMINI_MODEL || "gemini-1.5-flash";
+
+      const geminiModels = [model, "gemini-3.8-flash", "gemini-2.5-flash", "gemini-1.5-flash", "gemini-2.0-flash"].filter(
+        (v, i, a) => a.indexOf(v) === i
       );
+      for (const m of geminiModels) {
+        result = await callOpenAiCompatible(
+          "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+          process.env.GEMINI_API_KEY,
+          m,
+          options.messages,
+          maxTokens,
+          temperature,
+          timeoutMs
+        );
+        if (result) break;
+      }
     } else if (provider === "grok") {
       const key = process.env.GROK_API_KEY || process.env.XAI_API_KEY;
       if (key) {
@@ -187,7 +244,8 @@ export async function callAi(options: AiRequestOptions): Promise<{ text: string 
           model,
           options.messages,
           maxTokens,
-          temperature
+          temperature,
+          timeoutMs
         );
       }
     } else if (provider === "anthropic" && process.env.ANTHROPIC_API_KEY) {
@@ -196,7 +254,7 @@ export async function callAi(options: AiRequestOptions): Promise<{ text: string 
           ? process.env.REPORT_MODEL || "claude-sonnet-5-5"
           : process.env.SUMMARY_MODEL || "claude-haiku-5-5";
 
-      result = await callAnthropic(process.env.ANTHROPIC_API_KEY, model, options.messages, maxTokens);
+      result = await callAnthropic(process.env.ANTHROPIC_API_KEY, model, options.messages, maxTokens, timeoutMs);
     }
 
     if (result) {

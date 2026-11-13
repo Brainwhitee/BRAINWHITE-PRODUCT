@@ -1,5 +1,3 @@
-import { parentLabels } from "@/lib/analyser/module-tree";
-import { moduleNameFor } from "@/lib/analyser/modules";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requirePermission } from "@/lib/auth";
@@ -25,9 +23,14 @@ export default async function RepoPage({ params }: { params: Promise<{ id: strin
   const run = repo.syncRuns[0];
   const edges = await db.graphEdge.findMany({ where: { repoId: id, type: "DEPENDS_ON" } });
   const modName = new Map(repo.modules.map((m) => [m.id, m.name]));
-  const parents = parentLabels(repo.modules.map((m) => m.path), moduleNameFor); // hierarchy derived from paths, nothing stored
-  const langs = Object.entries(JSON.parse(repo.languages) as Record<string, number>).sort((a, b) => b[1] - a[1]);
-  const running = repo.syncStatus === "RUNNING";
+  let langs: [string, number][] = [];
+  try {
+    if (repo.languages) {
+      langs = Object.entries(JSON.parse(repo.languages) as Record<string, number>).sort((a, b) => b[1] - a[1]);
+    }
+  } catch {}
+  const isStalled = Boolean(run && repo.syncStatus === "RUNNING" && (Date.now() - new Date(run.startedAt).getTime() > 2 * 60 * 1000));
+  const running = repo.syncStatus === "RUNNING" && !isStalled;
   const manage = can(me.role, "codebase:manage");
 
   return (
@@ -46,7 +49,7 @@ export default async function RepoPage({ params }: { params: Promise<{ id: strin
           <div className="flex gap-3 text-sm">
             <form action={syncNow}>
               <input type="hidden" name="id" value={repo.id} />
-              <button disabled={running} className="rounded-md bg-indigo-600 px-3 py-1.5 text-white disabled:opacity-50">Sync now</button>
+              <button disabled={running} className="rounded-md bg-indigo-600 px-3 py-1.5 text-white disabled:opacity-50 cursor-pointer">{isStalled ? "Restart Sync" : "Sync now"}</button>
             </form>
             <form action={disconnectRepo}>
               <input type="hidden" name="id" value={repo.id} />
@@ -56,10 +59,17 @@ export default async function RepoPage({ params }: { params: Promise<{ id: strin
         )}
       </div>
 
+      <p className="mb-4 text-sm"><Link href={`/projects/repos/${repo.id}/graph`} className="text-indigo-700 underline">Open architecture graph →</Link></p>
+
       {run && (
         <section className="mb-6 rounded-lg border bg-white p-4 text-sm">
-          <div className="mb-1 font-medium">
-            Status: {repo.syncStatus}{running && ` — ${run.progress}…`}
+          <div className="mb-1 font-medium flex items-center gap-2 flex-wrap">
+            <span>Status: {repo.syncStatus}{running && ` — ${run.progress}…`}</span>
+            {isStalled && (
+              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-amber-100 text-amber-800">
+                Stalled: click Restart Sync above to resume
+              </span>
+            )}
           </div>
           {run.error && <p className="text-red-600">{run.error}</p>}
           <p className="text-slate-600">
@@ -69,8 +79,6 @@ export default async function RepoPage({ params }: { params: Promise<{ id: strin
           {langs.length > 0 && <p className="text-slate-600">Languages: {langs.map(([l, n]) => `${l} ${n}`).join(" · ")}</p>}
         </section>
       )}
-
-      <p className="mb-4 text-sm"><Link href={`/projects/repos/${repo.id}/graph`} className="text-indigo-700 underline">Open architecture graph →</Link></p>
 
       {repo.summary && <p className="mb-6 text-sm text-slate-700">{repo.summary}</p>}
 
@@ -90,7 +98,7 @@ export default async function RepoPage({ params }: { params: Promise<{ id: strin
         {repo.modules.map((m) => (
           <details key={m.id} className="rounded-lg border bg-white p-3" open={repo.modules.length <= 3}>
             <summary className="cursor-pointer font-medium">
-              {parents.get(m.path) ? `${parents.get(m.path)} › ` : ""}{m.name} <span className="text-xs font-normal text-slate-500">{m.path} · {m._count.files} files · {m.chunks.length} chunks</span>
+              {m.name} <span className="text-xs font-normal text-slate-500">{m.path} · {m._count.files} files · {m.chunks.length} chunks</span>
             </summary>
             {m.summary && <p className="mt-2 text-sm text-slate-600">{m.summary}</p>}
             <ul className="mt-2 divide-y text-sm">

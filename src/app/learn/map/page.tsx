@@ -14,7 +14,7 @@ export default async function LearnMap({ searchParams }: { searchParams: Promise
 
   const assignments = await db.assignment.findMany({ where: { userId: me.id, orgId: me.orgId }, include: { path: true }, orderBy: { startDate: "desc" } });
   const choices = (await Promise.all(assignments.map(async (a) => (await reposForAssignment(a.id)).map((r) => ({ assignmentId: a.id, repoId: r.id, repoName: r.name, pathTitle: a.path.title }))))).flat();
-  const current = choices.find((c) => c.assignmentId === sp.a && c.repoId === sp.r) ?? choices[0];
+  const current = choices.find((c) => c.assignmentId === sp.a && (!sp.r || c.repoId === sp.r)) ?? choices[0];
   const tab = (on: boolean) => `rounded-full px-3 py-1 text-sm ${on ? "pill-on" : "border bg-white text-slate-600 hover:bg-slate-100"}`;
 
   return (

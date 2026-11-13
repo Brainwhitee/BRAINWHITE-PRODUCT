@@ -32,14 +32,6 @@ export function ScrollingText() {
       {/* Background radial highlight */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-blue-500/5 rounded-full blur-[120px] pointer-events-none" />
 
-      {/* Section Indicator Badge (21st.dev style) */}
-      <div className="flex items-center justify-center gap-2 mb-2 z-10">
-        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-        <span className="text-[11px] sm:text-xs font-mono uppercase tracking-[0.25em] text-white/50">
-          Engineering Architecture · Day One Readiness
-        </span>
-      </div>
-
       {/* Row 1 - Moves Left with edge mask */}
       <div className="w-full overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_10%,black_90%,transparent)]">
         <motion.div 
@@ -66,9 +58,9 @@ export function ScrollingText() {
           {[0, 1].map((i) => (
             <h2 
               key={i} 
-              className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-black uppercase tracking-tighter leading-[0.9] pr-8 sm:pr-12 text-white/20 hover:text-white/80 transition-colors duration-700"
+              className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-black uppercase tracking-tighter leading-[0.9] pr-8 sm:pr-12 text-transparent bg-clip-text bg-gradient-to-r from-white/40 via-white/70 to-white"
             >
-              ENGINEERING ONBOARDING — DAY ONE IMPACT —{" "}
+              DAY ONE CONTRIBUTION — ZERO INTERRUPTIONS —{" "}
             </h2>
           ))}
         </motion.div>
