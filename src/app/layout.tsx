@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import { MarketingHeader } from "@/components/marketing-header";
 import { SupportChatWidget } from "@/components/chat/SupportChatWidget";
 import { SmoothScroll } from "@/components/ui/smooth-scroll";
@@ -35,6 +36,7 @@ export default function RootLayout({
         <MarketingHeader />
         {children}
         <SupportChatWidget />
+        <Analytics />
       </body>
     </html>
   );
