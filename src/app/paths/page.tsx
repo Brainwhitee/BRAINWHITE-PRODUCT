@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 import { can } from "@/lib/rbac";
 import { Shell } from "@/components/Shell";
 import { ActionForm, inputCls } from "@/components/ActionForm";
-import { createPath } from "./actions";
+import { createPath, createSuggestedPath } from "./actions";
 import Card, { CardData } from "@/components/ui/course-design-cards";
 import { Plus, Compass, BookOpen, Layers } from "lucide-react";
 
@@ -27,6 +27,7 @@ export default async function Paths() {
     },
     orderBy: { createdAt: "desc" },
   });
+  const repos = await db.repository.findMany({ where: { orgId: me.orgId, syncStatus: "HEALTHY" }, select: { id: true, name: true }, orderBy: { name: "asc" } });
 
   return (
     <Shell user={me}>
@@ -60,6 +61,20 @@ export default async function Paths() {
             <select name="type" className={inputCls + " !w-44"}>
               <option value="NEW_JOINEE">New Joinee</option>
               <option value="NEW_PROJECT">New Project Track</option>
+            </select>
+          </ActionForm>
+        </section>
+      )}
+
+      {can(me.role, "paths:manage") && repos.length > 0 && (
+        <section className="mb-8 rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs">
+          <h2 className="font-bold text-slate-900 text-sm">Suggest a track from the code graph</h2>
+          <p className="text-xs text-slate-500 mt-0.5 mb-3">
+            Creates a draft: modules in dependency order (foundations first), the most imported files first, each lesson linked to real code. Review and edit it before publishing.
+          </p>
+          <ActionForm action={createSuggestedPath} submit="Suggest a draft track" className="flex flex-wrap items-start gap-2.5">
+            <select name="repoId" className={inputCls + " !w-72"} required>
+              {repos.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
             </select>
           </ActionForm>
         </section>

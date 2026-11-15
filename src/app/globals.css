@@ -438,3 +438,15 @@ html {
   filter: brightness(1.15);
   transform: scale(1.02);
 }
+
+/* ------------------------------------------------------------- */
+/* Code explorer (TreeMap, drill-down): neutral colours, light.  */
+/* ------------------------------------------------------------- */
+:root {
+  --map-bg: #ffffff;
+  --map-text: #0f172a;
+  --app-border: #e3e6ec;
+  --app-border-strong: #c8cfdb;
+  --app-muted: #5b6678;
+}
+.pill-on { background: #0b0f17; color: #fff; border-color: #0b0f17; }

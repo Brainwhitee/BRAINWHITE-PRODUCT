@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requirePermission } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -57,6 +58,8 @@ export default async function RepoPage({ params }: { params: Promise<{ id: strin
           </div>
         )}
       </div>
+
+      <p className="mb-4 text-sm"><Link href={`/projects/repos/${repo.id}/graph`} className="text-indigo-700 underline">Open architecture graph →</Link></p>
 
       {run && (
         <section className="mb-6 rounded-lg border bg-white p-4 text-sm">

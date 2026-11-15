@@ -118,6 +118,12 @@ export default async function Learn() {
                     >
                       Resources
                     </Link>
+                    <Link
+                      className="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
+                      href={`/learn/map?a=${a.id}`}
+                    >
+                      Code map
+                    </Link>
                   </div>
                 </div>
 

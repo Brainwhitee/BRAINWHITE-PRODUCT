@@ -6,7 +6,7 @@ Built from `Onboarding_Platform_Feature_List.xlsx`. This is a **v0 for the team 
 
 ## Quick start
 
-Requires Node 20+ (tested on 24). No Docker or database server needed (SQLite for dev).
+Requires Node 20+ (tested on 24) and a PostgreSQL database (a local container is enough: see the `DATABASE_URL` comment in `.env.example`).
 
 ```bash
 git clone <repo-url> && cd brainwhite
@@ -38,6 +38,17 @@ Emails are not sent in dev: they are printed in the server console and stored in
 | 3-pane workspace, retrieval-based chat with citations, notes, progress + active-time tracking | Done |
 | Tasks, GitHub issue creation/link, webhook receiver, auto status, PR quality scoring, conflicts, blockers, manual review | Done |
 | Deadline reminders, weekly + final reports, grounded narratives, dashboards, risk flags, mentor rubric | Done |
+
+## Inspecting the core (no database needed)
+
+```bash
+npm run inspect -- .                   # local folder
+npm run inspect -- owner/name          # GitHub repo (GITHUB_TOKEN in .env for private repos)
+npm run inspect -- . --json out.json --mermaid graph.md
+npm run test:core                      # import-resolution and parsing tests
+```
+
+Prints file/symbol/chunk counts, import resolution (internal / unresolved / external), old-vs-new edge comparison, most imported files, modules and a Mermaid module graph.
 
 ## Configuration (all optional)
 

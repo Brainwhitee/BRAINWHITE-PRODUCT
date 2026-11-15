@@ -1,0 +1,221 @@
+/* Signed-in app theme. Everything is scoped to .app-shell, so the landing page and auth pages are untouched.
+   Dark is the default (cookie bw-theme=light switches to light). Pages use Tailwind slate/indigo utilities; the dark
+   theme re-colours those utilities here instead of editing every page.
+   Deliberately plain: flat surfaces, thin borders, one accent colour, short transitions. No decorative glow, gradients or motion. */
+
+.app-shell {
+  --app-bg: #eef1fb;
+  --app-surface: #f9faff;
+  --app-surface2: #e6ebf8;
+  --app-border: #d6dcf0;
+  --app-border-strong: #b5bfe0;
+  --app-text: #1a2138;
+  --app-muted: #5a6585;
+  --map-text: #1a2138;
+  --map-bg: #f9faff;
+  position: relative;
+}
+
+/* ---------- light: soft pastel surfaces instead of flat white ---------- */
+.app-shell[data-theme="light"] { background: var(--app-bg); color: var(--app-text); }
+.app-shell[data-theme="light"] .bg-white,
+.app-shell[data-theme="light"] .hover\:bg-white:hover { background-color: var(--app-surface); }
+.app-shell[data-theme="light"] [class*="bg-white/9"],
+.app-shell[data-theme="light"] [class*="bg-white/8"] { background-color: rgba(249, 250, 255, 0.92); }
+.app-shell[data-theme="light"] .bg-slate-50,
+.app-shell[data-theme="light"] [class~="bg-slate-50/50"],
+.app-shell[data-theme="light"] [class~="bg-slate-50/60"],
+.app-shell[data-theme="light"] [class~="bg-slate-50/70"],
+.app-shell[data-theme="light"] [class~="bg-slate-50/80"] { background-color: var(--app-surface2); }
+.app-shell[data-theme="light"] .bg-slate-100,
+.app-shell[data-theme="light"] [class~="bg-slate-100/80"],
+.app-shell[data-theme="light"] .hover\:bg-slate-100:hover { background-color: #dde3f6; }
+.app-shell[data-theme="light"] .bg-slate-200 { background-color: #cdd5ee; }
+.app-shell[data-theme="light"] .border-slate-100,
+.app-shell[data-theme="light"] .border-slate-200,
+.app-shell[data-theme="light"] .border-slate-300,
+.app-shell[data-theme="light"] [class*="border-slate-200/"],
+.app-shell[data-theme="light"] [class*="border-slate-100/"] { border-color: var(--app-border); }
+.app-shell[data-theme="light"] .divide-slate-100 > :not(:last-child),
+.app-shell[data-theme="light"] .divide-slate-200 > :not(:last-child) { border-color: var(--app-border); }
+.app-shell[data-theme="light"] .text-slate-500 { color: var(--app-muted); }
+.app-shell[data-theme="light"] .text-slate-950,
+.app-shell[data-theme="light"] .text-slate-900,
+.app-shell[data-theme="light"] .text-black { color: var(--app-text); }
+.app-shell[data-theme="light"] thead { background-color: var(--app-surface2); }
+.app-shell[data-theme="light"] input, .app-shell[data-theme="light"] select, .app-shell[data-theme="light"] textarea { background-color: #f4f6fe; border-color: var(--app-border-strong); }
+.app-shell[data-theme="light"] .bg-amber-50,
+.app-shell[data-theme="light"] [class*="bg-amber-50/"] { background-color: #fdf3dc; }
+.app-shell[data-theme="light"] .bg-emerald-50,
+.app-shell[data-theme="light"] [class*="bg-emerald-50/"] { background-color: #e1f4ea; }
+.app-shell[data-theme="light"] .bg-red-50,
+.app-shell[data-theme="light"] [class*="bg-red-50/"] { background-color: #fbe6e8; }
+.app-shell[data-theme="light"] .bg-indigo-50 { background-color: #e3e8ff; }
+
+.app-shell[data-theme="dark"] {
+  --app-bg: #0d1117;
+  --app-surface: #151b23;
+  --app-surface2: #1c242f;
+  --app-border: #262f3b;
+  --app-border-strong: #3a4656;
+  --app-text: #e6edf3;
+  --app-muted: #9aa7b8;
+  --map-text: #e6edf3;
+  --map-bg: #151b23;
+  color-scheme: dark;
+  background: var(--app-bg);
+  color: var(--app-text);
+}
+
+/* ---------- dark: surfaces, text, borders ---------- */
+.app-shell[data-theme="dark"] .bg-white { background-color: var(--app-surface); }
+.app-shell[data-theme="dark"] .bg-white\/90 { background-color: rgba(13, 17, 23, 0.9); }
+.app-shell[data-theme="dark"] .bg-slate-50 { background-color: var(--app-bg); }
+.app-shell[data-theme="dark"] .bg-slate-100,
+.app-shell[data-theme="dark"] .hover\:bg-slate-100:hover { background-color: var(--app-surface2); }
+.app-shell[data-theme="dark"] .bg-slate-200 { background-color: #263043; }
+.app-shell[data-theme="dark"] .text-slate-900 { color: var(--app-text); }
+.app-shell[data-theme="dark"] .text-slate-800 { color: #e2e8f0; }
+.app-shell[data-theme="dark"] .text-slate-700 { color: #cbd5e1; }
+.app-shell[data-theme="dark"] .text-slate-600 { color: #b5c0cf; }
+.app-shell[data-theme="dark"] .text-slate-500 { color: var(--app-muted); }
+.app-shell[data-theme="dark"] .text-slate-400 { color: #7d8aa0; }
+.app-shell[data-theme="dark"] .hover\:text-slate-900:hover { color: #fff; }
+.app-shell[data-theme="dark"] .border-slate-300 { border-color: #334155; }
+.app-shell[data-theme="dark"] .text-indigo-700 { color: #8fb0ff; }
+.app-shell[data-theme="dark"] .hover\:bg-indigo-50:hover,
+.app-shell[data-theme="dark"] .bg-indigo-50 { background-color: #15204a; }
+.app-shell[data-theme="dark"] .bg-indigo-100 { background-color: #1a2a5e; }
+.app-shell[data-theme="dark"] .bg-red-50,
+.app-shell[data-theme="dark"] .bg-red-100 { background-color: #2a1214; }
+.app-shell[data-theme="dark"] .text-red-700,
+.app-shell[data-theme="dark"] .text-red-800,
+.app-shell[data-theme="dark"] .text-red-600 { color: #fb8a8a; }
+.app-shell[data-theme="dark"] .border-red-200 { border-color: #5b1f24; }
+.app-shell[data-theme="dark"] .bg-amber-50,
+.app-shell[data-theme="dark"] .bg-amber-100 { background-color: #2a2008; }
+.app-shell[data-theme="dark"] .text-amber-700,
+.app-shell[data-theme="dark"] .text-amber-800 { color: #f6c453; }
+.app-shell[data-theme="dark"] .border-amber-200,
+.app-shell[data-theme="dark"] .border-amber-300 { border-color: #5c4510; }
+.app-shell[data-theme="dark"] .bg-green-50,
+.app-shell[data-theme="dark"] .bg-green-100,
+.app-shell[data-theme="dark"] .bg-emerald-50 { background-color: #0f2a1d; }
+.app-shell[data-theme="dark"] .text-green-700,
+.app-shell[data-theme="dark"] .text-green-800,
+.app-shell[data-theme="dark"] .text-emerald-700 { color: #5fe0a0; }
+.app-shell[data-theme="dark"] .border-green-200 { border-color: #1d5a3b; }
+.app-shell[data-theme="dark"] .bg-blue-100 { background-color: #12264d; }
+.app-shell[data-theme="dark"] .text-blue-800 { color: #8fb8ff; }
+.app-shell[data-theme="dark"] .bg-yellow-100 { background-color: #2b2508; }
+.app-shell[data-theme="dark"] thead { background-color: var(--app-surface2); }
+
+/* classes used by the sidebar Shell and the newer pages */
+.app-shell[data-theme="dark"] .text-black,
+.app-shell[data-theme="dark"] .text-slate-950,
+.app-shell[data-theme="dark"] .hover\:text-black:hover,
+.app-shell[data-theme="dark"] .group-hover\:text-black { color: var(--app-text); }
+.app-shell[data-theme="dark"] .bg-white\/95,
+.app-shell[data-theme="dark"] .bg-white\/80,
+.app-shell[data-theme="dark"] .bg-white\/70 { background-color: rgba(13, 17, 23, 0.92); }
+.app-shell[data-theme="dark"] .bg-slate-50\/60,
+.app-shell[data-theme="dark"] .bg-slate-50\/70,
+.app-shell[data-theme="dark"] .bg-slate-50\/80 { background-color: var(--app-surface2); }
+.app-shell[data-theme="dark"] .bg-slate-100\/80,
+.app-shell[data-theme="dark"] .hover\:bg-slate-100\/80:hover { background-color: var(--app-surface2); }
+.app-shell[data-theme="dark"] .border-slate-100,
+.app-shell[data-theme="dark"] .border-slate-200,
+.app-shell[data-theme="dark"] .border-slate-200\/70,
+.app-shell[data-theme="dark"] .border-slate-200\/80,
+.app-shell[data-theme="dark"] .border-slate-200\/90 { border-color: var(--app-border); }
+.app-shell[data-theme="dark"] .bg-amber-50\/90 { background-color: #2a2008; }
+.app-shell[data-theme="dark"] .text-amber-900,
+.app-shell[data-theme="dark"] .text-amber-950 { color: #f6c453; }
+.app-shell[data-theme="dark"] .border-amber-200\/80 { border-color: #5c4510; }
+.app-shell[data-theme="dark"] .hover\:bg-red-50:hover { background-color: #2a1214; }
+.app-shell[data-theme="dark"] .hover\:text-red-700:hover { color: #fb8a8a; }
+/* active nav item and brand mark are "black on light": invert them in dark */
+.app-shell[data-theme="dark"] .bg-black,
+.app-shell[data-theme="dark"] .bg-slate-950 { background-color: var(--app-text); color: var(--app-bg); }
+.app-shell[data-theme="dark"] .bg-black *,
+.app-shell[data-theme="dark"] .bg-slate-950 * { color: inherit; }
+.app-shell[data-theme="dark"] .bg-slate-900 { background-color: var(--app-surface2); }
+
+/* opacity variants, hovers and tinted surfaces used by the newer pages (cards, tables, status chips) */
+.app-shell[data-theme="dark"] [class~="bg-slate-50/50"],
+.app-shell[data-theme="dark"] [class~="bg-slate-50/60"],
+.app-shell[data-theme="dark"] [class~="bg-slate-50/70"],
+.app-shell[data-theme="dark"] [class~="bg-slate-50/80"],
+.app-shell[data-theme="dark"] [class~="bg-neutral-50/80"] { background-color: var(--app-surface2); }
+.app-shell[data-theme="dark"] .hover\:bg-white:hover,
+.app-shell[data-theme="dark"] .hover\:bg-slate-50:hover,
+.app-shell[data-theme="dark"] [class*="hover:bg-slate-50/"]:hover,
+.app-shell[data-theme="dark"] .group:hover .group-hover\:bg-white { background-color: var(--app-surface); }
+.app-shell[data-theme="dark"] .hover\:border-black:hover,
+.app-shell[data-theme="dark"] .border-black { border-color: var(--app-border-strong); }
+.app-shell[data-theme="dark"] [class*="border-slate-200/"],
+.app-shell[data-theme="dark"] [class*="border-slate-100/"] { border-color: var(--app-border); }
+.app-shell[data-theme="dark"] .divide-slate-100 > :not(:last-child),
+.app-shell[data-theme="dark"] .divide-slate-200 > :not(:last-child) { border-color: var(--app-border); }
+.app-shell[data-theme="dark"] .ring-slate-200 { --tw-ring-color: var(--app-border); }
+.app-shell[data-theme="dark"] .bg-slate-200 { background-color: #263043; }
+.app-shell[data-theme="dark"] .group-hover\:text-indigo-600,
+.app-shell[data-theme="dark"] .text-indigo-600 { color: #8fb0ff; }
+.app-shell[data-theme="dark"] .text-emerald-900,
+.app-shell[data-theme="dark"] .text-emerald-950 { color: #5fe0a0; }
+.app-shell[data-theme="dark"] [class*="bg-emerald-50"] { background-color: #0f2a1d; }
+.app-shell[data-theme="dark"] [class*="border-emerald-200"],
+.app-shell[data-theme="dark"] [class*="ring-emerald-100"] { border-color: #1d5a3b; }
+.app-shell[data-theme="dark"] [class*="bg-red-50/"] { background-color: #2a1214; }
+.app-shell[data-theme="dark"] [class*="border-red-200/"] { border-color: #5b1f24; }
+.app-shell[data-theme="dark"] .bg-amber-100 { background-color: #2a2008; }
+.app-shell[data-theme="dark"] [class*="border-amber-200/"],
+.app-shell[data-theme="dark"] [class*="ring-amber-100"] { border-color: #5c4510; }
+.app-shell[data-theme="dark"] .text-amber-600 { color: #f6c453; }
+.app-shell[data-theme="dark"] .bg-purple-50 { background-color: #231a3d; }
+.app-shell[data-theme="dark"] .text-purple-600 { color: #c4a8ff; }
+.app-shell[data-theme="dark"] .bg-blue-50 { background-color: #12264d; }
+.app-shell[data-theme="dark"] .text-blue-600 { color: #8fb8ff; }
+
+/* native controls and form fields follow the theme */
+.app-shell input, .app-shell select, .app-shell textarea { color: var(--app-text); background-color: transparent; }
+.app-shell[data-theme="dark"] input, .app-shell[data-theme="dark"] select, .app-shell[data-theme="dark"] textarea { background-color: var(--app-surface2); border-color: #2b374b; }
+.app-shell[data-theme="dark"] ::placeholder { color: #6b7a90; }
+.app-shell[data-theme="dark"] option { background: var(--app-surface); color: var(--app-text); }
+.app-shell[data-theme="dark"] pre.bg-slate-900 { background-color: #0a0f19; border: 1px solid var(--app-border); }
+
+/* "on" state for pills/tabs/nav: inverted in both themes */
+.app-shell .pill-on { background: #0b0f17; color: #fff; border-color: #0b0f17; }
+.app-shell[data-theme="dark"] .pill-on { background: #e6edf3; color: #0d1117; border-color: #e6edf3; }
+.app-shell[data-theme="dark"] .pill-on * { color: inherit; }
+
+/* every direct child sits above the background grid (z flex items work without position) */
+.app-shell > * { z-index: 1; }
+
+/* Background: a plain static grid of thin lines (the "checks" look), fading out towards the bottom. No glow, no motion. */
+.app-shell::after {
+  content: ""; position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background-image: linear-gradient(var(--app-border) 1px, transparent 1px), linear-gradient(90deg, var(--app-border) 1px, transparent 1px);
+  background-size: 56px 56px;
+  opacity: 0.55;
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, rgba(0, 0, 0, 0.35) 55%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 0%, rgba(0, 0, 0, 0.35) 55%, transparent 100%);
+}
+.app-shell:not([data-theme="dark"])::after { opacity: 0.6; }
+
+/* ---------- interaction: feedback only, short and quiet ---------- */
+.app-shell a, .app-shell button, .app-shell input, .app-shell select, .app-shell textarea { transition: color 0.12s, background-color 0.12s, border-color 0.12s; }
+.app-shell .bg-white[class*="rounded-"]:not([class*="overflow"]):not(input):not(select):not(textarea):not(button) { transition: border-color 0.12s; }
+.app-shell .bg-white[class*="rounded-"]:not([class*="overflow"]):not(input):not(select):not(textarea):not(button):hover { border-color: var(--app-border-strong); }
+.app-shell tbody tr:hover { background-color: rgba(127, 150, 200, 0.08); }
+.app-shell button:active:not(:disabled) { opacity: 0.85; }
+.app-shell button[class*="bg-indigo-600"]:hover, .app-shell a[class*="bg-indigo-600"]:hover { background-color: var(--color-indigo-700); }
+.app-shell button:not([class*="bg-indigo"]):not(.pill-on):hover:not(:disabled) { border-color: var(--app-border-strong); }
+
+/* progress bar: a plain fill that grows to its value */
+.bw-bar { overflow: hidden; }
+.bw-bar > i { display: block; height: 100%; border-radius: inherit; background: var(--color-indigo-600, #1a5cff); transition: width 0.4s ease-out; }
+
+@media (prefers-reduced-motion: reduce) {
+  .app-shell *, .app-shell *::before, .app-shell *::after { transition: none !important; }
+}

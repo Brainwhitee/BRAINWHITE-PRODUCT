@@ -23,6 +23,7 @@ Agents: read this before every task and update it when you change anything below
 | ENCRYPTION_KEY | yes | `openssl rand -hex 32` | app refuses to start |
 | APP_URL | yes | your production URL | email links break |
 | GITHUB_WEBHOOK_SECRET | yes | you choose, set in GitHub webhook | webhook rejected |
+| AUTO_SYNC_ON_PUSH | no | set to `true` to enable | off: pushes do not trigger a sync (default, safe on deploy) |
 | GEMINI_API_KEY / GROQ_API_KEY | optional | aistudio.google.com / console.groq.com | "AI not configured" state |
 | GitHub OAuth id/secret | optional | GitHub OAuth app | dev form disabled in prod |
 | Google OAuth id/secret | optional | Google Cloud Console | Google button shows "not configured" |

@@ -1,0 +1,5 @@
+{
+  "edges": [["src/main/java/com/acme/App.java", "src/main/java/com/acme/util/Strings.java"]],
+  "unresolved": [["src/main/java/com/acme/App.java", "com.acme.util.Missing"]],
+  "external": ["java.util.List"]
+}

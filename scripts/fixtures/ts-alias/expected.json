@@ -1,0 +1,12 @@
+{
+  "edges": [
+    ["src/main.ts", "src/lazy.ts"],
+    ["src/main.ts", "src/legacy.js"],
+    ["src/main.ts", "src/lib/a.ts"],
+    ["src/main.ts", "src/lib/util.ts"],
+    ["src/main.ts", "src/styles.css"],
+    ["src/main.ts", "src/ui/index.ts"]
+  ],
+  "unresolved": [["src/main.ts", "@/nope"]],
+  "external": ["node:fs", "react"]
+}

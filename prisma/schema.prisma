@@ -186,6 +186,7 @@ model Repository {
   lastSyncedAt  DateTime?
   summary       String   @default("")
   languages     String   @default("{}")
+  graphCoverage String   @default("{}") // which languages have symbol-level (call) edges, see lib/analyser/edges.ts
   customIgnore  String   @default("")
   modules       Module[]
   files         File[]
@@ -272,8 +273,14 @@ model GraphEdge {
   type     String
   fromKind String
   toKind   String
+  // IMPORTS / DEPENDS_ON are EXACT. Symbol edges (CALLS, REFERENCES, EXTENDS, IMPLEMENTS) are EXACT or NAME_MATCH (heuristic).
+  confidence String @default("EXACT")
+  weight   Int    @default(1)
 
   @@index([repoId])
+  @@index([repoId, fromId])
+  @@index([repoId, toId])
+  @@index([repoId, type])
 }
 
 model SyncRun {
@@ -291,6 +298,8 @@ model SyncRun {
   summariesGenerated Int @default(0)
   progress   String   @default("")
   error      String?
+  importsResolved   Int?
+  importsUnresolved Int?
 }
 
 // ---------- Learning paths (Phase 2) ----------
